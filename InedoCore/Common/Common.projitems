@@ -22,6 +22,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\ExecuteProcessOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SendEmailOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SleepOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpFileUploadOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpGetOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpOperationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpPostOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\StatusCodeRangeList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
   </ItemGroup>
 </Project>
