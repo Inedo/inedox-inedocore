@@ -23,6 +23,7 @@ namespace Inedo.Extensions.Operations.Files
     [ScriptAlias("Delete-Files")]
     [Note("This operation will delete files one-by-one. To clear large directories, a PowerShell script may be more performant.")]
     [DefaultProperty(nameof(Includes))]
+    [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
     [Tag(Tags.Files)]
     [Example(@"
 # delete all .config files in the working directory except web.config

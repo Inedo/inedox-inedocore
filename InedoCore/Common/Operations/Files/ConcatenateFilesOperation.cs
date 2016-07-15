@@ -24,6 +24,7 @@ namespace Inedo.Extensions.Operations.Files
     [DisplayName("Concatenate Files")]
     [Description("Concatenates files on a server.")]
     [ScriptAlias("Concatenate-Files")]
+    [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
     [Tag(Tags.Files)]
     [Example(@"
 # concatenates all SQL files in the working directory into a 

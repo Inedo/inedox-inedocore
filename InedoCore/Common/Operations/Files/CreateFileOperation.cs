@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
@@ -19,7 +20,9 @@ namespace Inedo.Extensions.Operations.Files
     [DisplayName("Create File")]
     [Description("Creates a file on a server.")]
     [ScriptAlias("Create-File")]
+    [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
     [Tag(Tags.Files)]
+    [DefaultProperty(nameof(FileName))]
     [Example(@"
 # write the name of the current working directory to my desktop
 Create-File(
@@ -40,6 +43,13 @@ Create-File(
         [ScriptAlias("Overwrite")]
         [Description(CommonDescriptions.Overwrite)]
         public bool Overwrite { get; set; }
+
+        [Category("Linux")]
+        [ScriptAlias("FileMode")]
+        [DisplayName("File mode")]
+        [Description("The octal file mode for the file. This value is ignored on Windows.")]
+        [DefaultValue("644")]
+        public string PosixFileMode { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
@@ -74,8 +84,26 @@ Create-File(
             this.LogDebug($"Creating directories for {path}...");
             await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(path)).ConfigureAwait(false);
             this.LogDebug($"Creating {path}...");
+            var linuxFileOps = fileOps as ILinuxFileOperationsExecuter;
+            if (linuxFileOps != null)
+            {
+                int? mode = AH.ParseInt(AH.CoalesceString(this.PosixFileMode ?? "644"));
+                if (mode == null)
+                {
+                    this.LogError("Invalid file mode specified.");
+                    return;
+                }
 
-            await fileOps.WriteAllTextAsync(path, this.Text ?? "").ConfigureAwait(false);
+                using (var stream = await linuxFileOps.OpenFileAsync(path, FileMode.Create, FileAccess.Write, Extensions.PosixFileMode.FromDecimal(mode.Value).OctalValue))
+                using (var writer = new StreamWriter(stream, InedoLib.UTF8Encoding) { NewLine = linuxFileOps.NewLine })
+                {
+                    await writer.WriteAsync(this.Text ?? string.Empty);
+                }
+            }
+            else
+            {
+                await fileOps.WriteAllTextAsync(path, this.Text ?? string.Empty);
+            }
 
             this.LogInformation(path + " file created.");
         }

@@ -20,7 +20,16 @@ namespace Inedo.Extensions.Operations.Files
     [Description("Renames a file on a server.")]
     [ScriptAlias("Rename-File")]
     [Note("To rename multiple files at once, running a PowerShell script is recommended.")]
+    [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
     [Tag(Tags.Files)]
+    [Example(@"
+# renames logs.txt to include the environment name in context
+Rename-File (
+    From: logs.txt,
+    To: logs.$EnvironmentName.txt,
+    Overwrite: true
+);
+")]
     public sealed class RenameFileOperation : ExecuteOperation
     {
         [Required]

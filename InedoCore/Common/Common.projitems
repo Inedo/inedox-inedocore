@@ -9,11 +9,16 @@
     <Import_RootNamespace>Inedo.Extensions</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Configurations\Files\DirectoryConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configurations\Files\FileConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Namespaces.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ConcatenateFilesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CopyFilesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CreateFileOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CreateZipFileOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\DeleteFilesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\EnsureDirectoryOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\EnsureFileOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\RenameFileOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ReplaceFileTextOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\SetFileAttributesOperation.cs" />
@@ -27,6 +32,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpOperationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpPostOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\StatusCodeRangeList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PosixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
   </ItemGroup>
 </Project>
