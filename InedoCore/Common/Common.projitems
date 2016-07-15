@@ -9,6 +9,19 @@
     <Import_RootNamespace>Inedo.Extensions</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ConcatenateFilesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CopyFilesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CreateFileOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CreateZipFileOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\DeleteFilesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\RenameFileOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ReplaceFileTextOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\SetFileAttributesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\TransferFilesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\UnzipFileOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\General\ExecuteProcessOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SendEmailOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SleepOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
   </ItemGroup>
 </Project>
