@@ -25,6 +25,7 @@ namespace Inedo.Extensions.Operations.Files
     [DisplayName("Transfer Files")]
     [Description("Copies files from a directory on a source server to a directory on a target server.")]
     [ScriptAlias("Transfer-Files")]
+    [ScriptNamespace("Files", PreferUnqualified = true)]
     [Tag(Tags.Files)]
     public sealed class TransferFilesOperation : ExecuteOperation
     {
