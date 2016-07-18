@@ -15,6 +15,7 @@ namespace Inedo.Extensions.Configurations.Files
 {
     [DisplayName("File")]
     [DefaultProperty(nameof(Name))]
+    [PersistFrom("Inedo.Otter.Extensions.Configurations.Files.FileConfiguration,OtterCoreEx")]
     public sealed class FileConfiguration : PersistedConfiguration, IExistential
     {
         [Persistent]

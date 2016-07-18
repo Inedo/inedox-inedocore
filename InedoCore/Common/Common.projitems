@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\Files\DirectoryConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\Files\FileConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configurations\Network\HostsEntryConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Namespaces.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ConcatenateFilesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CopyFilesOperation.cs" />
@@ -32,6 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpOperationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpPostOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\StatusCodeRangeList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Network\EnsureHostsEntryOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PosixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
   </ItemGroup>

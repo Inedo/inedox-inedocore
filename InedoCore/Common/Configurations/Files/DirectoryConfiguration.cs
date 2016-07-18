@@ -13,6 +13,7 @@ namespace Inedo.Extensions.Configurations.Files
 {
     [DisplayName("Directory")]
     [DefaultProperty(nameof(Name))]
+    [PersistFrom("Inedo.Otter.Extensions.Configurations.Files.DirectoryConfiguration,OtterCoreEx")]
     public sealed class DirectoryConfiguration : PersistedConfiguration, IExistential
     {
         [Required]
