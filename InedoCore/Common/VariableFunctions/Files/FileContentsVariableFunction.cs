@@ -18,7 +18,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("FileContents")]
     [Description("Returns the contents of a file on the current server.")]
     [Tag("files")]
-    public sealed partial class WorkingDirectoryVariableFunction : CommonScalarVariableFunction
+    public sealed class FileContentsVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("name")]
