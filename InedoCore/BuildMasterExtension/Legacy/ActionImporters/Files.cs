@@ -1,4 +1,9 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility.Actions.Files;
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.Extensions.Operations.Files;
@@ -8,6 +13,40 @@ namespace Inedo.Extensions.Legacy.ActionImporters
 {
     internal static class Files
     {
+        public sealed class TransferFiles : IActionOperationConverter<TransferFilesAction, TransferFilesOperation>
+        {
+            public ConvertedOperation<TransferFilesOperation> ConvertActionToOperation(TransferFilesAction action, IActionConverterContext context)
+            {
+                var masks = context.ConvertLegacyMask(action.IncludeFileMasks, true);
+
+                var actionConfigProp = context.GetType().GetProperty("ActionConfig", BindingFlags.NonPublic | BindingFlags.Instance);
+                var actionConfig = (Tables.ActionGroupActions_Extended)actionConfigProp.GetValue(context);
+
+                return new TransferFilesOperation
+                {
+                    SourceDirectory = context.ConvertLegacyExpression(AH.CoalesceString(action.SourceDirectory, "$WorkingDirectory")),
+                    TargetDirectory = context.ConvertLegacyExpression(action.TargetDirectory),
+                    DeleteTarget = action.DeleteTarget,
+                    Includes = masks.Includes,
+                    Excludes = masks.Excludes,
+                    SourceServerName = context.ActionServerName,
+                    TargetServerName = MungeName(context, actionConfig.Target_Server_Name, actionConfig.Target_Server_Variable_Name)
+                };
+            }
+
+            private static string MungeName(IActionConverterContext context, string name, string variableName)
+            {
+                if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(variableName))
+                    return null;
+
+                if (string.IsNullOrEmpty(variableName))
+                    return name;
+
+                var wrappedVariableName = "${" + variableName + "}";
+                return context.ConvertLegacyExpression(wrappedVariableName);
+            }
+        }
+
         public sealed class CopyFiles : IActionOperationConverter<CopyFilesAction, CopyFilesOperation>
         {
             public ConvertedOperation<CopyFilesOperation> ConvertActionToOperation(CopyFilesAction action, IActionConverterContext context)

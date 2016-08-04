@@ -51,6 +51,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\ExecutionStateVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\IsVariableDefinedVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileContentsVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Math\DecrementVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Math\IncrementVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Math\RangeVariableFunction.cs" />
