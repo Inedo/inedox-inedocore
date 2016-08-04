@@ -64,6 +64,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
@@ -71,11 +72,84 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Legacy\ActionImporters\Files.cs" />
+    <Compile Include="Legacy\ActionImporters\General.cs" />
+    <Compile Include="Legacy\ActionImporters\HTTP.cs" />
+    <Compile Include="Legacy\Actions\Files\ConcatenateFilesAction.cs" />
+    <Compile Include="Legacy\Actions\Files\ConcatenateFilesActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\CopyFilesAction.cs" />
+    <Compile Include="Legacy\Actions\Files\CopyFilesActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\CreateFileAction.cs" />
+    <Compile Include="Legacy\Actions\Files\CreateFileActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\CreateZipFileAction.cs" />
+    <Compile Include="Legacy\Actions\Files\CreateZipFileActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\DeleteFilesAction.cs" />
+    <Compile Include="Legacy\Actions\Files\DeleteFilesActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\RenameFilesAction.cs" />
+    <Compile Include="Legacy\Actions\Files\RenameFilesActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\ReplaceFileAction.cs" />
+    <Compile Include="Legacy\Actions\Files\ReplaceFileActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\SetFileAttributesAction.cs" />
+    <Compile Include="Legacy\Actions\Files\SetFileAttributesActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\TransferFilesAction.cs" />
+    <Compile Include="Legacy\Actions\Files\TransferFilesActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\Files\UnZipFileAction.cs" />
+    <Compile Include="Legacy\Actions\Files\UnZipFileActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\General\CommandLineAction.cs" />
+    <Compile Include="Legacy\Actions\General\CommandLineActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\General\SendEmailAction.cs" />
+    <Compile Include="Legacy\Actions\General\SendEmailActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\General\SleepAction.cs" />
+    <Compile Include="Legacy\Actions\General\SleepActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\HTTP\FormDataConverter.cs" />
+    <Compile Include="Legacy\Actions\HTTP\HttpActionBase.cs" />
+    <Compile Include="Legacy\Actions\HTTP\HttpFileUploadAction.cs" />
+    <Compile Include="Legacy\Actions\HTTP\HttpFileUploadActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\HTTP\HttpGetAction.cs" />
+    <Compile Include="Legacy\Actions\HTTP\HttpGetActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\HTTP\HttpPostAction.cs" />
+    <Compile Include="Legacy\Actions\HTTP\HttpPostActionEditor.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Legacy\Actions\HTTP\StatusCodeRanges.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Legacy\Actions\HTTP\FormDataInput.html" />
   </ItemGroup>
   <Import Project="..\Common\Common.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

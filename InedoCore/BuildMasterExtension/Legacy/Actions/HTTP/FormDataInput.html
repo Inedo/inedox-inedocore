@@ -1,0 +1,9 @@
+﻿<div style="margin-top: 5px;">
+    <div data-bind="foreach: items">
+        <input type="text" data-bind="value: key" style="width: 150px;" />=<input type="text" data-bind="value: value" style="width: 200px;" />
+        <a href="#" class="SmallDeleteButton" data-bind="click: function() { $root.deleteClick($data); }"></a>
+    </div>
+    <p>
+        <a href="#" data-bind="click: addClick">Add</a>
+    </p>
+</div>

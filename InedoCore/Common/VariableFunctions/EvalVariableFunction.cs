@@ -16,7 +16,7 @@ using Inedo.BuildMaster.Extensibility.VariableFunctions;
 namespace Inedo.Extensions.VariableFunctions
 {
     [ScriptAlias("Eval")]
-    [Description("Performs variable subsitution and function evaluation for arbitrary text.")]
+    [Description("Performs variable substitution and function evaluation for arbitrary text.")]
     [Example(@"
 # format strings taken from https://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx
 set $OtterScript = >>

@@ -39,6 +39,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\GetPackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PushPackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\UniversalPackageVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PosixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
@@ -58,12 +59,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\AllServersVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\EnvironmentVariableVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\PathCombineVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServerNameVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInEnvironmentVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInRoleVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\HtmlEncodeVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\JoinVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\JSEncodeVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\MatchesRegexVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\NewLineVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\ReplaceVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\SplitVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\SubstringVariableFunction.cs" />

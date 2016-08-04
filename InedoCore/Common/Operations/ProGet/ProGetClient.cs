@@ -82,6 +82,47 @@ namespace Inedo.Extensions.Operations.ProGet
             }
         }
 
+        public async Task PushPackageAsync(string group, string name, string version, ProGetPackagePushData packageData)
+        {
+            if (packageData == null)
+                throw new ArgumentNullException(nameof(packageData));
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentNullException(nameof(name));
+            if (string.IsNullOrWhiteSpace(version))
+                throw new ArgumentNullException(nameof(version));
+
+            var url = Uri.EscapeDataString(name) + "/" + Uri.EscapeDataString(version);
+            if (!string.IsNullOrEmpty(group))
+                url = group + "/" + url;
+
+            var request = this.CreateRequest("upload/" + url);
+            request.Method = "POST";
+            request.ContentType = "application/json";
+            using (var stream = await request.GetRequestStreamAsync().ConfigureAwait(false))
+            using (var writer = new StreamWriter(stream, InedoLib.UTF8Encoding))
+            using (var json = new JsonTextWriter(writer))
+            {
+                var serializer = new JsonSerializer();
+                serializer.Serialize(json, packageData);
+            }
+
+            try
+            {
+                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
+                {
+                }
+            }
+            catch (WebException wex)
+            {
+                using (var responseStream = wex.Response.GetResponseStream())
+                using (var reader = new StreamReader(responseStream))
+                {
+                    string message = reader.ReadToEnd();
+                    throw new WebException(message, wex, wex.Status, wex.Response);
+                }
+            }
+        }
+
         private HttpWebRequest CreateRequest(string relativePath)
         {
             var asm = typeof(Operation).Assembly;
@@ -89,9 +130,14 @@ namespace Inedo.Extensions.Operations.ProGet
             request.UserAgent = $"{asm.GetCustomAttribute<AssemblyProductAttribute>()?.Product} {asm.GetName().Version} ({Environment.OSVersion})";
             request.AutomaticDecompression = DecompressionMethods.GZip;
             if (!string.IsNullOrEmpty(this.UserName) && !string.IsNullOrEmpty(this.Password))
+            {
                 request.Headers.Add(HttpRequestHeader.Authorization, "Basic " + Convert.ToBase64String(InedoLib.UTF8Encoding.GetBytes(this.UserName + ":" + this.Password)));
+            }
             else
+            {
                 request.UseDefaultCredentials = true;
+                request.PreAuthenticate = true;
+            }
 
             return request;
         }
@@ -130,5 +176,15 @@ namespace Inedo.Extensions.Operations.ProGet
         public string name { get; set; }
         public long? size { get; set; }
         public DateTime? date { get; set; }
+    }
+
+    internal sealed class ProGetPackagePushData
+    {
+        public string title { get; set; }
+        public string icon { get; set; }
+        public string description { get; set; }
+        public string[] dependencies { get; set; }
+        [JsonProperty("content-b64")]
+        public string contentBase64 { get; set; }
     }
 }

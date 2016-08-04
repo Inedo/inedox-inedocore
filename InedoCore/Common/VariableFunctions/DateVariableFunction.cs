@@ -14,6 +14,9 @@ namespace Inedo.Extensions.VariableFunctions
     [ScriptAlias("Date")]
     [Description("Returns the current date and time of the local timezone in the specified .NET datetime format string, or ISO 8601 format (yyyy-mm-ddThh:mm:ss) if no format is specified.")]
     [SeeAlso(typeof(DateUtcVariableFunction))]
+#if BuildMaster
+    [LegacyAlias("DATE")]
+#endif
     [Example(@"
 # format strings taken from https://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx
 set $OtterScript = >>
