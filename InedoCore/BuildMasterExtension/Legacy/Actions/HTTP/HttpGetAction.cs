@@ -8,6 +8,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.HTTP.HttpGetAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.HTTP.Get))]
     [DisplayName("HTTP GET/DELETE/HEAD Request")]
     [Description("Executes an HTTP GET/DELETE/HEAD request against a URL, typically used for RESTful operations.")]
     [CustomEditor(typeof(HttpGetActionEditor))]

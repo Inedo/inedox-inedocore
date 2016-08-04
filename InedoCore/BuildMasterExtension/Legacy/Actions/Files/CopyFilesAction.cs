@@ -13,6 +13,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.CopyFilesAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.CopyFiles))]
     [DisplayName("Copy Files")]
     [Description("Copies files from one directory to another on the same server.")]
     [Tag(Tags.Files)]

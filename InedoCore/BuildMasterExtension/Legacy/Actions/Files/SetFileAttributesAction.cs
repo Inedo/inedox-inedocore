@@ -12,6 +12,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.SetFileAttributesAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.SetAttributes))]
     [DisplayName("Change File Attributes")]
     [Description("Sets or clears the read-only, system, or hidden attributes on one or more files.")]
     [CustomEditor(typeof(SetFileAttributesActionEditor))]

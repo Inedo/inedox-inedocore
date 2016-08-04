@@ -13,6 +13,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.General
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.General.SendEmailAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.General.SendEmail))]
     [DisplayName("Send Email")]
     [Description("Sends an email message.")]
     [CustomEditor(typeof(SendEmailActionEditor))]

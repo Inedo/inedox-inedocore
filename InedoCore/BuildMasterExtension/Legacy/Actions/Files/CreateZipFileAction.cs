@@ -7,6 +7,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.CreateZipFileAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.CreateZip))]
     [DisplayName("Create Zip File")]
     [Description("Creates a .zip archive of a folder.")]
     [CustomEditor(typeof(CreateZipFileActionEditor))]

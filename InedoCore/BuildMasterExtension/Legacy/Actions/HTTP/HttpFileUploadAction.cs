@@ -13,6 +13,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.HTTP.HttpFileUploadAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.HTTP.Upload))]
     [DisplayName("Upload File to URL")]
     [Description("Uploads a file to a specified URL using an HTTP POST.")]
     [CustomEditor(typeof(HttpFileUploadActionEditor))]

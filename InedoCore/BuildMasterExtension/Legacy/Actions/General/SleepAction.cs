@@ -6,6 +6,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.General
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.General.SleepAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.General.Sleep))]
     [DisplayName("Sleep")]
     [Description("Halts the execution for a specified number of seconds.")]
     [CustomEditor(typeof(SleepActionEditor))]

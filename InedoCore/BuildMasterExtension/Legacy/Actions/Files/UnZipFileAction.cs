@@ -7,6 +7,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.UnZipFileAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.ExtractZip))]
     [DisplayName("Unzip File")]
     [Description("Extracts a .zip archive to a directory.")]
     [CustomEditor(typeof(UnZipFileActionEditor))]

@@ -14,6 +14,7 @@ using Inedo.Agents;
 namespace Inedo.BuildMaster.Extensibility.Actions.General
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.General.CommandLineAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.General.CommandLine))]
     [DisplayName("Execute Command Line"), Description("Runs a process via command line with arguments on the target server.")]
     [CustomEditor(typeof(CommandLineActionEditor))]
     [RequiresInterface(typeof(IFileOperationsExecuter))]

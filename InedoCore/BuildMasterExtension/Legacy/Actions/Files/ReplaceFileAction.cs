@@ -10,6 +10,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.ReplaceFileAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.ReplaceText))]
     [DisplayName("Search/Replace File Contents")]
     [Description("Searches a text file for a specified string and replaces it.")]
     [CustomEditor(typeof(ReplaceFileActionEditor))]

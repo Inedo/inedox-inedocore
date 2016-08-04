@@ -10,6 +10,7 @@ using Inedo.Agents;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.DeleteFilesAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.DeleteFiles))]
     [DisplayName("Delete Files/Folders")]
     [Description("Deletes files and folders in a directory based on one or more specified file masks.")]
     [CustomEditor(typeof(DeleteFilesActionEditor))]

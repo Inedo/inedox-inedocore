@@ -9,6 +9,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.RenameFilesAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.RenameFiles))]
     [DisplayName("Rename Files")]
     [Description("Renames one or more files.")]
     [CustomEditor(typeof(RenameFilesActionEditor))]

@@ -10,6 +10,7 @@ using Inedo.Serialization;
 namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     [PersistFrom("Inedo.BuildMaster.Extensibility.Actions.Files.CreateFileAction,BuildMasterExtensions")]
+    [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.CreateFile))]
     [DisplayName("Create File")]
     [Description("Creates a text file.")]
     [CustomEditor(typeof(CreateFileActionEditor))]
