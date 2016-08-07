@@ -128,7 +128,7 @@ namespace Inedo.Extensions.Operations.HTTP
                 int remaining = this.MaxResponseLength;
 
                 int read = await reader.ReadAsync(buffer, 0, Math.Min(remaining, 1024)).ConfigureAwait(false);
-                while (read > 0)
+                while (read > 0 && remaining > 0)
                 {
                     text.Append(buffer, 0, read);
                     remaining -= read;
