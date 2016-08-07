@@ -82,7 +82,7 @@ namespace Inedo.Extensions.Operations.HTTP
         protected async Task ProcessResponseAsync(HttpResponseMessage response)
         {
             var message = $"Server responded with status code {(int)response.StatusCode} - {response.ReasonPhrase}";
-            if (string.IsNullOrWhiteSpace(this.ErrorStatusCodes))
+            if (!string.IsNullOrWhiteSpace(this.ErrorStatusCodes))
             {
                 var errorCodeRanges = StatusCodeRangeList.Parse(this.ErrorStatusCodes);
                 if (errorCodeRanges.IsInAnyRange((int)response.StatusCode))
