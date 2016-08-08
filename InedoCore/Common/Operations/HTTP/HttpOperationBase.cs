@@ -82,7 +82,7 @@ namespace Inedo.Extensions.Operations.HTTP
         protected async Task ProcessResponseAsync(HttpResponseMessage response)
         {
             var message = $"Server responded with status code {(int)response.StatusCode} - {response.ReasonPhrase}";
-            if (string.IsNullOrWhiteSpace(this.ErrorStatusCodes))
+            if (!string.IsNullOrWhiteSpace(this.ErrorStatusCodes))
             {
                 var errorCodeRanges = StatusCodeRangeList.Parse(this.ErrorStatusCodes);
                 if (errorCodeRanges.IsInAnyRange((int)response.StatusCode))
@@ -128,7 +128,7 @@ namespace Inedo.Extensions.Operations.HTTP
                 int remaining = this.MaxResponseLength;
 
                 int read = await reader.ReadAsync(buffer, 0, Math.Min(remaining, 1024)).ConfigureAwait(false);
-                while (read > 0)
+                while (read > 0 && remaining > 0)
                 {
                     text.Append(buffer, 0, read);
                     remaining -= read;
