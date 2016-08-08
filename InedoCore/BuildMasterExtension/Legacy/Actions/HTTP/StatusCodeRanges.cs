@@ -10,6 +10,9 @@ namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
 
         public static StatusCodeRangeList Parse(string value)
         {
+            if (string.IsNullOrEmpty(value))
+                return new StatusCodeRangeList{ ranges = new List<Range>() };
+
             var values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             return new StatusCodeRangeList { ranges = values.Select(v => Range.Parse(v)).Where(r => r != null).ToList() };
         }
