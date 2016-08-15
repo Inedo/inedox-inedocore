@@ -57,7 +57,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
                         index += read;
                     }
 
-                    return new string(buffer);
+                    return new string(buffer, 0, index);
                 }
             }
         }
