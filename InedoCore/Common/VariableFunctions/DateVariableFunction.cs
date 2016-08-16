@@ -12,7 +12,7 @@ using Inedo.BuildMaster.Extensibility.VariableFunctions;
 namespace Inedo.Extensions.VariableFunctions
 {
     [ScriptAlias("Date")]
-    [Description("Returns the current date and time of the local timezone in the specified .NET datetime format string, or ISO 8601 format (yyyy-mm-ddThh:mm:ss) if no format is specified.")]
+    [Description("Returns the current date and time of the local timezone in the specified .NET datetime format string, or ISO 8601 format (yyyy-MM-ddThh:mm:ss) if no format is specified.")]
     [SeeAlso(typeof(DateUtcVariableFunction))]
 #if BuildMaster
     [LegacyAlias("DATE")]
@@ -43,7 +43,7 @@ Log-Information $Result;
         protected override object EvaluateScalar(object context)
         {
             if (string.IsNullOrEmpty(this.Format))
-                return DateTime.Now.ToString("yyyy-mm-ddThh:mm:ss");
+                return DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss");
             else
                 return DateTime.Now.ToString(this.Format);
         }

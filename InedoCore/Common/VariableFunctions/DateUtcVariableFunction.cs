@@ -12,7 +12,7 @@ using Inedo.BuildMaster.Extensibility.VariableFunctions;
 namespace Inedo.Extensions.VariableFunctions
 {
     [ScriptAlias("DateUtc")]
-    [Description("Returns the current UTC date and time in the specified .NET datetime format string, or ISO 8601 format (yyyy-mm-ddThh:mm:ss) if no format is specified.")]
+    [Description("Returns the current UTC date and time in the specified .NET datetime format string, or ISO 8601 format (yyyy-MM-ddThh:mm:ss) if no format is specified.")]
     [SeeAlso(typeof(DateVariableFunction))]
     [Example(@"
 # format strings taken from https://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx
@@ -40,7 +40,7 @@ Log-Information $Result;
         protected override object EvaluateScalar(object context)
         {
             if (string.IsNullOrEmpty(this.Format))
-                return DateTime.UtcNow.ToString("yyyy-mm-ddThh:mm:ss");
+                return DateTime.UtcNow.ToString("yyyy-MM-ddThh:mm:ss");
             else
                 return DateTime.UtcNow.ToString(this.Format);
         }
