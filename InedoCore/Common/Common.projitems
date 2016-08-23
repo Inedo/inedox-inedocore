@@ -43,6 +43,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\UniversalPackageVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PosixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonMapVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonScalarVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonVectorVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\DateUtcVariableFunction.cs" />
@@ -52,6 +53,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\IsVariableDefinedVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileContentsVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListCountVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListIndexOfVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListInsertVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListItemVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListRemoveVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Maps\MapAddVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Maps\MapItemVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Maps\MapKeysVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Maps\MapRemoveVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Math\DecrementVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Math\IncrementVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Math\RangeVariableFunction.cs" />
