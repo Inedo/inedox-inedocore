@@ -33,7 +33,7 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 
-            var client = new ProGetClient(this.Template.FeedUrl, this.Template.UserName, this.Template.Password);
+            var client = new ProGetClient(this.Template.FeedUrl, this.Template.UserName, this.Template.Password, this);
 
             var packageId = ParseName(this.Template.PackageName);
 
@@ -47,7 +47,7 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             this.LogInformation($"Resolved package version is {version}.");
-
+            
             if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
             {
                 this.LogInformation(this.Template.TargetDirectory + " does not exist.");
@@ -126,67 +126,75 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 
-            var client = new ProGetClient(this.Template.FeedUrl, this.Template.UserName, this.Template.Password);
+            var client = new ProGetClient(this.Template.FeedUrl, this.Template.UserName, this.Template.Password, this);
 
-            var packageId = ParseName(this.Template.PackageName);
-
-            this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}...");
-            var packageInfo = await client.GetPackageInfoAsync(packageId.Item1, packageId.Item2).ConfigureAwait(false);
-
-            string version;
-
-            if (!string.IsNullOrEmpty(this.Template.PackageVersion) && !string.Equals(this.Template.PackageVersion, "latest", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                if (!packageInfo.versions.Contains(this.Template.PackageVersion, StringComparer.OrdinalIgnoreCase))
+                var packageId = ParseName(this.Template.PackageName);
+
+                this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}...");
+                var packageInfo = await client.GetPackageInfoAsync(packageId.Item1, packageId.Item2).ConfigureAwait(false);
+
+                string version;
+
+                if (!string.IsNullOrEmpty(this.Template.PackageVersion) && !string.Equals(this.Template.PackageVersion, "latest", StringComparison.OrdinalIgnoreCase))
                 {
-                    this.LogError($"Package {this.Template.PackageName} does not have a version {this.Template.PackageVersion}.");
-                    return;
+                    if (!packageInfo.versions.Contains(this.Template.PackageVersion, StringComparer.OrdinalIgnoreCase))
+                    {
+                        this.LogError($"Package {this.Template.PackageName} does not have a version {this.Template.PackageVersion}.");
+                        return;
+                    }
+
+                    version = this.Template.PackageVersion;
+                }
+                else
+                {
+                    version = packageInfo.latestVersion;
+                    this.LogInformation($"Latest version of {this.Template.PackageName} is {version}.");
                 }
 
-                version = this.Template.PackageVersion;
-            }
-            else
-            {
-                version = packageInfo.latestVersion;
-                this.LogInformation($"Latest version of {this.Template.PackageName} is {version}.");
-            }
-
-            this.LogInformation("Downloading package...");
-            using (var zip = await client.DownloadPackageAsync(packageId.Item1, packageId.Item2, version).ConfigureAwait(false))
-            {
-                var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                await fileOps.CreateDirectoryAsync(this.Template.TargetDirectory).ConfigureAwait(false);
-                dirsCreated.Add(this.Template.TargetDirectory);
-
-                foreach (var entry in zip.Entries)
+                this.LogInformation("Downloading package...");
+                using (var zip = await client.DownloadPackageAsync(packageId.Item1, packageId.Item2, version).ConfigureAwait(false))
                 {
-                    if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.Length <= "package/".Length)
-                        continue;
+                    var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    var relativeName = entry.FullName.Substring("package/".Length);
+                    await fileOps.CreateDirectoryAsync(this.Template.TargetDirectory).ConfigureAwait(false);
+                    dirsCreated.Add(this.Template.TargetDirectory);
 
-                    var targetPath = fileOps.CombinePath(this.Template.TargetDirectory, relativeName);
-                    if (relativeName.EndsWith("/"))
+                    foreach (var entry in zip.Entries)
                     {
-                        if (dirsCreated.Add(targetPath))
-                            await fileOps.CreateDirectoryAsync(targetPath).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var dir = PathEx.GetDirectoryName(targetPath);
-                        if (dirsCreated.Add(dir))
-                            await fileOps.CreateDirectoryAsync(dir);
+                        if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.Length <= "package/".Length)
+                            continue;
 
-                        using (var targetStream = await fileOps.OpenFileAsync(targetPath, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
-                        using (var sourceStream = entry.Open())
+                        var relativeName = entry.FullName.Substring("package/".Length);
+
+                        var targetPath = fileOps.CombinePath(this.Template.TargetDirectory, relativeName);
+                        if (relativeName.EndsWith("/"))
                         {
-                            await sourceStream.CopyToAsync(targetStream).ConfigureAwait(false);
+                            if (dirsCreated.Add(targetPath))
+                                await fileOps.CreateDirectoryAsync(targetPath).ConfigureAwait(false);
                         }
+                        else
+                        {
+                            var dir = PathEx.GetDirectoryName(targetPath);
+                            if (dirsCreated.Add(dir))
+                                await fileOps.CreateDirectoryAsync(dir);
 
-                        await fileOps.SetLastWriteTimeAsync(targetPath, entry.LastWriteTime.UtcDateTime).ConfigureAwait(false);
+                            using (var targetStream = await fileOps.OpenFileAsync(targetPath, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
+                            using (var sourceStream = entry.Open())
+                            {
+                                await sourceStream.CopyToAsync(targetStream).ConfigureAwait(false);
+                            }
+
+                            await fileOps.SetLastWriteTimeAsync(targetPath, entry.LastWriteTime.UtcDateTime).ConfigureAwait(false);
+                        }
                     }
                 }
+            }
+            catch (ProGetException ex)
+            {
+                this.LogError(ex.FullMessage);
+                return;
             }
 
             this.LogInformation("Package deployed!");

@@ -32,13 +32,13 @@ namespace Inedo.Extensions.Operations.ProGet
     [Serializable]
     public sealed class PushPackageOperation : RemoteExecuteOperation, IHasCredentials<ProGetCredentials>
     {
-        [Required]
         [ScriptAlias("FeedUrl")]
         [DisplayName("ProGet feed URL")]
         [Description("The ProGet feed API endpoint URL.")]
+        [PlaceholderText("Use feed URL from credential")]
         [MappedCredential(nameof(ProGetCredentials.Url))]
         public string FeedUrl { get; set; }
-        
+
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
@@ -55,7 +55,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [PlaceholderText("$ReleaseNumber")]
         [DefaultValue("$ReleaseNumber")]
         public string Version { get; set; }
-        
+
         [ScriptAlias("Title")]
         public string Title { get; set; }
         [ScriptAlias("Icon")]
@@ -74,46 +74,53 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("UserName")]
         [DisplayName("ProGet user name")]
         [Description("The name of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use user name from credential")]
         [MappedCredential(nameof(ProGetCredentials.UserName))]
         public string UserName { get; set; }
         [Category("Identity")]
         [ScriptAlias("Password")]
         [DisplayName("ProGet password")]
         [Description("The password of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use password from credential")]
         [MappedCredential(nameof(ProGetCredentials.Password))]
         public string Password { get; set; }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            var client = new ProGetClient(this.FeedUrl, this.UserName, this.Password);
+            var client = new ProGetClient(this.FeedUrl, this.UserName, this.Password, this);
 
-            this.LogInformation($"Pushing package {this.Name} to ProGet...");
-
-            string path = context.ResolvePath(this.FilePath);
-
-            this.LogDebug("Using package file: " + path);
-
-            string content;
-            using (var file = FileEx.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var stream = new SlimMemoryStream())
+            try
             {
-                file.CopyTo(stream);
-                var bytes = stream.ToArray();
-                content = Convert.ToBase64String(bytes);
+                this.LogInformation($"Pushing package {this.Name} to ProGet...");
+
+                string path = context.ResolvePath(this.FilePath);
+
+                this.LogDebug("Using package file: " + path);
+
+                if (!FileEx.Exists(path))
+                {
+                    this.LogError(this.FilePath + " does not exist.");
+                    return null;
+                }
+
+                using (var file = FileEx.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    var data = new ProGetPackagePushData
+                    {
+                        Title = this.Title,
+                        Description = this.Description,
+                        Icon = this.Icon,
+                        Dependencies = this.Dependencies?.ToArray()
+                    };
+
+                    await client.PushPackageAsync(this.Group, this.Name, this.Version, data, file).ConfigureAwait(false);
+                }
             }
-
-            string name = this.Name;
-
-            var data = new ProGetPackagePushData
+            catch (ProGetException ex)
             {
-                title = this.Title,
-                description = this.Description,
-                icon = this.Icon,
-                dependencies = this.Dependencies?.ToArray(),
-                contentBase64 = content
-            };
-
-            await client.PushPackageAsync(this.Group, name, this.Version, data).ConfigureAwait(false);
+                this.LogError(ex.FullMessage);
+                return null;
+            }
 
             this.LogInformation("Package pushed.");
             return null;
