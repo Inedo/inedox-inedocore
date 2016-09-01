@@ -1,8 +1,9 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
-using System;
 #if Otter
+using Inedo.Otter;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensibility.VariableFunctions;
@@ -14,10 +15,10 @@ using Inedo.BuildMaster.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Executions
 {
-    [ScriptAlias("IsVariableDefined")]
-    [Description("Returns true if the specified variable name is available in the current context; otherwise returns false.")]
+    [ScriptAlias("GetVariableValue")]
+    [Description("Returns the value of a variable if the specified variable name is available in the current context; otherwise returns null.")]
     [Tag("executions")]
-    public sealed class IsVariableDefinedVariableFunction : CommonScalarVariableFunction
+    public sealed class GetVariableValueVariableFunction : VariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("name")]
@@ -28,8 +29,11 @@ namespace Inedo.Extensions.VariableFunctions.Executions
         [DisplayName("type")]
         [Description("Must be one of: any, scalar, vector, or map; when none is specified, \"any\" is used.")]
         public string VariableType { get; set; }
-
-        protected override object EvaluateScalar(object context)
+#if BuildMaster
+        public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
+#elif Otter
+        public override RuntimeValue Evaluate(IOtterContext context)
+#endif
         {
             if (string.IsNullOrEmpty(this.VariableName))
                 return false;
@@ -45,18 +49,22 @@ namespace Inedo.Extensions.VariableFunctions.Executions
                 types = new[] { RuntimeValueType.Scalar, RuntimeValueType.Vector, RuntimeValueType.Map };
 
             var execContext = context as IOperationExecutionContext;
+            if (execContext == null)
+                return null;
 
             foreach (var type in types)
             {
                 var variableName = new RuntimeVariableName(this.VariableName, type);
-                if (execContext.TryGetVariableValue(variableName) != null)
-                    return true;
+                var value = execContext.TryGetVariableValue(variableName);
+                if (value != null)
+                    return value.Value;
 
-                if (execContext.TryGetFunctionValue(variableName.ToString()) != null)
-                    return true;
+                var functionValue = execContext.TryGetFunctionValue(variableName.ToString());
+                if (functionValue != null)
+                    return functionValue.Value;
             }
 
-            return false;
+            return null;
         }
     }
 }

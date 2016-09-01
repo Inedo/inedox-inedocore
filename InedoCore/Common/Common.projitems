@@ -50,6 +50,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\DateVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\EvalVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\ExecutionStateVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\GetVariableValueVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\IsVariableDefinedVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileContentsVariableFunction.cs" />
