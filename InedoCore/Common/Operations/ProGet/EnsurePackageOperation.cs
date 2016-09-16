@@ -188,7 +188,7 @@ namespace Inedo.Extensions.Operations.ProGet
                                 await sourceStream.CopyToAsync(targetStream).ConfigureAwait(false);
                             }
 
-                            await fileOps.SetLastWriteTimeAsync(targetPath, entry.LastWriteTime.UtcDateTime).ConfigureAwait(false);
+                            await fileOps.SetLastWriteTimeAsync(targetPath, entry.LastWriteTime.DateTime).ConfigureAwait(false);
                         }
                     }
                 }
