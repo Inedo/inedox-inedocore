@@ -105,6 +105,8 @@ namespace Inedo.Extensions.Operations.ProGet
                     if (entry.size != fileInfo.Size || entry.date != fileInfo.LastWriteTimeUtc)
                     {
                         this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
+                        this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
+                        this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
                         return new ProGetPackageConfiguration
                         {
                             TargetDirectory = this.Template.TargetDirectory
