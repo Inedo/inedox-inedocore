@@ -155,8 +155,10 @@ namespace Inedo.Extensions.Operations.ProGet
                     this.LogInformation($"Latest version of {this.Template.PackageName} is {version}.");
                 }
 
+                var deployInfo = PackageDeploymentData.Create(context, this, "Deployed by Ensure-Package operation, see URL for more info.");
+
                 this.LogInformation("Downloading package...");
-                using (var zip = await client.DownloadPackageAsync(packageId.Item1, packageId.Item2, version).ConfigureAwait(false))
+                using (var zip = await client.DownloadPackageAsync(packageId.Item1, packageId.Item2, version, deployInfo).ConfigureAwait(false))
                 {
                     var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

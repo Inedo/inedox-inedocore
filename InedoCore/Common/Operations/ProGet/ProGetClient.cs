@@ -1,16 +1,19 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Inedo.IO;
-using Newtonsoft.Json;
 using System.Reflection;
 using System.Text;
+using Inedo.IO;
 using Inedo.Diagnostics;
+using Newtonsoft.Json;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
+using Inedo.BuildMaster.Data;
 #elif Otter
+using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
 #endif
 
@@ -80,7 +83,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw ProGetException.Wrap(wex);
             }
         }
-        public async Task<ZipArchive> DownloadPackageAsync(string group, string name, string version)
+        public async Task<ZipArchive> DownloadPackageAsync(string group, string name, string version, PackageDeploymentData deployInfo)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentNullException(nameof(name));
@@ -91,7 +94,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrEmpty(group))
                 url = group + "/" + url;
 
-            var request = this.CreateRequest("download/" + url);
+            var request = this.CreateRequest("download/" + url, deployInfo);
             try
             {
                 using (var response = await request.GetResponseAsync().ConfigureAwait(false))
@@ -142,7 +145,7 @@ namespace Inedo.Extensions.Operations.ProGet
             }
         }
 
-        private HttpWebRequest CreateRequest(string relativePath)
+        private HttpWebRequest CreateRequest(string relativePath, PackageDeploymentData deployInfo = null)
         {
             string url = this.FeedUrl + relativePath;
             this.Log.LogDebug("Creating request: " + url);
@@ -161,6 +164,14 @@ namespace Inedo.Extensions.Operations.ProGet
                 this.Log.LogDebug($"Using integrated authentication; user account '{Environment.UserName}', domain '{Environment.UserDomainName}'.");
                 request.UseDefaultCredentials = true;
                 request.PreAuthenticate = true;
+            }
+            
+            if (deployInfo != null)
+            {
+                request.Headers.Add(PackageDeploymentData.Headers.Application, deployInfo.Application);
+                request.Headers.Add(PackageDeploymentData.Headers.Description, deployInfo.Description);
+                request.Headers.Add(PackageDeploymentData.Headers.Url, deployInfo.Url);
+                request.Headers.Add(PackageDeploymentData.Headers.Target, deployInfo.Target);
             }
 
             return request;
@@ -295,6 +306,73 @@ namespace Inedo.Extensions.Operations.ProGet
                 buffer.Remove(buffer.Length - 1, 1);
 
             return buffer.ToString();
+        }
+    }
+
+    internal sealed class PackageDeploymentData
+    {
+#if BuildMaster
+        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
+        {
+            string baseUrl = DB.Configuration_GetValue("CoreEx", "BuildMaster_BaseUrl");
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                log.LogDebug("Deployment will not be recorded in ProGet because the BuildMaster_BaseUrl configuration setting is not set.");
+                return null;
+            }
+
+            var server = DB.Servers_GetServer(context.ServerId).Servers.FirstOrDefault();
+            string serverName = server?.Server_Name ?? Environment.MachineName;
+
+            string relativeUrl = $"application/{context.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(context.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(context.BuildNumber)}";
+
+            return new PackageDeploymentData("BuildMaster", baseUrl, relativeUrl, serverName, description);
+        }
+#elif Otter
+        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
+        {
+            // this can be changed to use OtterConfig class when Otter SDK is updated to v1.4
+            var config = DB.Configuration_GetValues().FirstOrDefault(v => v.Key_Name == "OtterConfig.OtterBaseUrl");
+            if (config == null)
+            {
+                log.LogDebug("Deployment will not be recorded in ProGet because the OtterBaseUrl configuration setting is not set.");
+                return null;
+            }
+
+            string relativeUrl = $"servers/details?serverId={context.ServerId}";
+
+            return new PackageDeploymentData("Otter", config.Value_Text, relativeUrl, context.ServerName, description);
+        }
+#endif
+
+        public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
+        {
+            if (application == null)
+                throw new ArgumentNullException(nameof(application));
+            if (baseUrl == null)
+                throw new ArgumentNullException(nameof(baseUrl));
+            if (relativeUrl == null)
+                throw new ArgumentNullException(nameof(relativeUrl));
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+
+            this.Application = application;
+            this.Url = baseUrl.TrimEnd('/') + '/' + relativeUrl.TrimStart('/');
+            this.Target = target;
+            this.Description = description ?? "";
+        }
+
+        public string Application { get; }
+        public string Description { get; }
+        public string Url { get; }
+        public string Target { get; }
+
+        public static class Headers
+        {
+            public const string Application = "X-ProGet-Deployment-Application";
+            public const string Description = "X-ProGet-Deployment-Description";
+            public const string Url = "X-ProGet-Deployment-Url";
+            public const string Target = "X-ProGet-Deployment-Target";
         }
     }
 }
