@@ -324,7 +324,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var server = DB.Servers_GetServer(context.ServerId).Servers.FirstOrDefault();
             string serverName = server?.Server_Name ?? Environment.MachineName;
 
-            string relativeUrl = $"application/{context.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(context.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(context.BuildNumber)}";
+            string relativeUrl = $"applications/{context.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(context.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(context.BuildNumber)}";
 
             return new PackageDeploymentData("BuildMaster", baseUrl, relativeUrl, serverName, description);
         }
