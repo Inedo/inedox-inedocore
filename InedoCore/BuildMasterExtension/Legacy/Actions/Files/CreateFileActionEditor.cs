@@ -8,19 +8,16 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     internal sealed class CreateFileActionEditor : ActionEditorBase
     {
-        private SourceControlFileFolderPicker txtFileName;
+        private FileBrowserTextBox txtFileName;
         private TextBox txtFileContents;
 
-        public override string ServerLabel
-        {
-            get { return "On server:"; }
-        }
+        public override string ServerLabel => "On server:";
 
         protected override void CreateChildControls()
         {
-            this.txtFileName = new SourceControlFileFolderPicker
+            this.txtFileName = new FileBrowserTextBox
             {
-                DisplayMode = SourceControlBrowser.DisplayModes.FoldersAndFiles,
+                IncludeFiles = true,
                 Required = true
             };
 

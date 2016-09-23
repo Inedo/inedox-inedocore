@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Web.UI.WebControls;
-using Inedo.BuildMaster.Extensibility.PromotionRequirements;
 using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Extensions;
 using Inedo.Web.Controls;
@@ -10,26 +9,26 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
 {
     internal sealed class CommandLineActionEditor : ActionEditorBase
     {
-        private SourceControlFileFolderPicker txtWorkingDirectory;
-        private SourceControlFileFolderPicker txtExePath;
+        private FileBrowserTextBox txtWorkingDirectory;
+        private FileBrowserTextBox txtExePath;
         private ValidatingTextBox txtArguments;
         private CheckBox chkFailOnStandardError;
         private CheckBox chkUseExitCode;
         private DropDownList ddlExitCode;
         private CheckBox chkImportBuildMasterVariables;
 
-        public override string ServerLabel { get { return "Run on server:"; } }
+        public override string ServerLabel => "Run on server:";
 
         protected override void CreateChildControls()
         {
-            this.txtWorkingDirectory = new SourceControlFileFolderPicker() { DefaultText = "$CurrentDirectory" };
-            this.txtExePath = new SourceControlFileFolderPicker { Required = true, };
+            this.txtWorkingDirectory = new FileBrowserTextBox { IncludeFiles = false, DefaultText = "$CurrentDirectory" };
+            this.txtExePath = new FileBrowserTextBox { IncludeFiles = true, Required = true, };
             this.txtArguments = new ValidatingTextBox();
             this.chkFailOnStandardError = new CheckBox { Text = "Fail if any text is written to standard error" };
             this.chkUseExitCode = new CheckBox { Text = "Succeed only when exit code is..." };
             this.chkImportBuildMasterVariables = new CheckBox { Text = "Import BuildMaster variables to environment" };
 
-            this.ddlExitCode = new DropDownList()
+            this.ddlExitCode = new DropDownList
             {
                 Items =
                 {

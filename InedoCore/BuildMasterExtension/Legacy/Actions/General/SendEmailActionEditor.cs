@@ -15,7 +15,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
         private ValidatingTextBox txtSubject;
         private TextBox txtBody;
         private ActionServerPicker ddlServer;
-        private SourceControlFileFolderPicker txtAttachment;
+        private FileBrowserTextBox txtAttachment;
         private CheckBox chkAttachFile;
         private CheckBox chkIsBodyHtml;
 
@@ -40,9 +40,9 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
                 Rows = 10
             };
 
-            this.txtAttachment = new SourceControlFileFolderPicker
+            this.txtAttachment = new FileBrowserTextBox
             {
-                DisplayMode = SourceControlBrowser.DisplayModes.FoldersAndFiles,
+                IncludeFiles = true,
                 DefaultText = "no attachment"
             };
 

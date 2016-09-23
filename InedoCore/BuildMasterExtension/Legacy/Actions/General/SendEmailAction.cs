@@ -84,7 +84,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
 
                 if (!string.IsNullOrEmpty(this.Attachment))
                 {
-                    using (var agent = Util.Agents.CreateAgentFromId(this.ServerId))
+                    using (var agent = BuildMasterAgent.Create(this.ServerId.Value))
                     {
                         var fileOps = agent.GetService<IFileOperationsExecuter>();
                         var sourceDir = fileOps.GetLegacyWorkingDirectory((IGenericBuildMasterContext)this.Context, PathEx.GetDirectoryName(this.Attachment));

@@ -7,11 +7,11 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     internal sealed class UnZipFileActionEditor : ActionEditorBase
     {
-        private SourceControlFileFolderPicker txtFileName;
+        private FileBrowserTextBox txtFileName;
 
-        public override bool DisplayTargetDirectory { get { return true; } }
-        public override string ServerLabel { get { return "On server:"; } }
-        public override string TargetDirectoryLabel { get { return "To directory:"; } }
+        public override bool DisplayTargetDirectory => true;
+        public override string ServerLabel => "On server:";
+        public override string TargetDirectoryLabel => "To directory:";
 
         public override ActionBase CreateFromForm()
         {
@@ -30,7 +30,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 
         protected override void CreateChildControls()
         {
-            this.txtFileName = new SourceControlFileFolderPicker { Required = true };
+            this.txtFileName = new FileBrowserTextBox { IncludeFiles = true, Required = true };
             
             this.Controls.Add(
                 new SlimFormField("Zip file path:", this.txtFileName)

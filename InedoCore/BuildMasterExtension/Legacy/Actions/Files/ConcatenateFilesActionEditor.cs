@@ -14,20 +14,11 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
         private ValidatingTextBox txtMasks, txtContentSeparationText;
         private CheckBox chkRecursive, chkForceLinuxNewlines;
         private EncodingPicker ddlEncoding;
-        private SourceControlFileFolderPicker txtOutputFile;
+        private FileBrowserTextBox txtOutputFile;
 
-        public override bool DisplaySourceDirectory
-        {
-            get { return true; }
-        }
-        public override string ServerLabel
-        {
-            get { return "On server:"; }
-        }
-        public override string SourceDirectoryLabel
-        {
-            get { return "From directory:"; }
-        }
+        public override bool DisplaySourceDirectory => true;
+        public override string ServerLabel => "On server:";
+        public override string SourceDirectoryLabel => "From directory:";
 
         protected override void CreateChildControls()
         {
@@ -38,9 +29,9 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
                 Text = "*"
             };
 
-            this.txtOutputFile = new SourceControlFileFolderPicker
+            this.txtOutputFile = new FileBrowserTextBox
             {
-                DisplayMode = SourceControlBrowser.DisplayModes.FoldersAndFiles,
+                IncludeFiles = true,
                 Required = true
             };
 

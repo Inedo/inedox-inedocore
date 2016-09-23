@@ -7,26 +7,17 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     internal sealed class CreateZipFileActionEditor : ActionEditorBase
     {
-        private SourceControlFileFolderPicker txtFileName;
+        private FileBrowserTextBox txtFileName;
 
-        public override bool DisplaySourceDirectory
-        {
-            get { return true; }
-        }
-        public override string SourceDirectoryLabel
-        {
-            get { return "From directory:"; }
-        }
-        public override string ServerLabel
-        {
-            get { return "From server:"; }
-        }
+        public override bool DisplaySourceDirectory => true;
+        public override string SourceDirectoryLabel => "From directory:";
+        public override string ServerLabel => "From server:";
 
         protected override void CreateChildControls()
         {
-            this.txtFileName = new SourceControlFileFolderPicker
+            this.txtFileName = new FileBrowserTextBox
             {
-                DisplayMode = SourceControlBrowser.DisplayModes.FoldersAndFiles,
+                IncludeFiles = true,
                 DefaultText = "$CurrentDirectory\\archive.zip"
             };
 

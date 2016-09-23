@@ -104,7 +104,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 
         private void TransferFiles(IFileOperationsExecuter sourceAgentHelper, char srcSeparator, string srcPath, DirectoryEntryInfo sourceDir, int targetServerId)
         {
-            using (var targetAgent = Util.Agents.CreateAgentFromId(targetServerId))
+            using (var targetAgent = BuildMasterAgent.Create(targetServerId))
             {
                 var fileOps = targetAgent.GetService<IFileOperationsExecuter>();
                 char targetSeparator = fileOps.DirectorySeparator;
