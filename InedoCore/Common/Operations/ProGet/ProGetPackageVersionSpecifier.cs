@@ -13,7 +13,7 @@ namespace Inedo.Extensions.Operations.ProGet
         public ProGetPackageVersionSpecifier(string versionText)
         {
             this.Value = AH.CoalesceString(versionText, "latest");
-            var match = VersionRegex.Match(versionText);
+            var match = VersionRegex.Match(versionText ?? "");
             if (!match.Groups[3].Success)
             {
                 if (match.Groups[1].Success)

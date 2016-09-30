@@ -8,15 +8,19 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.IO;
 using Inedo.Extensions;
+using Inedo.Extensions.SuggestionProviders;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Credentials;
 using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensions.Credentials;
+using Inedo.Otter.Web.Controls;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.Operations;
+using Inedo.BuildMaster.Web.Controls;
+using Inedo.BuildMaster.Web.Controls.Plans;
 #endif
 using Inedo.Serialization;
 
@@ -29,62 +33,73 @@ namespace Inedo.Extensions.Operations.ProGet
     [Tag("proget")]
     public sealed class GetPackageOperation : ExecuteOperation, IHasCredentials<ProGetCredentials>
     {
-        [Required]
-        [Persistent]
-        [ScriptAlias("Name")]
-        [DisplayName("Package name")]
-        public string PackageName { get; set; }
-        [Persistent]
-        [ScriptAlias("Version")]
-        [DisplayName("Package version")]
-        [Description("The version of the package. Use \"latest\" to ensure the latest available version.")]
-        public string PackageVersion { get; set; }
-        [Required]
-        [Persistent]
-        [ScriptAlias("Directory")]
-        [DisplayName("Target directory")]
-        [Description("The directory path on disk of the package contents.")]
-        public string TargetDirectory { get; set; }
-        [Persistent]
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
         public string CredentialName { get; set; }
-        [Persistent]
+
+        [Required]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [SuggestibleValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
+
+        [Required]
+        [ScriptAlias("Name")]
+        [DisplayName("Package name")]
+        [SuggestibleValue(typeof(PackageNameSuggestionProvider))]
+        public string PackageName { get; set; }
+        
+        [ScriptAlias("Version")]
+        [DisplayName("Package version")]
+        [PlaceholderText("latest")]
+        [SuggestibleValue(typeof(PackageVersionSuggestionProvider))]
+        public string PackageVersion { get; set; }
+
+        [Required]
+        [ScriptAlias("Directory")]
+        [DisplayName("Target directory")]
+        [Description("The directory path on disk of the package contents.")]
+#if BuildMaster
+        [FilePathEditor]
+#endif
+        public string TargetDirectory { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Server")]
         [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet feed URL")]
-        [Description("The ProGet feed API endpoint URL.")]
-        [PlaceholderText("Use feed URL from credential")]
+        [DisplayName("ProGet server URL")]
+        [PlaceholderText("Use server URL from credential")]
         [MappedCredential(nameof(ProGetCredentials.Url))]
-        public string FeedUrl { get; set; }
-        [Persistent]
+        public string Server { get; set; }
+
+        [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
         [DisplayName("ProGet user name")]
-        [Description("The name of a user in ProGet that can access this feed.")]
+        [Description("The name of a user in ProGet that can access the specified feed.")]
         [PlaceholderText("Use user name from credential")]
         [MappedCredential(nameof(ProGetCredentials.UserName))]
         public string UserName { get; set; }
-        [Persistent]
+
+        [Category("Connection/Identity")]
         [ScriptAlias("Password")]
         [DisplayName("ProGet password")]
-        [Description("The password of a user in ProGet that can access this feed.")]
+        [Description("The password of a user in ProGet that can access the specified feed.")]
         [PlaceholderText("Use password from credential")]
         [MappedCredential(nameof(ProGetCredentials.Password))]
         public string Password { get; set; }
-        [Persistent]
-        public bool Current { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 
-            var client = new ProGetClient(this.FeedUrl, this.UserName, this.Password, this);
+            var client = new ProGetClient(this.Server, this.FeedName, this.UserName, this.Password, this);
 
             try
             {
-                var packageId = ParseName(this.PackageName);
+                var packageId = ProGet.PackageName.Parse(this.PackageName);
 
-                this.LogInformation($"Connecting to {this.FeedUrl} to get metadata for {this.PackageName}...");
-                var packageInfo = await client.GetPackageInfoAsync(packageId.Item1, packageId.Item2).ConfigureAwait(false);
+                this.LogInformation($"Connecting to {this.Server} to get metadata for {this.PackageName}...");
+                var packageInfo = await client.GetPackageInfoAsync(packageId).ConfigureAwait(false);
 
                 var version = new ProGetPackageVersionSpecifier(this.PackageVersion).GetBestMatch(packageInfo.versions);
                 if (version == null)
@@ -98,7 +113,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 var deployInfo = PackageDeploymentData.Create(context, this, "Deployed by Get-Package operation, see URL for more info.");
 
                 this.LogInformation("Downloading package...");
-                using (var zip = await client.DownloadPackageAsync(packageId.Item1, packageId.Item2, version, deployInfo).ConfigureAwait(false))
+                using (var zip = await client.DownloadPackageAsync(packageId, version, deployInfo).ConfigureAwait(false))
                 {
                     var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -166,20 +181,6 @@ namespace Inedo.Extensions.Operations.ProGet
                     new DirectoryHilite(config[nameof(this.TargetDirectory)])
                 )
             );
-        }
-
-        private static Tuple<string, string> ParseName(string fullName)
-        {
-            fullName = fullName?.Trim('/');
-            if (string.IsNullOrEmpty(fullName))
-                return Tuple.Create(string.Empty, fullName);
-
-            int index = fullName.LastIndexOf('/');
-
-            if (index > 0)
-                return Tuple.Create(fullName.Substring(0, index), fullName.Substring(index + 1));
-            else
-                return Tuple.Create(string.Empty, fullName);
         }
     }
 }

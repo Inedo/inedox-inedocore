@@ -33,11 +33,11 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 
-            var client = new ProGetClient(this.Template.FeedUrl, this.Template.UserName, this.Template.Password, this);
+            var client = new ProGetClient(this.Template.FeedUrl, this.Template.FeedName, this.Template.UserName, this.Template.Password, this);
 
-            var packageId = ParseName(this.Template.PackageName);
+            var packageId = PackageName.Parse(this.Template.PackageName);
 
-            var packageInfo = await client.GetPackageInfoAsync(packageId.Item1, packageId.Item2).ConfigureAwait(false);
+            var packageInfo = await client.GetPackageInfoAsync(packageId).ConfigureAwait(false);
 
             var version = new ProGetPackageVersionSpecifier(this.Template.PackageVersion).GetBestMatch(packageInfo.versions);
             if (version == null)
@@ -77,7 +77,7 @@ namespace Inedo.Extensions.Operations.ProGet
             this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
 
             this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}:{version}...");
-            var versionInfo = await client.GetPackageVersionInfoAsync(packageId.Item1, packageId.Item2, version).ConfigureAwait(false);
+            var versionInfo = await client.GetPackageVersionInfoAsync(packageId, version).ConfigureAwait(false);
             if (versionInfo.fileList == null)
             {
                 this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
@@ -128,14 +128,14 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 
-            var client = new ProGetClient(this.Template.FeedUrl, this.Template.UserName, this.Template.Password, this);
+            var client = new ProGetClient(this.Template.FeedUrl, this.Template.FeedName, this.Template.UserName, this.Template.Password, this);
 
             try
             {
-                var packageId = ParseName(this.Template.PackageName);
+                var packageId = PackageName.Parse(this.Template.PackageName);
 
                 this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}...");
-                var packageInfo = await client.GetPackageInfoAsync(packageId.Item1, packageId.Item2).ConfigureAwait(false);
+                var packageInfo = await client.GetPackageInfoAsync(packageId).ConfigureAwait(false);
 
                 string version;
 
@@ -158,7 +158,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 var deployInfo = PackageDeploymentData.Create(context, this, "Deployed by Ensure-Package operation, see URL for more info.");
 
                 this.LogInformation("Downloading package...");
-                using (var zip = await client.DownloadPackageAsync(packageId.Item1, packageId.Item2, version, deployInfo).ConfigureAwait(false))
+                using (var zip = await client.DownloadPackageAsync(packageId, version, deployInfo).ConfigureAwait(false))
                 {
                     var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

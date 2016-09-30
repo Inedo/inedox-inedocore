@@ -9,6 +9,7 @@ using System.Text;
 using Inedo.IO;
 using Inedo.Diagnostics;
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Data;
@@ -21,17 +22,36 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     internal sealed class ProGetClient
     {
-        public ProGetClient(string feedUrl, string userName, string password, ILogger log)
-        {
-            if (string.IsNullOrEmpty(feedUrl))
-                throw new ProGetException(400, "A feed URL must be specified for this operation either in the operation itself or in the credential.");
-            if (log == null)
-                throw new ArgumentNullException(nameof(log));
+        private static readonly LazyRegex FeedNameRegex = new LazyRegex(@"(?<1>(https?://)?[^/]+)/upack(/?(?<2>.+))", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
-            this.FeedUrl = feedUrl.TrimEnd('/') + "/";
+        public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogger log = null)
+        {
+            if (string.IsNullOrEmpty(serverUrl))
+                throw new ProGetException(400, "A ProGet server URL must be specified for this operation either in the operation itself or in the credential.");
+
             this.UserName = AH.NullIf(userName, string.Empty);
             this.Password = AH.NullIf(password, string.Empty);
-            this.Log = log;
+            this.Log = log ?? new NullLogger();
+            this.FeedUrl = ResolveFeedUrl(serverUrl, feedName, this.Log);
+        }
+
+        private static string ResolveFeedUrl(string baseUrl, string feedName, ILogger log)
+        {
+            var match = FeedNameRegex.Match(baseUrl);
+            
+            if (match.Success)
+            {
+                log.LogWarning("As of v5.4 of the ProGet extension, specific ProGet feed URLs should not be used in the ProGet resource credential. Instead, use the server or hostname only (i.e. 'http://proget-server:81' instead of 'http://proget-server:81/upack/feedName') and update the Get/Ensure-Package operation to include the name of the feed via the Feed property.");
+                string credentialUrl = match.Groups[1].Value;
+                string credentialFeedName = match.Groups[2].Value;
+                string resolvedFeedName = AH.CoalesceString(Uri.EscapeUriString(feedName ?? ""), credentialFeedName);
+
+                return credentialUrl + "/upack/" + resolvedFeedName.TrimEnd('/') + '/';
+            }
+            else
+            {
+                return baseUrl.TrimEnd('/') + "/upack/" + Uri.EscapeUriString(feedName ?? "") + '/';
+            }
         }
 
         public string FeedUrl { get; }
@@ -39,12 +59,52 @@ namespace Inedo.Extensions.Operations.ProGet
         public string Password { get; }
         public ILogger Log { get; }
 
-        public async Task<ProGetPackageInfo> GetPackageInfoAsync(string group, string name)
+        public async Task<string[]> GetFeedNamesAsync()
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentNullException(nameof(name));
+            var request = this.CreateRequest("?list-feeds");
+            try
+            {
+                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
+                using (var responseStream = response.GetResponseStream())
+                using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
+                using (var jsonReader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.Create();
+                    return serializer.Deserialize<string[]>(jsonReader);
+                }
+            }
+            catch (WebException wex)
+            {
+                throw ProGetException.Wrap(wex);
+            }
+        }
 
-            var request = this.CreateRequest($"packages?group={Uri.EscapeDataString(group ?? string.Empty)}&name={Uri.EscapeDataString(name)}");
+        public async Task<ProGetPackageInfo[]> GetPackagesAsync()
+        {
+            var request = this.CreateRequest("packages");
+            try
+            {
+                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
+                using (var responseStream = response.GetResponseStream())
+                using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
+                using (var jsonReader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.Create();
+                    return serializer.Deserialize<ProGetPackageInfo[]>(jsonReader);
+                }
+            }
+            catch (WebException wex)
+            {
+                throw ProGetException.Wrap(wex);
+            }
+        }
+
+        public async Task<ProGetPackageInfo> GetPackageInfoAsync(PackageName id)
+        {
+            if (string.IsNullOrWhiteSpace(id?.Name))
+                throw new ArgumentNullException(nameof(id));
+
+            var request = this.CreateRequest($"packages?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}");
             try
             {
                 using (var response = await request.GetResponseAsync().ConfigureAwait(false))
@@ -61,12 +121,12 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw ProGetException.Wrap(wex);
             }
         }
-        public async Task<ProGetPackageVersionInfo> GetPackageVersionInfoAsync(string group, string name, string version)
+        public async Task<ProGetPackageVersionInfo> GetPackageVersionInfoAsync(PackageName id, string version)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentNullException(nameof(name));
+            if (string.IsNullOrWhiteSpace(id?.Name))
+                throw new ArgumentNullException(nameof(id));
 
-            var request = this.CreateRequest($"versions?group={Uri.EscapeDataString(group ?? string.Empty)}&name={Uri.EscapeDataString(name)}&version={Uri.EscapeDataString(version)}&includeFileList=true");
+            var request = this.CreateRequest($"versions?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}&version={Uri.EscapeDataString(version)}&includeFileList=true");
             try
             {
                 using (var response = await request.GetResponseAsync().ConfigureAwait(false))
@@ -83,16 +143,16 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw ProGetException.Wrap(wex);
             }
         }
-        public async Task<ZipArchive> DownloadPackageAsync(string group, string name, string version, PackageDeploymentData deployInfo)
+        public async Task<ZipArchive> DownloadPackageAsync(PackageName id, string version, PackageDeploymentData deployInfo)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentNullException(nameof(name));
+            if (string.IsNullOrWhiteSpace(id?.Name))
+                throw new ArgumentNullException(nameof(id));
             if (string.IsNullOrWhiteSpace(version))
                 throw new ArgumentNullException(nameof(version));
 
-            var url = Uri.EscapeDataString(name) + "/" + Uri.EscapeDataString(version);
-            if (!string.IsNullOrEmpty(group))
-                url = group + "/" + url;
+            var url = Uri.EscapeDataString(id.Name) + "/" + Uri.EscapeDataString(version);
+            if (!string.IsNullOrEmpty(id.Group))
+                url = id.Group + "/" + url;
 
             var request = this.CreateRequest("download/" + url, deployInfo);
             try
@@ -175,6 +235,55 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             return request;
+        }
+    }
+
+    internal sealed class PackageName
+    {
+        public static PackageName Parse(string fullName)
+        {
+            fullName = fullName?.Trim('/');
+            if (string.IsNullOrEmpty(fullName))
+                return new PackageName(fullName);
+
+            int index = fullName.LastIndexOf('/');
+
+            if (index > 0)
+                return new PackageName(fullName.Substring(0, index), fullName.Substring(index + 1));
+            else
+                return new PackageName(fullName);
+        }
+
+        public PackageName(string name)
+        {
+            this.Group = "";
+            this.Name = name ?? "";
+        }
+        public PackageName(string group, string name)
+        {
+            this.Group = group ?? "";
+            this.Name = name ?? "";
+        }
+        public string Group { get; }
+        public string Name { get; }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(this.Group))
+                return this.Name;
+            else
+                return this.Group + '/' + this.Name;
+        }
+    }
+
+    internal sealed class NullLogger : ILogger
+    {
+#pragma warning disable CS0067
+        public event EventHandler<LogMessageEventArgs> MessageLogged;
+#pragma warning restore CS0067
+
+        public void Log(MessageLevel logLevel, string message)
+        {
         }
     }
 
