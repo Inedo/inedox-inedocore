@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
+using Inedo.BuildMaster.Extensibility.Credentials;
+using System.Security;
+using System.Net;
 #if Otter
 using Inedo.Otter.Documentation;
 using Inedo.Otter.Extensibility;
@@ -61,9 +64,32 @@ namespace Inedo.Extensions.Operations.HTTP
         [DefaultValue(1000)]
         public int MaxResponseLength { get; set; } = 1000;
 
+        [Category("Authentication")]
+        [ScriptAlias("UserName")]
+        [DisplayName("User name")]
+        [PlaceholderText("Use user name from credential")]
+        [MappedCredential(nameof(UsernamePasswordCredentials.UserName))]
+        public string UserName { get; set; }
+        [Category("Authentication")]
+        [ScriptAlias("Password")]
+        [DisplayName("Password")]
+        [PlaceholderText("Use password from credential")]
+        [MappedCredential(nameof(UsernamePasswordCredentials.Password))]
+        public SecureString Password { get; set; }
+
         protected HttpClient CreateClient()
         {
-            var client = new HttpClient();
+            HttpClient client;
+            if (!string.IsNullOrWhiteSpace(this.UserName))
+            {
+                this.LogDebug($"Making request as {this.UserName}...");
+                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? new SecureString()) });
+            }
+            else
+            {
+                client = new HttpClient();
+            }
+
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(HttpOperationBase).Assembly.GetName().Version.ToString()));
