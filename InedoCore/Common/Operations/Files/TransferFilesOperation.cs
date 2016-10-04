@@ -40,7 +40,6 @@ namespace Inedo.Extensions.Operations.Files
         public IEnumerable<string> Excludes { get; set; }
         [ScriptAlias("FromDirectory")]
         [DisplayName("Source directory")]
-        [Description(CommonDescriptions.SourceDirectory)]
         [PlaceholderText("$WorkingDirectory")]
         public string SourceDirectory { get; set; }
         [ScriptAlias("FromServer")]
@@ -50,7 +49,6 @@ namespace Inedo.Extensions.Operations.Files
         [Required]
         [ScriptAlias("ToDirectory")]
         [DisplayName("Target directory")]
-        [Description("The directory where the files will be copied to.")]
         public string TargetDirectory { get; set; }
         [ScriptAlias("ToServer")]
         [DisplayName("Target server")]
@@ -58,7 +56,6 @@ namespace Inedo.Extensions.Operations.Files
         public string TargetServerName { get; set; }
         [ScriptAlias("Verbose")]
         [DisplayName("Verbose")]
-        [Description(CommonDescriptions.VerboseLogging)]
         public bool VerboseLogging { get; set; }
         [ScriptAlias("DeleteTarget")]
         [DisplayName("Delete target")]

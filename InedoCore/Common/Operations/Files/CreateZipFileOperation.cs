@@ -34,15 +34,12 @@ Create-ZipFile(
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Zip file name")]
-        [Description("The name of the zip file to create.")]
         public string FileName { get; set; }
         [Required]
         [ScriptAlias("Directory")]
         [DisplayName("Source directory")]
-        [Description("The directory with the contents to be zipped.")]
         public string DirectoryToZip { get; set; }
         [ScriptAlias("Overwrite")]
-        [Description(CommonDescriptions.Overwrite)]
         public bool Overwrite { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)

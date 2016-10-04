@@ -35,16 +35,13 @@ Rename-File (
         [Required]
         [ScriptAlias("From")]
         [DisplayName("Source file")]
-        [Description("The source file to rename.")]
         public string SourceFileName { get; set; }
         [Required]
         [ScriptAlias("To")]
         [DisplayName("Target file")]
-        [Description("The new name of the file.")]
         public string TargetFileName { get; set; }
         [ScriptAlias("Overwrite")]
         [DisplayName("Overwrite")]
-        [Description(CommonDescriptions.VerboseLogging)]
         public bool Overwrite { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

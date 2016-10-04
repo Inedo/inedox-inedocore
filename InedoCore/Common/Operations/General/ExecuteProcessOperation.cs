@@ -43,24 +43,19 @@ Exec c:\tools\7za.exe (
         [Required]
         [ScriptAlias("FileName")]
         [DisplayName("File name")]
-        [Description("The file name of the process to execute.")]
         public string FileName { get; set; }
         [ScriptAlias("Arguments")]
-        [Description("Arguments to pass to the process as a single string.")]
         public string Arguments { get; set; }
         [ScriptAlias("WorkingDirectory")]
         [DisplayName("Working directory")]
-        [Description("The working directory in which the process will be started.")]
         public string WorkingDirectory { get; set; }
         [Category("Logging")]
         [ScriptAlias("OutputLogLevel")]
         [DisplayName("Output log level")]
-        [Description("The log level for process standard output. The default is \"Information\".")]
         public MessageLevel OutputLevel { get; set; } = MessageLevel.Information;
         [Category("Logging")]
         [ScriptAlias("ErrorOutputLogLevel")]
         [DisplayName("Error log level")]
-        [Description("The log level for process standard error output. The default is \"Error\".")]
         public MessageLevel ErrorLevel { get; set; } = MessageLevel.Error;
         [ScriptAlias("SuccessExitCode")]
         [DisplayName("Success exit code")]

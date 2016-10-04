@@ -28,7 +28,6 @@ namespace Inedo.Extensions.Operations.Files
     public sealed class SetFileAttributesOperation : RemoteExecuteOperation
     {
         [ScriptAlias("Directory")]
-        [Description(CommonDescriptions.SourceDirectory)]
         public string SourceDirectory { get; set; }
         [ScriptAlias("Include")]
         [Description(CommonDescriptions.MaskingHelp)]
@@ -39,18 +38,14 @@ namespace Inedo.Extensions.Operations.Files
 
         [ScriptAlias("ReadOnly")]
         [DisplayName("Read only")]
-        [Description("When true or false, sets or clears the \"read-only\" flag on matching files.")]
         public bool? ReadOnly { get; set; }
         [ScriptAlias("Hidden")]
-        [Description("When true or false, sets or clears the \"hidden\" flag on matching files.")]
         public bool? Hidden { get; set; }
         [ScriptAlias("System")]
-        [Description("When true or false, sets or clears the \"system\" flag on matching files.")]
         public bool? System { get; set; }
 
         [ScriptAlias("Verbose")]
         [DisplayName("Verbose")]
-        [Description(CommonDescriptions.VerboseLogging)]
         public bool VerboseLogging { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

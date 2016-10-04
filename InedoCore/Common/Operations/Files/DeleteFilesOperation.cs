@@ -42,11 +42,9 @@ Delete-Files(
         [Description(CommonDescriptions.MaskingHelp)]
         public IEnumerable<string> Excludes { get; set; }
         [ScriptAlias("Directory")]
-        [Description(CommonDescriptions.SourceDirectory)]
         public string SourceDirectory { get; set; }
         [ScriptAlias("Verbose")]
         [DisplayName("Verbose")]
-        [Description(CommonDescriptions.VerboseLogging)]
         public bool VerboseLogging { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

@@ -10,6 +10,8 @@ using Inedo.IO;
 using Inedo.Diagnostics;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using System.Net.Http;
+using System.Net.Http.Headers;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Data;
@@ -35,25 +37,6 @@ namespace Inedo.Extensions.Operations.ProGet
             this.FeedUrl = ResolveFeedUrl(serverUrl, feedName, this.Log);
         }
 
-        private static string ResolveFeedUrl(string baseUrl, string feedName, ILogger log)
-        {
-            var match = FeedNameRegex.Match(baseUrl);
-            
-            if (match.Success)
-            {
-                log.LogWarning("As of v5.4 of the ProGet extension, specific ProGet feed URLs should not be used in the ProGet resource credential. Instead, use the server or hostname only (i.e. 'http://proget-server:81' instead of 'http://proget-server:81/upack/feedName') and update the Get/Ensure-Package operation to include the name of the feed via the Feed property.");
-                string credentialUrl = match.Groups[1].Value;
-                string credentialFeedName = match.Groups[2].Value;
-                string resolvedFeedName = AH.CoalesceString(Uri.EscapeUriString(feedName ?? ""), credentialFeedName);
-
-                return credentialUrl + "/upack/" + resolvedFeedName.TrimEnd('/') + '/';
-            }
-            else
-            {
-                return baseUrl.TrimEnd('/') + "/upack/" + Uri.EscapeUriString(feedName ?? "") + '/';
-            }
-        }
-
         public string FeedUrl { get; }
         public string UserName { get; }
         public string Password { get; }
@@ -61,11 +44,12 @@ namespace Inedo.Extensions.Operations.ProGet
 
         public async Task<string[]> GetFeedNamesAsync()
         {
-            var request = this.CreateRequest("?list-feeds");
-            try
+            using (var client = this.CreateClient())
+            using (var response = await client.GetAsync(this.FeedUrl + "?list-feeds").ConfigureAwait(false))
             {
-                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
-                using (var responseStream = response.GetResponseStream())
+                await HandleError(response).ConfigureAwait(false);
+
+                using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                 using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
                 using (var jsonReader = new JsonTextReader(streamReader))
                 {
@@ -73,19 +57,15 @@ namespace Inedo.Extensions.Operations.ProGet
                     return serializer.Deserialize<string[]>(jsonReader);
                 }
             }
-            catch (WebException wex)
-            {
-                throw ProGetException.Wrap(wex);
-            }
         }
-
         public async Task<ProGetPackageInfo[]> GetPackagesAsync()
         {
-            var request = this.CreateRequest("packages");
-            try
+            using (var client = this.CreateClient())
+            using (var response = await client.GetAsync(this.FeedUrl + "packages").ConfigureAwait(false))
             {
-                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
-                using (var responseStream = response.GetResponseStream())
+                await HandleError(response).ConfigureAwait(false);
+
+                using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                 using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
                 using (var jsonReader = new JsonTextReader(streamReader))
                 {
@@ -93,22 +73,18 @@ namespace Inedo.Extensions.Operations.ProGet
                     return serializer.Deserialize<ProGetPackageInfo[]>(jsonReader);
                 }
             }
-            catch (WebException wex)
-            {
-                throw ProGetException.Wrap(wex);
-            }
         }
-
         public async Task<ProGetPackageInfo> GetPackageInfoAsync(PackageName id)
         {
             if (string.IsNullOrWhiteSpace(id?.Name))
                 throw new ArgumentNullException(nameof(id));
 
-            var request = this.CreateRequest($"packages?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}");
-            try
+            using (var client = this.CreateClient())
+            using (var response = await client.GetAsync(this.FeedUrl + $"packages?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}").ConfigureAwait(false))
             {
-                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
-                using (var responseStream = response.GetResponseStream())
+                await HandleError(response).ConfigureAwait(false);
+
+                using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                 using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
                 using (var jsonReader = new JsonTextReader(streamReader))
                 {
@@ -116,31 +92,26 @@ namespace Inedo.Extensions.Operations.ProGet
                     return serializer.Deserialize<ProGetPackageInfo>(jsonReader);
                 }
             }
-            catch (WebException wex)
-            {
-                throw ProGetException.Wrap(wex);
-            }
         }
         public async Task<ProGetPackageVersionInfo> GetPackageVersionInfoAsync(PackageName id, string version)
         {
             if (string.IsNullOrWhiteSpace(id?.Name))
                 throw new ArgumentNullException(nameof(id));
 
-            var request = this.CreateRequest($"versions?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}&version={Uri.EscapeDataString(version)}&includeFileList=true");
-            try
+            using (var client = this.CreateClient())
             {
-                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
-                using (var responseStream = response.GetResponseStream())
-                using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
-                using (var jsonReader = new JsonTextReader(streamReader))
+                using (var response = await client.GetAsync(this.FeedUrl + $"versions?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}&version={Uri.EscapeDataString(version)}&includeFileList=true").ConfigureAwait(false))
                 {
-                    var serializer = JsonSerializer.Create();
-                    return serializer.Deserialize<ProGetPackageVersionInfo>(jsonReader);
+                    await HandleError(response).ConfigureAwait(false);
+
+                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
+                    using (var jsonReader = new JsonTextReader(streamReader))
+                    {
+                        var serializer = JsonSerializer.Create();
+                        return serializer.Deserialize<ProGetPackageVersionInfo>(jsonReader);
+                    }
                 }
-            }
-            catch (WebException wex)
-            {
-                throw ProGetException.Wrap(wex);
             }
         }
         public async Task<ZipArchive> DownloadPackageAsync(PackageName id, string version, PackageDeploymentData deployInfo)
@@ -154,24 +125,22 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrEmpty(id.Group))
                 url = id.Group + "/" + url;
 
-            var request = this.CreateRequest("download/" + url, deployInfo);
-            try
+            using (var client = this.CreateClient(deployInfo))
             {
-                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
-                using (var responseStream = response.GetResponseStream())
+                using (var response = await client.GetAsync(this.FeedUrl + "download/" + url).ConfigureAwait(false))
                 {
-                    var tempStream = TemporaryStream.Create(response.ContentLength);
-                    await responseStream.CopyToAsync(tempStream).ConfigureAwait(false);
-                    tempStream.Position = 0;
-                    return new ZipArchive(tempStream, ZipArchiveMode.Read);
+                    await HandleError(response).ConfigureAwait(false);
+
+                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    {
+                        var tempStream = TemporaryStream.Create(response.Content.Headers.ContentLength ?? 0L);
+                        await responseStream.CopyToAsync(tempStream).ConfigureAwait(false);
+                        tempStream.Position = 0;
+                        return new ZipArchive(tempStream, ZipArchiveMode.Read);
+                    }
                 }
             }
-            catch (WebException wex)
-            {
-                throw ProGetException.Wrap(wex);
-            }
         }
-
         public async Task PushPackageAsync(string group, string name, string version, ProGetPackagePushData packageData, Stream content)
         {
             if (packageData == null)
@@ -185,26 +154,45 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrEmpty(group))
                 url = group + "/" + url;
 
-            var request = this.CreateRequest("upload/" + url + packageData.ToQueryString());
-            request.Method = "POST";
-            request.ContentType = "application/zip";
-            try
+            using (var client = this.CreateClient())
+            using (var streamContent = new StreamContent(content))
             {
-                using (var stream = await request.GetRequestStreamAsync().ConfigureAwait(false))
-                {
-                    await content.CopyToAsync(stream).ConfigureAwait(false);
-                }
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
 
-                using (var response = await request.GetResponseAsync().ConfigureAwait(false))
+                using (var response = await client.PostAsync(this.FeedUrl + "upload/" + url + packageData.ToQueryString(), streamContent).ConfigureAwait(false))
                 {
+                    await HandleError(response).ConfigureAwait(false);
                 }
-            }
-            catch (WebException wex)
-            {
-                throw ProGetException.Wrap(wex);
             }
         }
 
+        private HttpClient CreateClient(PackageDeploymentData deployInfo = null)
+        {
+            HttpClient client;
+            if (!string.IsNullOrWhiteSpace(this.UserName))
+            {
+                this.Log?.LogDebug($"Making request as {this.UserName}...");
+                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) });
+            }
+            else
+            {
+                client = new HttpClient();
+            }
+
+            client.DefaultRequestHeaders.UserAgent.Clear();
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetClient).Assembly.GetName().Version.ToString()));
+
+            if (deployInfo != null)
+            {
+                client.DefaultRequestHeaders.Add(PackageDeploymentData.Headers.Application, deployInfo.Application ?? string.Empty);
+                client.DefaultRequestHeaders.Add(PackageDeploymentData.Headers.Description, deployInfo.Description ?? string.Empty);
+                client.DefaultRequestHeaders.Add(PackageDeploymentData.Headers.Url, deployInfo.Url ?? string.Empty);
+                client.DefaultRequestHeaders.Add(PackageDeploymentData.Headers.Target, deployInfo.Target ?? string.Empty);
+            }
+
+            return client;
+        }
         private HttpWebRequest CreateRequest(string relativePath, PackageDeploymentData deployInfo = null)
         {
             string url = this.FeedUrl + relativePath;
@@ -235,6 +223,35 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             return request;
+        }
+        private static async Task HandleError(HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            var message = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.InternalServerError && message.StartsWith("<!DOCTYPE"))
+                message = "Invalid feed URL. Ensure the feed URL follows the format: http://{proget-server}/upack/{feed-name}";
+
+            throw new ProGetException((int)response.StatusCode, message);
+        }
+        private static string ResolveFeedUrl(string baseUrl, string feedName, ILogger log)
+        {
+            var match = FeedNameRegex.Match(baseUrl);
+
+            if (match.Success)
+            {
+                log.LogWarning("As of v5.4 of the ProGet extension, specific ProGet feed URLs should not be used in the ProGet resource credential. Instead, use the server or hostname only (i.e. 'http://proget-server:81' instead of 'http://proget-server:81/upack/feedName') and update the Get/Ensure-Package operation to include the name of the feed via the Feed property.");
+                string credentialUrl = match.Groups[1].Value;
+                string credentialFeedName = match.Groups[2].Value;
+                string resolvedFeedName = AH.CoalesceString(Uri.EscapeUriString(feedName ?? ""), credentialFeedName);
+
+                return credentialUrl + "/upack/" + resolvedFeedName.TrimEnd('/') + '/';
+            }
+            else
+            {
+                return baseUrl.TrimEnd('/') + "/upack/" + Uri.EscapeUriString(feedName ?? "") + '/';
+            }
         }
     }
 

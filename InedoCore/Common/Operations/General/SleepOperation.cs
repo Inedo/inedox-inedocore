@@ -25,7 +25,6 @@ namespace Inedo.Extensions.Operations.General
 
         [Required]
         [ScriptAlias("Seconds")]
-        [Description("The number of seconds to sleep.")]
         public int Seconds { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

@@ -35,18 +35,14 @@ Extract-ZipFile(
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("File name")]
-        [Description("The file path of the zip archive to extract.")]
         public string FileName { get; set; }
         [ScriptAlias("Directory")]
         [DisplayName("Target directory")]
-        [Description("The directory where the files will be extracted to. The default is the working directory")]
         public string TargetDirectory { get; set; }
         [ScriptAlias("ClearTarget")]
         [DisplayName("Clear target directory")]
-        [Description("When true, the target directory will be cleared before extracting the contents of the zip file.")]
         public bool ClearTargetDirectory { get; set; }
         [ScriptAlias("Overwrite")]
-        [Description(CommonDescriptions.Overwrite)]
         public bool Overwrite { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

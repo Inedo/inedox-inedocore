@@ -38,10 +38,8 @@ Create-File(
         [Description("The path of the file to create.")]
         public string FileName { get; set; }
         [ScriptAlias("Text")]
-        [Description("The contents of the file. If this value is missing or empty, a 0-byte file will be created.")]
         public string Text { get; set; }
         [ScriptAlias("Overwrite")]
-        [Description(CommonDescriptions.Overwrite)]
         public bool Overwrite { get; set; }
 
         [Category("Linux")]
