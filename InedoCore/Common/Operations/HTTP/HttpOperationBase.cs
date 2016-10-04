@@ -12,12 +12,12 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using System.Security;
 using System.Net;
-using Inedo.Otter.Extensions.Credentials;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Credentials;
 using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensions;
+using Inedo.Otter.Extensions.Credentials;
 #elif BuildMaster
 using Inedo.BuildMaster.Web;
 using Inedo.BuildMaster.Extensibility;
