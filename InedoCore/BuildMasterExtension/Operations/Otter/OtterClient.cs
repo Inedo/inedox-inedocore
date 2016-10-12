@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.Diagnostics;
+using Inedo.IO;
 using Newtonsoft.Json;
 
 namespace Inedo.Extensions.Operations.Otter
@@ -42,7 +43,10 @@ namespace Inedo.Extensions.Operations.Otter
             {
                 string url = $"api/configuration/check?{entity.Type}={Uri.EscapeDataString(entity.Name)}";
                 this.LogRequest(url);
-                await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
+                using (var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false))
+                {
+                    await HandleError(response).ConfigureAwait(false);
+                }
             }
         }
 
@@ -53,16 +57,17 @@ namespace Inedo.Extensions.Operations.Otter
                 string url = $"api/configuration/status?{entity.Type}={Uri.EscapeDataString(entity.Name)}";
                 this.LogRequest(url);
 
-                var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
-
-                await HandleError(response).ConfigureAwait(false);
-
-                using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var reader = new StreamReader(stream))
-                using (var jsonReader = new JsonTextReader(reader))
+                using (var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false))
                 {
-                    var result = JsonSerializer.CreateDefault().Deserialize<ConfigurationStatusJsonModel>(jsonReader);
-                    return result;
+                    await HandleError(response).ConfigureAwait(false);
+
+                    using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var reader = new StreamReader(stream))
+                    using (var jsonReader = new JsonTextReader(reader))
+                    {
+                        var result = JsonSerializer.CreateDefault().Deserialize<ConfigurationStatusJsonModel>(jsonReader);
+                        return result;
+                    }
                 }
             }
         }
@@ -75,11 +80,13 @@ namespace Inedo.Extensions.Operations.Otter
                 if (jobName != null)
                     url += $"?job={jobName}";
 
-                var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
-                await HandleError(response).ConfigureAwait(false);
+                using (var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false))
+                {
+                    await HandleError(response).ConfigureAwait(false);
 
-                string jobToken = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return jobToken;
+                    string jobToken = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    return jobToken;
+                }
             }
         }
 
@@ -89,15 +96,17 @@ namespace Inedo.Extensions.Operations.Otter
             {
                 string url = $"api/configuration/remediate/status?token={Uri.EscapeDataString(jobToken)}";
                 this.LogRequest(url);
-                var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
-                await HandleError(response).ConfigureAwait(false);
+                using (var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false))
+                {
+                    await HandleError(response).ConfigureAwait(false);
 
-                string status = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                RemediationStatus result;
-                if (Enum.TryParse(status, ignoreCase: true, result: out result))
-                    return result;
-                else
-                    throw new OtterException(500, "Unexpected remediation job status returned from Otter: " + status);
+                    string status = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    RemediationStatus result;
+                    if (Enum.TryParse(status, ignoreCase: true, result: out result))
+                        return result;
+                    else
+                        throw new OtterException(500, "Unexpected remediation job status returned from Otter: " + status);
+                }
             }
         }
 
@@ -142,6 +151,32 @@ namespace Inedo.Extensions.Operations.Otter
             }
         }
 
+        public async Task SetVariableAsync(ScopedVariableJsonModel variable)
+        {
+            using (var client = this.CreateClient())
+            {
+                string url;
+                if (string.IsNullOrEmpty(variable.Server) && string.IsNullOrEmpty(variable.ServerRole) && string.IsNullOrEmpty(variable.Environment))
+                    url = $"api/variables/global";
+                else
+                    url = "api/variables/scoped/single";
+                this.LogRequest(url);
+                using (var stream = new SlimMemoryStream())
+                using (var writer = new StreamWriter(stream))
+                {
+                    JsonSerializer.CreateDefault().Serialize(writer, variable);
+                    await writer.FlushAsync().ConfigureAwait(false);
+                    stream.Position = 0;
+
+                    using (var content = new StreamContent(stream))
+                    using (var response = await client.PostAsync(url, content).ConfigureAwait(false))
+                    {
+                        await HandleError(response).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
         private void LogRequest(string relativeUrl)
         {
             string url = this.baseUrl + '/' + relativeUrl;
@@ -177,6 +212,7 @@ namespace Inedo.Extensions.Operations.Otter
     {
         public static readonly string Server = "server";
         public static readonly string Role = "role";
+        public static readonly string Environment = "environment";
 
         public string Name { get; }
         public abstract string Type { get; }
@@ -213,6 +249,14 @@ namespace Inedo.Extensions.Operations.Otter
         {
             public override string Type => InfrastructureEntity.Role;
             public RoleEntity(string name)
+                : base(name)
+            {
+            }
+        }
+        private sealed class EnvironmentEntity : InfrastructureEntity
+        {
+            public override string Type => InfrastructureEntity.Environment;
+            public EnvironmentEntity(string name)
                 : base(name)
             {
             }
