@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.Operations;
+using Inedo.BuildMaster.Web.Controls;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
+using Inedo.Extensions.SuggestionProviders;
 
 namespace Inedo.Extensions.Operations.Otter
 {
@@ -24,10 +26,12 @@ namespace Inedo.Extensions.Operations.Otter
 
         [ScriptAlias("Server")]
         [DisplayName("Server name")]
+        [SuggestibleValue(typeof(OtterServerNameSuggestionProvider))]
         public string Server { get; set; }
 
         [ScriptAlias("Role")]
         [DisplayName("Role name")]
+        [SuggestibleValue(typeof(OtterRoleNameSuggestionProvider))]
         public string Role { get; set; }
 
         [ScriptAlias("WaitForCompletion")]
@@ -50,39 +54,26 @@ namespace Inedo.Extensions.Operations.Otter
 
         public async override Task ExecuteAsync(IOperationExecutionContext context)
         {
-            string entityName;
-            EntityType entityType;
-            if (this.Server != null)
-            {
-                entityName = this.Server;
-                entityType = EntityType.Server;
-            }
-            else if (this.Role != null)
-            {
-                entityName = this.Role;
-                entityType = EntityType.Role;
-            }
-            else
+            var entity = InfrastructureEntity.Create(serverName: this.Server, roleName: this.Role);
+            if (entity == null)
             {
                 this.LogError("A server or role name is required to remediate drift in Otter.");
                 return;
             }
 
-            string entityTypeAndName = $"{entityType.ToString().ToLowerInvariant()} '{entityName}'";
-
-            this.LogInformation($"Remediating drift for {entityTypeAndName}...");
+            this.LogInformation($"Remediating drift for {entity}...");
             
             var client = new OtterClient(this.Host, this.ApiKey, this, context.CancellationToken);
 
             try
             {
                 this.LogDebug("Triggering configuration check...");
-                await client.TriggerConfigurationCheckAsync(entityType, entityName).ConfigureAwait(false);
+                await client.TriggerConfigurationCheckAsync(entity).ConfigureAwait(false);
 
                 this.LogDebug("Waiting a few seconds to get new configuration status...");
                 await Task.Delay(3 * 1000, context.CancellationToken).ConfigureAwait(false);
 
-                var configuration = await client.GetConfigurationStatusAsync(entityType, entityName).ConfigureAwait(false);
+                var configuration = await client.GetConfigurationStatusAsync(entity).ConfigureAwait(false);
 
                 if (string.Equals(configuration.Status, "error", StringComparison.OrdinalIgnoreCase))
                 {
@@ -107,7 +98,7 @@ namespace Inedo.Extensions.Operations.Otter
                 else if (string.Equals(configuration.Status, "drifted", StringComparison.OrdinalIgnoreCase))
                 {
                     this.LogInformation("Configuration status is 'drifted', triggering remediation job...");
-                    string jobToken = await client.TriggerRemediationJobAsync(entityType, entityName).ConfigureAwait(false);
+                    string jobToken = await client.TriggerRemediationJobAsync(entity).ConfigureAwait(false);
 
                     this.LogInformation("Remediation job triggered successfully.");
                     this.LogDebug("Job token: " + jobToken);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -13,8 +14,6 @@ using Newtonsoft.Json;
 
 namespace Inedo.Extensions.Operations.Otter
 {
-    internal enum EntityType { Server, Role }
-
     internal enum RemediationStatus { Pending, Completed, Faulted, Running, Disabled }
 
     internal sealed class OtterClient
@@ -24,7 +23,7 @@ namespace Inedo.Extensions.Operations.Otter
         private ILogger log;
         private CancellationToken cancellationToken;
 
-        public OtterClient(string server, SecureString apiKey, ILogger log, CancellationToken cancellationToken)
+        public OtterClient(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
         {
             if (string.IsNullOrEmpty(server))
                 throw new ArgumentNullException(nameof(server));
@@ -34,24 +33,24 @@ namespace Inedo.Extensions.Operations.Otter
             this.baseUrl = server.TrimEnd('/');
             this.apiKey = apiKey;
             this.log = log ?? new ProGet.NullLogger();
-            this.cancellationToken = cancellationToken;
+            this.cancellationToken = cancellationToken ?? CancellationToken.None;
         }
 
-        public async Task TriggerConfigurationCheckAsync(EntityType entityType, string entityName)
+        public async Task TriggerConfigurationCheckAsync(InfrastructureEntity entity)
         {
             using (var client = this.CreateClient())
             {
-                string url = $"api/configuration/check?{entityType.ToString().ToLowerInvariant()}={Uri.EscapeDataString(entityName)}";
+                string url = $"api/configuration/check?{entity.Type}={Uri.EscapeDataString(entity.Name)}";
                 this.LogRequest(url);
                 await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public async Task<ConfigurationStatusJsonModel> GetConfigurationStatusAsync(EntityType entityType, string entityName)
+        public async Task<ConfigurationStatusJsonModel> GetConfigurationStatusAsync(InfrastructureEntity entity)
         {
             using (var client = this.CreateClient())
             {
-                string url = $"api/configuration/status?{entityType.ToString().ToLowerInvariant()}={Uri.EscapeDataString(entityName)}";
+                string url = $"api/configuration/status?{entity.Type}={Uri.EscapeDataString(entity.Name)}";
                 this.LogRequest(url);
 
                 var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
@@ -68,11 +67,11 @@ namespace Inedo.Extensions.Operations.Otter
             }
         }
 
-        public async Task<string> TriggerRemediationJobAsync(EntityType entityType, string entityName, string jobName = null)
+        public async Task<string> TriggerRemediationJobAsync(InfrastructureEntity entity, string jobName = null)
         {
             using (var client = this.CreateClient())
             {
-                string url = $"api/configuration/remediate/{entityType.ToString().ToLowerInvariant()}/{Uri.EscapeDataString(entityName)}";
+                string url = $"api/configuration/remediate/{entity.Type}/{Uri.EscapeDataString(entity.Name)}";
                 if (jobName != null)
                     url += $"?job={jobName}";
 
@@ -99,6 +98,47 @@ namespace Inedo.Extensions.Operations.Otter
                     return result;
                 else
                     throw new OtterException(500, "Unexpected remediation job status returned from Otter: " + status);
+            }
+        }
+
+        public async Task<IList<string>> EnumerateInfrastructureAsync(string entityType)
+        {
+            using (var client = this.CreateClient())
+            {
+                string url = $"api/infrastructure/{entityType}s/list";
+                this.LogRequest(url);
+                var response = await client.GetAsync(url, this.cancellationToken).ConfigureAwait(false);
+                await HandleError(response).ConfigureAwait(false);
+
+                using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                using (var reader = new StreamReader(stream))
+                using (var jsonReader = new JsonTextReader(reader)) 
+                {
+                    jsonReader.Read();
+                    if (jsonReader.TokenType != JsonToken.StartArray)
+                        throw new OtterException(400, $"Expected StartArray token from Otter Infrastructure API, was '{jsonReader.TokenType}'.");
+
+                    var entities = new List<string>();
+
+                    while (jsonReader.Read())
+                    {
+                        if (jsonReader.TokenType == JsonToken.PropertyName)
+                        {
+                            string value = jsonReader.Value.ToString();
+                            if (string.Equals(value, "name", StringComparison.OrdinalIgnoreCase))
+                            {
+                                string entityName = jsonReader.ReadAsString();
+                                entities.Add(entityName);
+                            }
+                            else
+                            {
+                                jsonReader.Skip();
+                            }
+                        }
+                    }
+
+                    return entities;
+                }
             }
         }
 
@@ -130,6 +170,52 @@ namespace Inedo.Extensions.Operations.Otter
                 message = "Invalid Otter API URL. Ensure the URL follows the format: http://{otter-server}";
 
             throw new OtterException((int)response.StatusCode, message);
+        }
+    }
+
+    internal abstract class InfrastructureEntity
+    {
+        public static readonly string Server = "server";
+        public static readonly string Role = "role";
+
+        public string Name { get; }
+        public abstract string Type { get; }
+
+        protected InfrastructureEntity(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            this.Name = name;
+        }
+
+        public static InfrastructureEntity Create(string serverName = null, string roleName = null)
+        {
+            if (!string.IsNullOrEmpty(serverName))
+                return new ServerEntity(serverName);
+            else if (!string.IsNullOrEmpty(roleName))
+                return new RoleEntity(roleName);
+            else
+                return null;
+        }
+        
+        public override string ToString() => $"{this.Type} '{this.Name}'";
+
+        private sealed class ServerEntity : InfrastructureEntity
+        {
+            public override string Type => InfrastructureEntity.Server;
+            public ServerEntity(string name)
+                : base(name)
+            {
+            }
+        }
+        private sealed class RoleEntity : InfrastructureEntity
+        {
+            public override string Type => InfrastructureEntity.Role;
+            public RoleEntity(string name)
+                : base(name)
+            {
+            }
         }
     }
 

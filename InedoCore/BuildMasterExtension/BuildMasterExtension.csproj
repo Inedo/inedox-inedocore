@@ -147,6 +147,8 @@
     <Compile Include="Operations\Otter\RemediateDriftOperation.cs" />
     <Compile Include="PromotionRequirements\DriftStatusPromotionRequirement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SuggestionProviders\OtterRoleNameSuggestionProvider.cs" />
+    <Compile Include="SuggestionProviders\OtterServerNameSuggestionProvider.cs" />
     <Compile Include="SuggestionProviders\OtterCredentialSuggestionProvider.cs" />
     <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
   </ItemGroup>

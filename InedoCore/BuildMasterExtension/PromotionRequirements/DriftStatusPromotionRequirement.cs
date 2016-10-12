@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Threading;
 using System.Threading.Tasks;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.PromotionRequirements;
@@ -20,51 +19,39 @@ namespace Inedo.Extensions.PromotionRequirements
     {
         [Persistent]
         [DisplayName("Credentials:")]
+        [Required]
         [SuggestibleValue(typeof(OtterCredentialSuggestionProvider))]
         public string CredentialName { get; set; }
         [Persistent]
         [DisplayName("Server name:")]
+        [SuggestibleValue(typeof(OtterServerNameSuggestionProvider))]
         public string Server { get; set; }
         [Persistent]
         [DisplayName("Role name:")]
+        [SuggestibleValue(typeof(OtterRoleNameSuggestionProvider))]
         public string Role { get; set; }
         [Persistent]
         public DriftStatus Status { get; set; }
 
         public override async Task<PromotionRequirementStatus> GetStatusAsync(PromotionContext context)
         {
-            string entityName;
-            EntityType entityType;
-            if (!string.IsNullOrEmpty(this.Server))
-            {
-                entityName = this.Server;
-                entityType = EntityType.Server;
-            }
-            else if (!string.IsNullOrEmpty(this.Role))
-            {
-                entityName = this.Role;
-                entityType = EntityType.Role;
-            }
-            else
-            {
+            var entity = InfrastructureEntity.Create(serverName: this.Server, roleName: this.Role);
+            if (entity == null)
                 return new PromotionRequirementStatus(PromotionRequirementState.NotApplicable, "A server or role must be specified to determine drift status.");
-            }
-
-            string entityTypeAndName = $"{entityType.ToString()} {entityName}";
-
+            
             var credentials = ResourceCredentials.Create<OtterCredentials>(this.CredentialName);
 
-            var client = new OtterClient(credentials.Host, credentials.ApiKey, null, CancellationToken.None);
+            var client = new OtterClient(credentials.Host, credentials.ApiKey);
             try
             {
-                await client.TriggerConfigurationCheckAsync(entityType, entityName).ConfigureAwait(false);
+                await client.TriggerConfigurationCheckAsync(entity).ConfigureAwait(false);
                 await Task.Delay(2 * 1000).ConfigureAwait(false);
-                var config = await client.GetConfigurationStatusAsync(entityType, entityName).ConfigureAwait(false);
+                var config = await client.GetConfigurationStatusAsync(entity).ConfigureAwait(false);
 
                 if (string.Equals(config.Status, this.Status.ToString(), StringComparison.OrdinalIgnoreCase))
-                    return new PromotionRequirementStatus(PromotionRequirementState.Met, $"{entityTypeAndName} status is {config.Status}.");
+                    return new PromotionRequirementStatus(PromotionRequirementState.Met, $"{entity} status is {config.Status}.");
                 else
-                    return new PromotionRequirementStatus(PromotionRequirementState.NotMet, $"{entityTypeAndName} status is {config.Status}, must be {this.Status.ToString().ToLower()}.");
+                    return new PromotionRequirementStatus(PromotionRequirementState.NotMet, $"{entity} status is {config.Status}, must be {this.Status.ToString().ToLowerInvariant()}.");
             }
             catch (OtterException ex)
             {
