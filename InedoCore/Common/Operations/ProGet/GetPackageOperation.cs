@@ -143,7 +143,7 @@ namespace Inedo.Extensions.Operations.ProGet
                             using (var targetStream = await fileOps.OpenFileAsync(targetPath, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
                             using (var sourceStream = entry.Open())
                             {
-                                await sourceStream.CopyToAsync(targetStream);
+                                await sourceStream.CopyToAsync(targetStream).ConfigureAwait(false);
                             }
 
                             // timestamp in zip file is stored as UTC by convention

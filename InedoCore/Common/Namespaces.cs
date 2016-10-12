@@ -5,5 +5,6 @@
         public const string Files = nameof(Files);
         public const string Network = nameof(Network);
         public const string ProGet = nameof(ProGet);
+        public const string Otter = nameof(Otter);
     }
 }

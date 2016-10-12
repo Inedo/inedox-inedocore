@@ -171,7 +171,7 @@ namespace Inedo.Extensions.Operations.ProGet
             HttpClient client;
             if (!string.IsNullOrWhiteSpace(this.UserName))
             {
-                this.Log?.LogDebug($"Making request as {this.UserName}...");
+                this.Log.LogDebug($"Making request as {this.UserName}...");
                 client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) });
             }
             else
