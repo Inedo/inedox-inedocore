@@ -14,10 +14,18 @@ using Inedo.Extensions.SuggestionProviders;
 namespace Inedo.Extensions.Operations.Otter
 {
     [DisplayName("Remediate Drift")]
-    [Description("Checks configuration status and remediates drift in Otter.")]
+    [Description("Checks configuration status and if drifted, triggers a remediation job in Otter.")]
     [ScriptAlias("Remediate-Drift")]
     [ScriptNamespace(Namespaces.Otter)]
     [Tag("otter")]
+    [Example(@"
+# triggers Otter to remediate drift for hdars web server roles
+Otter::Remediate-Drift
+(
+    Credentials: ProductionOtter,
+    Role: hdars-web-1k
+);")]
+    [Note("Either a server name or role name is required, but not both. If both values are entered, role name will be ignored.")]
     public sealed class RemediateDriftOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
     {
         [ScriptAlias("Credentials")]
@@ -142,7 +150,10 @@ namespace Inedo.Extensions.Operations.Otter
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
             return new ExtendedRichDescription(
-                new RichDescription("Remediate drift for ", new Hilite(AH.CoalesceString(config[nameof(this.Server)], config[nameof(this.Role)])))
+                new RichDescription(
+                    "Remediate drift for ", 
+                    new Hilite(InfrastructureEntity.Create(serverName: config[nameof(this.Server)], roleName: config[nameof(this.Role)])?.ToString())
+                )
             );
         }
     }
