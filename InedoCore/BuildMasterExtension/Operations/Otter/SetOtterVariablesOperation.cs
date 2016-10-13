@@ -60,6 +60,10 @@ Otter::Set-Variable
         [SuggestibleValue(typeof(OtterEnvironmentNameSuggestionProvider))]
         public string Environment { get; set; }
 
+        [ScriptAlias("Sensitive")]
+        [DisplayName("Sensitive")]
+        public bool Sensitive { get; set; }
+
         [Category("Connection")]
         [ScriptAlias("Host")]
         [DisplayName("Otter server URL")]
@@ -75,19 +79,33 @@ Otter::Set-Variable
 
         public async override Task ExecuteAsync(IOperationExecutionContext context)
         {
+            this.LogInformation($"Setting Otter variable {this.Name}...");
+
             var variable = new ScopedVariableJsonModel
             {
                 Name = this.Name,
                 Value = this.Value,
                 Environment = this.Environment,
                 Server = this.Server,
-                ServerRole = this.Role
+                ServerRole = this.Role,
+                Sensitive = this.Sensitive
             };
 
             var client = new OtterClient(this.Host, this.ApiKey, this, context.CancellationToken);
             try
             {
-                await client.SetVariableAsync(variable).ConfigureAwait(false);
+                if (string.IsNullOrEmpty(variable.Server) && string.IsNullOrEmpty(variable.ServerRole) && string.IsNullOrEmpty(variable.Environment))
+                {
+                    this.LogDebug($"Setting Otter global variable '{variable.Name}' = '{variable.Value}'...");
+                    await client.SetGlobalVariableAsync(variable.Name, variable.Value).ConfigureAwait(false);
+                }
+                else
+                {
+                    this.LogDebug($"Setting Otter scoped variable '{variable.Name}' = '{variable.Value}'...");
+                    await client.SetSingleVariableAsync(variable).ConfigureAwait(false);
+                }
+
+                this.LogInformation("Otter variable value set.");
             }
             catch (OtterException ex)
             {

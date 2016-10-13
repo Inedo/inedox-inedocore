@@ -151,15 +151,30 @@ namespace Inedo.Extensions.Operations.Otter
             }
         }
 
-        public async Task SetVariableAsync(ScopedVariableJsonModel variable)
+        public async Task SetGlobalVariableAsync(string name, string value)
         {
             using (var client = this.CreateClient())
             {
-                string url;
-                if (string.IsNullOrEmpty(variable.Server) && string.IsNullOrEmpty(variable.ServerRole) && string.IsNullOrEmpty(variable.Environment))
-                    url = $"api/variables/global";
-                else
-                    url = "api/variables/scoped/single";
+                string url = $"api/variables/global/{Uri.EscapeDataString(name)}"; 
+
+                this.LogRequest(url);
+                
+                using (var content = new StringContent(value))
+                using (var response = await client.PostAsync(url, content).ConfigureAwait(false))
+                {
+                    await HandleError(response).ConfigureAwait(false);
+                }
+            }
+        }
+
+        public async Task SetSingleVariableAsync(ScopedVariableJsonModel variable)
+        {
+            if (string.IsNullOrEmpty(variable.Server) && string.IsNullOrEmpty(variable.ServerRole) && string.IsNullOrEmpty(variable.Environment))
+                throw new InvalidOperationException("Specified variable requires at least one scope (server, role, or environment).");
+
+            using (var client = this.CreateClient())
+            {
+                string url = "api/variables/scoped/single";
                 this.LogRequest(url);
                 using (var stream = new SlimMemoryStream())
                 using (var writer = new StreamWriter(stream))

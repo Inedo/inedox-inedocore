@@ -15,7 +15,7 @@ namespace Inedo.Extensions.PromotionRequirements
 
     [DisplayName("Drift Status")]
     [Description("Verifies that a specified Otter server or role is in a specified drift status.")]
-    public sealed class DriftStatusPromotionRequirement : PromotionRequirementBase
+    public sealed class DriftStatusPromotionRequirement : PromotionRequirement
     {
         [Persistent]
         [DisplayName("Credentials:")]
