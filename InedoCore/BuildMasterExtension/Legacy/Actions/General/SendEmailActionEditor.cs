@@ -51,8 +51,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
                 ID = "bm-action-server-id",
                 ClientIDMode = ClientIDMode.Static,
                 EnvironmentId = this.EnvironmentId,
-                ServerId = this.ServerId,
-                SecuredTaskRequired = (int)SecuredTask.Environments_View
+                ServerId = this.ServerId
             };
 
             this.chkAttachFile = new CheckBox { Text = "Attach file..." };
