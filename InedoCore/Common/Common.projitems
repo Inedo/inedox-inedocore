@@ -90,6 +90,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\SubstringVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\ToLowerVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\ToUpperVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\TrimEndVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\TrimStartVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\TrimVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\UrlEncodeVariableFunction.cs" />
   </ItemGroup>
