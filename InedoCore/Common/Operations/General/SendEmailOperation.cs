@@ -63,6 +63,16 @@ This email was sent from BuildMaster on $Date.>>
         [DisplayName("From directory")]
         [PlaceholderText("$WorkingDirectory")]
         public string SourceDirectory { get; set; }
+        [ScriptAlias("CC")]
+        [DisplayName("CC address(es)")]
+        [Description("A single email address may be used, or a list variable containing multiple email addresses.")]
+        [Category("Advanced")]
+        public IEnumerable<string> CC { get; set; }
+        [ScriptAlias("Bcc")]
+        [DisplayName("BCC address(es)")]
+        [Description("A single email address may be used, or a list variable containing multiple email addresses.")]
+        [Category("Advanced")]
+        public IEnumerable<string> Bcc { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
@@ -72,6 +82,9 @@ This email was sent from BuildMaster on $Date.>>
                 this.LogWarning("No \"To\" addresses were specified.");
                 return;
             }
+
+            var ccAddresses = this.CC?.ToList() ?? new List<string>();
+            var bccAddresses = this.Bcc?.ToList() ?? new List<string>();
 
             var attachments = new List<Attachment>();
             try
@@ -117,6 +130,10 @@ This email was sent from BuildMaster on $Date.>>
                     foreach (var address in addresses)
                         message.To.Add(address);
 #endif
+                    foreach (var address in ccAddresses)
+                        message.CC.Add(address);
+                    foreach (var address in bccAddresses)
+                        message.Bcc.Add(address);
 
                     message.IsBodyHtml = !string.IsNullOrWhiteSpace(this.BodyHtml);
                     message.Body = AH.CoalesceString(this.BodyHtml, this.BodyText) ?? string.Empty;
