@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 using Inedo.Documentation;
+using System;
+using System.Text.RegularExpressions;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
@@ -30,6 +32,17 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("The substring to replace occurrences of the second parameter with.")]
         public string ReplaceWith { get; set; }
 
-        protected override object EvaluateScalar(object context) => this.Text.Replace(this.Value, this.ReplaceWith);
+        [DisplayName("ignoreCase")]
+        [VariableFunctionParameter(3, Optional = true)]
+        [Description("When \"true\", string comparison will be performed with case insensitivity; the default is \"false\".")]
+        public bool IgnoreCase { get; set; }
+
+        protected override object EvaluateScalar(object context)
+        {
+            if (this.IgnoreCase)
+                return Regex.Replace(this.Text, Regex.Escape(this.Value), this.ReplaceWith, RegexOptions.IgnoreCase);
+            else
+                return this.Text.Replace(this.Value, this.ReplaceWith);
+        }
     }
 }
