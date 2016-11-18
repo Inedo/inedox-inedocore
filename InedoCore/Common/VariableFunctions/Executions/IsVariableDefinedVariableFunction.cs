@@ -52,8 +52,13 @@ namespace Inedo.Extensions.VariableFunctions.Executions
                 if (execContext.TryGetVariableValue(variableName) != null)
                     return true;
 
+#if Otter
                 if (execContext.TryGetFunctionValue(variableName.ToString()) != null)
                     return true;
+#elif BuildMaster
+                if (execContext.TryEvaluateFunction(variableName, new RuntimeValue[0]) != null)
+                    return true;
+#endif
             }
 
             return false;

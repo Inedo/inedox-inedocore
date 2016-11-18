@@ -58,10 +58,15 @@ namespace Inedo.Extensions.VariableFunctions.Executions
                 var value = execContext.TryGetVariableValue(variableName);
                 if (value != null)
                     return value.Value;
-
+#if Otter
                 var functionValue = execContext.TryGetFunctionValue(variableName.ToString());
                 if (functionValue != null)
                     return functionValue.Value;
+#elif BuildMaster
+                var functionValue = execContext.TryEvaluateFunction(variableName, new RuntimeValue[0]);
+                if (functionValue != null)
+                    return functionValue.Value;
+#endif
             }
 
             return null;

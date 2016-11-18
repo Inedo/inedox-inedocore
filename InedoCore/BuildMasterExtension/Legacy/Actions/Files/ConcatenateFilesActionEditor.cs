@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 using System.Web.UI.WebControls;
 using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Extensions;
@@ -92,6 +94,52 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
                 ContentSeparationText = this.txtContentSeparationText.Text,
                 ForceLinuxNewlines = this.chkForceLinuxNewlines.Checked
             };
+        }
+    }
+
+    internal sealed class EncodingPicker : SelectList
+    {
+        public EncodingPicker()
+        {
+            this.Items.AddRange(
+                new[]
+                {
+                    new SelectListItem("Auto Detect", string.Empty, false, "Standard"),
+                    new SelectListItem("UTF-8", Encoding.UTF8.WebName, false, "Standard"),
+                    new SelectListItem("UTF-16", Encoding.Unicode.WebName, false, "Standard"),
+                    new SelectListItem("ASCII", Encoding.ASCII.WebName, false, "Standard"),
+                    new SelectListItem("ANSI", "ansi", false, "Standard")
+                }
+            );
+
+            this.Items.AddRange(
+                Encoding.GetEncodings()
+                    .Where(e => e.Name != Encoding.UTF8.WebName && e.Name != Encoding.Unicode.WebName && e.Name != Encoding.ASCII.WebName && e.Name != "ansi")
+                    .Select(e => new SelectListItem(e.DisplayName, e.Name, false, "Extended"))
+            );
+        }
+        public Encoding SelectedEncoding
+        {
+            get
+            {
+                var value = this.SelectedValue;
+                if (string.IsNullOrEmpty(value))
+                    return null;
+
+                if (value == "ansi")
+                    return Encoding.Default;
+
+                return Encoding.GetEncoding(value);
+            }
+            set
+            {
+                if (value == null)
+                    this.SelectedValue = string.Empty;
+                else if (value == Encoding.Default)
+                    this.SelectedValue = "ansi";
+                else
+                    this.SelectedValue = value.WebName;
+            }
         }
     }
 }
