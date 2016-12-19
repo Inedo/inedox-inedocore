@@ -42,6 +42,7 @@ Copy-Files(
 
         [ScriptAlias("Include")]
         [Description(CommonDescriptions.MaskingHelp)]
+        [PlaceholderText("* (top-level items)")]
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
         [Description(CommonDescriptions.MaskingHelp)]
@@ -53,15 +54,13 @@ Copy-Files(
         public string SourceDirectory { get; set; }
         [Required]
         [ScriptAlias("To")]
-        [Description(CommonDescriptions.TargetDirectory)]
         [DisplayName("Target directory")]
         public string TargetDirectory { get; set; }
         [ScriptAlias("Verbose")]
         [DisplayName("Verbose")]
-        [Description(CommonDescriptions.VerboseLogging)]
         public bool VerboseLogging { get; set; }
         [ScriptAlias("Overwrite")]
-        [Description(CommonDescriptions.Overwrite)]
+        [DisplayName("Overwrite target files")]
         public bool Overwrite { get; set; }
 
         public override Task ExecuteAsync(IOperationExecutionContext context)

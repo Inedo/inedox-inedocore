@@ -33,6 +33,7 @@ namespace Inedo.Extensions.Operations.Files
         private long bytesCopied;
 
         [ScriptAlias("Include")]
+        [PlaceholderText("* (top-level items)")]
         [Description(CommonDescriptions.MaskingHelp)]
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
