@@ -24,8 +24,8 @@ namespace Inedo.Extensions.Operations.ProGet
         }
         
         public string Value { get; }
-        public BigInteger Major { get; }
-        public BigInteger Minor { get; }
+        public BigInteger? Major { get; }
+        public BigInteger? Minor { get; }
 
         public string GetBestMatch(IEnumerable<string> packageVersions)
         {

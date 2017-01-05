@@ -34,7 +34,7 @@ namespace Inedo.Extensions.SuggestionProviders
 #elif Otter
         public IEnumerable<string> GetSuggestions(object context)
         {
-            throw new NotImplementedException();
+            return Enumerable.Empty<string>();
         }
 #endif
 
