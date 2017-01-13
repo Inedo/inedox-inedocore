@@ -12,10 +12,13 @@ using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security;
+using System.Runtime.InteropServices;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Data;
 #elif Otter
+using Inedo.Otter;
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
 #endif
@@ -35,9 +38,11 @@ namespace Inedo.Extensions.Operations.ProGet
             this.Password = AH.NullIf(password, string.Empty);
             this.Log = log ?? new NullLogger();
             this.FeedUrl = ResolveFeedUrl(serverUrl, feedName, this.Log);
+            this.ServerUrl = serverUrl.TrimEnd('/') + '/';
         }
 
         public string FeedUrl { get; }
+        public string ServerUrl { get; }
         public string UserName { get; }
         public string Password { get; }
         public ILogger Log { get; }
@@ -165,8 +170,44 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
             }
         }
+        public async Task PromotePackageAsync(SecureString apiKey, PackageName id, string version, string fromFeed, string toFeed, string comments = null)
+        {
+            if (string.IsNullOrWhiteSpace(id?.Name))
+                throw new ArgumentNullException(nameof(id));
+            if (string.IsNullOrWhiteSpace(version))
+                throw new ArgumentNullException(nameof(version));
+            if (string.IsNullOrWhiteSpace(fromFeed))
+                throw new ArgumentNullException(nameof(fromFeed));
+            if (string.IsNullOrWhiteSpace(toFeed))
+                throw new ArgumentNullException(nameof(toFeed));
+            
+            using (var client = this.CreateClient(apiKey: apiKey))
+            {
+                string json = JsonConvert.SerializeObject(
+                    new
+                    {
+                        packageName = id.Name,
+                        groupName = id.Group,
+                        version = version,
+                        fromFeed = fromFeed,
+                        toFeed = toFeed,
+                        comments = comments
+                    }
+                );
+                
+                using (var streamContent = new StringContent(json))
+                {
+                    streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-        private HttpClient CreateClient(PackageDeploymentData deployInfo = null)
+                    using (var response = await client.PostAsync(this.ServerUrl + "api/promotions/promote", streamContent).ConfigureAwait(false))
+                    {
+                        await HandleError(response).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
+        private HttpClient CreateClient(PackageDeploymentData deployInfo = null, SecureString apiKey = null)
         {
             HttpClient client;
             if (!string.IsNullOrWhiteSpace(this.UserName))
@@ -178,10 +219,15 @@ namespace Inedo.Extensions.Operations.ProGet
             {
                 client = new HttpClient();
             }
-
+            
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetClient).Assembly.GetName().Version.ToString()));
+
+            if (apiKey != null)
+            {
+                client.DefaultRequestHeaders.Add("X-ApiKey", apiKey.ToUnsecureString());
+            }
 
             if (deployInfo != null)
             {
@@ -457,9 +503,7 @@ namespace Inedo.Extensions.Operations.ProGet
 #elif Otter
         public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
         {
-            // this can be changed to use OtterConfig class when Otter SDK is updated to v1.4
-            var config = DB.Configuration_GetValues().FirstOrDefault(v => v.Key_Name == "OtterConfig.OtterBaseUrl");
-            if (config == null)
+            if (string.IsNullOrEmpty(OtterConfig.OtterBaseUrl))
             {
                 log.LogDebug("Deployment will not be recorded in ProGet because the OtterBaseUrl configuration setting is not set.");
                 return null;
@@ -467,7 +511,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             string relativeUrl = $"servers/details?serverId={context.ServerId}";
 
-            return new PackageDeploymentData("Otter", config.Value_Text, relativeUrl, context.ServerName, description);
+            return new PackageDeploymentData("Otter", OtterConfig.OtterBaseUrl, relativeUrl, context.ServerName, description);
         }
 #endif
 
@@ -501,4 +545,27 @@ namespace Inedo.Extensions.Operations.ProGet
             public const string Target = "X-ProGet-Deployment-Target";
         }
     }
+
+#if Otter
+    internal static class SecureStringExtensions 
+    {
+        public static string ToUnsecureString(this SecureString s)
+        {
+            if (s == null)
+                return null;
+
+            var str = IntPtr.Zero;
+            try
+            {
+                str = Marshal.SecureStringToGlobalAllocUnicode(s);
+                return Marshal.PtrToStringUni(str, s.Length);
+            }
+            finally
+            {
+                if (str != IntPtr.Zero)
+                    Marshal.ZeroFreeGlobalAllocUnicode(str);
+            }
+        }
+    }
+#endif
 }
