@@ -287,7 +287,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             if (match.Success)
             {
-                log.LogWarning("As of v5.4 of the ProGet extension, specific ProGet feed URLs should not be used in the ProGet resource credential. Instead, use the server or hostname only (i.e. 'http://proget-server:81' instead of 'http://proget-server:81/upack/feedName') and update the Get/Ensure-Package operation to include the name of the feed via the Feed property.");
+                log.LogWarning("Specific ProGet feed URLs should no longer be used in ProGet resource credentials. Instead, use the server or hostname only (i.e. 'http://proget-server:81' instead of 'http://proget-server:81/upack/feedName') and update the Get/Ensure-Package operation to include the name of the feed via the Feed property.");
                 string credentialUrl = match.Groups[1].Value;
                 string credentialFeedName = match.Groups[2].Value;
                 string resolvedFeedName = AH.CoalesceString(Uri.EscapeUriString(feedName ?? ""), credentialFeedName);

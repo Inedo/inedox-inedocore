@@ -37,6 +37,7 @@ Delete-Files(
         [Required]
         [ScriptAlias("Include")]
         [Description(CommonDescriptions.MaskingHelp)]
+        [PlaceholderText("* (top-level items)")]
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
         [Description(CommonDescriptions.MaskingHelp)]

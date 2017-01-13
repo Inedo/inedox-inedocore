@@ -48,6 +48,7 @@ GO
         [PlaceholderText("$WorkingDirectory")]
         public string SourceDirectory { get; set; }
         [ScriptAlias("Include")]
+        [PlaceholderText("* (top-level items)")]
         [Description(CommonDescriptions.MaskingHelp)]
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
