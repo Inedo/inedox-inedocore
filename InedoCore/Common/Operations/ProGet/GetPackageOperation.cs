@@ -123,7 +123,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
                     foreach (var entry in zip.Entries)
                     {
-                        if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.Length <= "package/".Length)
+                        if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.FullName.Length <= "package/".Length)
                             continue;
 
                         var relativeName = entry.FullName.Substring("package/".Length);

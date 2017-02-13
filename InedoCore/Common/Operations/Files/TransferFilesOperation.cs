@@ -55,14 +55,23 @@ namespace Inedo.Extensions.Operations.Files
         [DisplayName("Target server")]
         [PlaceholderText("Same as source server")]
         public string TargetServerName { get; set; }
-        [ScriptAlias("Verbose")]
-        [DisplayName("Verbose")]
-        public bool VerboseLogging { get; set; }
         [ScriptAlias("DeleteTarget")]
         [DisplayName("Delete target")]
         [Description("When set to true, files in the target directory will be deleted if they are not present in the source directory. "
                    + "If false, files present in the target directory that are not present in the source directory are unmodified.")]
         public bool DeleteTarget { get; set; }
+
+        [Category("Advanced")]
+        [ScriptAlias("SetLastModifiedDate")]
+        [DisplayName("Set last modified")]
+        [Description("When true, the modified date on any transferred files will be set to match their source files.")]
+        [DefaultValue(true)]
+        public bool SetLastModifiedDate { get; set; } = true;
+
+        [Category("Advanced")]
+        [ScriptAlias("Verbose")]
+        [DisplayName("Verbose")]
+        public bool VerboseLogging { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
@@ -296,6 +305,9 @@ namespace Inedo.Extensions.Operations.Files
             {
                 await sourceStream.CopyToAsync(targetStream).ConfigureAwait(false);
             }
+
+            if (this.SetLastModifiedDate)
+                await targetFileOps.SetLastWriteTimeAsync(targetFileName, sourceFile.LastWriteTimeUtc).ConfigureAwait(false);
         }
 
         private sealed class DirectoryToTransfer
