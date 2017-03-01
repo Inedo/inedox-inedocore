@@ -64,6 +64,10 @@ namespace Inedo.Extensions.Operations.ProGet
 #endif
         public string TargetDirectory { get; set; }
 
+        [ScriptAlias("DeleteExtra")]
+        [DisplayName("Delete files not in Package")]
+        public bool DeleteExtra { get; set; }
+
         [Category("Connection/Identity")]
         [ScriptAlias("Server")]
         [ScriptAlias("FeedUrl")]
@@ -120,6 +124,33 @@ namespace Inedo.Extensions.Operations.ProGet
                     this.LogDebug("Creating directory: " + this.TargetDirectory);
                     await fileOps.CreateDirectoryAsync(this.TargetDirectory).ConfigureAwait(false);
                     dirsCreated.Add(this.TargetDirectory);
+
+                    if (this.DeleteExtra)
+                    {
+                        var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+
+                        foreach (var file in remoteFileList)
+                        {
+                            var relativeName = file.FullName.Substring(this.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                            var entry = zip.GetEntry("package/" + relativeName);
+                            if (file is SlimDirectoryInfo)
+                            {
+                                if (entry == null || !entry.IsDirectory())
+                                {
+                                    this.LogDebug($"Deleting extra directory: {relativeName}");
+                                    await fileOps.DeleteDirectoryAsync(file.FullName).ConfigureAwait(false);
+                                }
+                            }
+                            else
+                            {
+                                if (entry == null || entry.IsDirectory())
+                                {
+                                    this.LogDebug($"Deleting extra file: {relativeName}");
+                                    await fileOps.DeleteFileAsync(file.FullName).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                    }
 
                     foreach (var entry in zip.Entries)
                     {
