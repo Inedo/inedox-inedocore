@@ -156,7 +156,7 @@ Exec c:\tools\7za.exe (
                 var comparator = ExitCodeComparator.TryParse(this.SuccessExitCode);
                 if (comparator != null)
                 {
-                    bool result = comparator.Evauluate(exitCode);
+                    bool result = comparator.Evaluate(exitCode);
                     if (result)
                         this.LogInformation($"Process exited with code: {exitCode} (success)");
                     else
@@ -260,28 +260,28 @@ Exec c:\tools\7za.exe (
                 return new ExitCodeComparator(op, int.Parse(match.Groups[2].Value));
             }
 
-            public bool Evauluate(int exitCode)
+            public bool Evaluate(int exitCode)
             {
                 switch (this.Operator)
                 {
                     case "=":
                     case "==":
-                        return this.Value == exitCode;
+                        return exitCode == this.Value;
 
                     case "!=":
-                        return this.Value != exitCode;
+                        return exitCode != this.Value;
 
                     case "<":
-                        return this.Value < exitCode;
+                        return exitCode < this.Value;
 
                     case ">":
-                        return this.Value > exitCode;
+                        return exitCode > this.Value;
 
                     case "<=":
-                        return this.Value <= exitCode;
+                        return exitCode <= this.Value;
 
                     case ">=":
-                        return this.Value >= exitCode;
+                        return exitCode >= this.Value;
                 }
 
                 return false;
