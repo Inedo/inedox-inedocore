@@ -56,7 +56,7 @@ namespace Inedo.Extensions.VariableFunctions.Executions
                 if (execContext.TryGetFunctionValue(variableName.ToString()) != null)
                     return true;
 #elif BuildMaster
-                if (execContext.TryEvaluateFunction(variableName, new RuntimeValue[0]) != null)
+                if (execContext.TryGetFunctionValue(variableName.Name, new RuntimeValue[0]) != null)
                     return true;
 #endif
             }
