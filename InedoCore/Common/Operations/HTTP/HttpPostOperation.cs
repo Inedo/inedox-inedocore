@@ -11,9 +11,11 @@ using System.Threading;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
+using Inedo.Otter.Extensions;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
+using Inedo.BuildMaster.Web;
 #endif
 
 namespace Inedo.Extensions.Operations.HTTP
@@ -50,11 +52,13 @@ Post-Http http://httpbin.org/post
         [ScriptAlias("TextData")]
         [DisplayName("Request text content")]
         [Description("Direct text input that will be written to the request content body. This will override any form data if both are supplied.")]
+        [FieldEditMode(FieldEditMode.Multiline)]
         public string PostData { get; set; }
         [Category("Data")]
         [ScriptAlias("FormData")]
         [DisplayName("Form data")]
         [Description("A map of form data key/value pairs to send. If TextData is supplied, this value is ignored.")]
+        [FieldEditMode(FieldEditMode.Multiline)]
         public IDictionary<string, RuntimeValue> FormData { get; set; }
         [Category("Options")]
         [ScriptAlias("LogRequestData")]
