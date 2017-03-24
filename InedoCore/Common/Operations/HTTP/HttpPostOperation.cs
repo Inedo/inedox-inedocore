@@ -79,6 +79,14 @@ Post-Http http://httpbin.org/post
 
             this.LogInformation($"Performing HTTP {this.Method} request to {this.Url}...");
 
+            if (this.LogRequestData)
+            {
+                using (var content = this.GetContent())
+                {
+                    this.LogDebug($"Request content: {await content.ReadAsStringAsync().ConfigureAwait(false)}");
+                }
+            }
+
             await this.CallRemoteAsync(context).ConfigureAwait(false);
         }
 
