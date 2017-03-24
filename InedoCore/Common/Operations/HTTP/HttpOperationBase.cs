@@ -13,6 +13,8 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using System.Security;
 using System.Net;
+using Inedo.Agents;
+using System.Runtime.Serialization.Formatters.Binary;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Credentials;
@@ -28,6 +30,7 @@ using Inedo.BuildMaster.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
+    [Serializable]
     public abstract class HttpOperationBase : ExecuteOperation
     {
         protected HttpOperationBase()
@@ -65,6 +68,12 @@ namespace Inedo.Extensions.Operations.HTTP
         [DisplayName("Max response length")]
         [DefaultValue(1000)]
         public int MaxResponseLength { get; set; } = 1000;
+        [Category("Options")]
+        [ScriptAlias("ProxyRequest")]
+        [DisplayName("Use server in context")]
+        [Description("When selected, this will proxy the HTTP calls through the server is in context instead of using the server Otter or BuildMaster is installed on. If the server in context is SSH-based, then an error will be raised.")]
+        [DefaultValue(true)]
+        public bool ProxyRequest { get; set; } = true;
 
         [Category("Authentication")]
         [ScriptAlias("UserName")]
@@ -77,7 +86,7 @@ namespace Inedo.Extensions.Operations.HTTP
         [DisplayName("Password")]
         [PlaceholderText("Use password from credential")]
         [MappedCredential(nameof(UsernamePasswordCredentials.Password))]
-        public SecureString Password { get; set; }
+        public string Password { get; set; }
 
         protected HttpClient CreateClient()
         {
@@ -85,7 +94,7 @@ namespace Inedo.Extensions.Operations.HTTP
             if (!string.IsNullOrWhiteSpace(this.UserName))
             {
                 this.LogDebug($"Making request as {this.UserName}...");
-                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? new SecureString()) });
+                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) });
             }
             else
             {
@@ -167,6 +176,64 @@ namespace Inedo.Extensions.Operations.HTTP
                 }
 
                 return text.ToString();
+            }
+        }
+
+        protected async Task CallRemoteAsync(IOperationExecutionContext context)
+        {
+            if (!this.ProxyRequest)
+            {
+                await this.PerformRequestAsync(context.CancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            var executer = await context.Agent.TryGetServiceAsync<IRemoteJobExecuter>().ConfigureAwait(false);
+            if (executer == null)
+            {
+                this.LogError($"\"Use server in context\" is not supported for this agent: {context.Agent.GetDescription()}");
+                return;
+            }
+
+            var job = new RemoteHttpJob
+            {
+                Operation = this
+            };
+            job.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
+            context.CancellationToken.Register(() => job.Cancel());
+            await executer.ExecuteJobAsync(job).ConfigureAwait(false);
+        }
+
+        protected abstract Task PerformRequestAsync(CancellationToken cancellationToken);
+
+        private class RemoteHttpJob : RemoteJob
+        {
+            public HttpOperationBase Operation { get; set; }
+
+            public override void Serialize(Stream stream)
+            {
+                new BinaryFormatter().Serialize(stream, this.Operation);
+            }
+
+            public override void Deserialize(Stream stream)
+            {
+                this.Operation = (HttpOperationBase)new BinaryFormatter().Deserialize(stream);
+            }
+
+            public override void SerializeResponse(Stream stream, object result)
+            {
+                return;
+            }
+
+            public override object DeserializeResponse(Stream stream)
+            {
+                return null;
+            }
+
+            public override async Task<object> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                this.Operation.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
+                await this.Operation.PerformRequestAsync(cancellationToken).ConfigureAwait(false);
+                return null;
             }
         }
     }

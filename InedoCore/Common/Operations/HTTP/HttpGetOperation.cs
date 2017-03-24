@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
+using System.Threading;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
@@ -29,6 +30,7 @@ Get-Http http://httpbin.org/get
     ResponseBody => $ResponseBody
 );
 ")]
+    [Serializable]
     public sealed class HttpGetOperation : HttpOperationBase
     {
         [ScriptAlias("Method")]
@@ -49,10 +51,15 @@ Get-Http http://httpbin.org/get
 
             this.LogInformation($"Performing HTTP {this.Method} request to {this.Url}...");
 
+            await this.CallRemoteAsync(context).ConfigureAwait(false);
+        }
+
+        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        {
             if (this.Method == GetHttpMethod.DELETE)
             {
                 using (var client = this.CreateClient())
-                using (var response = await client.DeleteAsync(this.Url, context.CancellationToken).ConfigureAwait(false))
+                using (var response = await client.DeleteAsync(this.Url, cancellationToken).ConfigureAwait(false))
                 {
                     await this.ProcessResponseAsync(response).ConfigureAwait(false);
                 }
@@ -60,7 +67,7 @@ Get-Http http://httpbin.org/get
             else
             {
                 using (var client = this.CreateClient())
-                using (var response = await client.GetAsync(this.Url, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false))
+                using (var response = await client.GetAsync(this.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                 {
                     await this.ProcessResponseAsync(response).ConfigureAwait(false);
                 }

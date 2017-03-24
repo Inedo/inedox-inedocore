@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
+using System.Threading;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
@@ -34,6 +35,7 @@ Post-Http http://httpbin.org/post
     LogResponseBody: true
 );
 ")]
+    [Serializable]
     public sealed class HttpPostOperation : HttpOperationBase
     {
         [ScriptAlias("Method")]
@@ -73,12 +75,17 @@ Post-Http http://httpbin.org/post
 
             this.LogInformation($"Performing HTTP {this.Method} request to {this.Url}...");
 
+            await this.CallRemoteAsync(context).ConfigureAwait(false);
+        }
+
+        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        {
             if (this.Method == PostHttpMethod.PUT)
             {
                 using (var client = this.CreateClient())
                 using (var content = this.GetContent())
                 {
-                    using (var response = await client.PutAsync(this.Url, content, context.CancellationToken).ConfigureAwait(false))
+                    using (var response = await client.PutAsync(this.Url, content, cancellationToken).ConfigureAwait(false))
                     {
                         await this.ProcessResponseAsync(response).ConfigureAwait(false);
                     }
@@ -89,7 +96,7 @@ Post-Http http://httpbin.org/post
                 using (var client = this.CreateClient())
                 using (var content = this.GetContent())
                 {
-                    using (var response = await client.PostAsync(this.Url, content, context.CancellationToken).ConfigureAwait(false))
+                    using (var response = await client.PostAsync(this.Url, content, cancellationToken).ConfigureAwait(false))
                     {
                         await this.ProcessResponseAsync(response).ConfigureAwait(false);
                     }

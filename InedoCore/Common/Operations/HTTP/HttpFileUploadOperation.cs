@@ -8,6 +8,7 @@ using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.IO;
+using System.Threading;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
@@ -29,6 +30,7 @@ Upload-Http ReleaseNotes.xml (
     To: http://example.org/upload-service/v3/hdars
 );
 ")]
+    [Serializable]
     public sealed class HttpFileUploadOperation : HttpOperationBase
     {
         [Required]
@@ -36,6 +38,8 @@ Upload-Http ReleaseNotes.xml (
         [ScriptAlias("FileName")]
         [Description("The path of the file to upload.")]
         public string FileName { get; set; }
+
+        public byte[] FileData { get; private set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
@@ -59,23 +63,25 @@ Upload-Http ReleaseNotes.xml (
             }
 
             this.LogInformation($"Uploading file {fileName} to {this.Url}...");
-            using (var stream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
-            {
-                using (var client = this.CreateClient())
-                using (var streamContent = new StreamContent(stream))
-                using (var formData = new MultipartFormDataContent())
-                {
-                    streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                    formData.Add(streamContent, "file", PathEx.GetFileName(this.FileName));
+            this.FileData = await fileOps.ReadFileBytesAsync(fileName).ConfigureAwait(false);
+            await this.CallRemoteAsync(context).ConfigureAwait(false);
+            this.LogInformation("HTTP file upload completed.");
+        }
 
-                    using (var response = await client.PostAsync(this.Url, formData, context.CancellationToken).ConfigureAwait(false))
-                    {
-                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                    }
+        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        {
+            using (var client = this.CreateClient())
+            using (var streamContent = new ByteArrayContent(this.FileData))
+            using (var formData = new MultipartFormDataContent())
+            {
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                formData.Add(streamContent, "file", PathEx.GetFileName(this.FileName));
+
+                using (var response = await client.PostAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
+                {
+                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
                 }
             }
-
-            this.LogInformation("HTTP file upload completed.");
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
