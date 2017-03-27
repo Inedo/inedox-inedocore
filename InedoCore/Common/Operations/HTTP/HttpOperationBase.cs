@@ -65,6 +65,7 @@ namespace Inedo.Extensions.Operations.HTTP
         [FieldEditMode(FieldEditMode.Multiline)]
         public IDictionary<string, RuntimeValue> RequestHeaders { get; set; }
         [Category("Options")]
+        [ScriptAlias("MaxResponseLength")]
         [DisplayName("Max response length")]
         [DefaultValue(1000)]
         public int MaxResponseLength { get; set; } = 1000;
