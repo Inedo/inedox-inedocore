@@ -39,7 +39,7 @@ Upload-Http ReleaseNotes.xml (
         [Description("The path of the file to upload.")]
         public string FileName { get; set; }
 
-        public byte[] FileData { get; private set; }
+        public string ResolvedFilePath { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
@@ -55,27 +55,29 @@ Upload-Http ReleaseNotes.xml (
 
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
 
-            var fileName = context.ResolvePath(this.FileName);
-            if (!await fileOps.FileExistsAsync(fileName).ConfigureAwait(false))
-            {
-                this.LogError($"The file \"{fileName}\" does not exist.");
-                return;
-            }
+            this.ResolvedFilePath = context.ResolvePath(this.FileName);
+            this.LogDebug("File path resolved to: " + this.ResolvedFilePath);
 
-            this.LogInformation($"Uploading file {fileName} to {this.Url}...");
-            this.FileData = await fileOps.ReadFileBytesAsync(fileName).ConfigureAwait(false);
+            this.LogInformation($"Uploading file {this.FileName} to {this.Url}...");
             await this.CallRemoteAsync(context).ConfigureAwait(false);
             this.LogInformation("HTTP file upload completed.");
         }
 
         protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
+            if (!FileEx.Exists(this.ResolvedFilePath))
+            {
+                this.LogDebug($"The file \"{this.ResolvedFilePath}\" does not exist.");
+                return;
+            }
+
             using (var client = this.CreateClient())
-            using (var streamContent = new ByteArrayContent(this.FileData))
+            using (var fileStream = new FileStream(this.ResolvedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+            using (var streamContent = new StreamContent(fileStream))
             using (var formData = new MultipartFormDataContent())
             {
                 streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                formData.Add(streamContent, "file", PathEx.GetFileName(this.FileName));
+                formData.Add(streamContent, "file", PathEx.GetFileName(this.ResolvedFilePath));
 
                 using (var response = await client.PostAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
                 {

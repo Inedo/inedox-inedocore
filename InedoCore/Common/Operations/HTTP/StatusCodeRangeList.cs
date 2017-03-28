@@ -14,7 +14,7 @@ namespace Inedo.Extensions.Operations.HTTP
                 return new StatusCodeRangeList{ ranges = new List<Range>() };
                 
             var values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            return new StatusCodeRangeList { ranges = values.Select(v => Range.Parse(v)).Where(r => r != null).ToList() };
+            return new StatusCodeRangeList { ranges = values.Select(Range.Parse).Where(r => r != null).ToList() };
         }
 
         private StatusCodeRangeList()
@@ -69,8 +69,8 @@ namespace Inedo.Extensions.Operations.HTTP
             public bool IsInRange(int value) => this.start <= value && value <= this.end;
             public override string ToString()
             {
-                if (start == end)
-                    return start.ToString();
+                if (this.start == this.end)
+                    return this.start.ToString();
                 else
                     return this.start.ToString() + ":" + this.end.ToString();
             }
