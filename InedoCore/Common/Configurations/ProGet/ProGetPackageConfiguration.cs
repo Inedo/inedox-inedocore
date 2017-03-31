@@ -49,6 +49,11 @@ namespace Inedo.Extensions.Configurations.ProGet
         [SuggestibleValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
+        [Persistent]
+        [ScriptAlias("DeleteExtra")]
+        [DisplayName("Delete files not in Package")]
+        public bool DeleteExtra { get; set; }
+
         [Required]
         [Persistent]
         [ConfigurationKey]

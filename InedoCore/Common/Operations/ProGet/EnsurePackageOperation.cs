@@ -47,7 +47,7 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             this.LogInformation($"Resolved package version is {version}.");
-            
+
             if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
             {
                 this.LogInformation(this.Template.TargetDirectory + " does not exist.");
@@ -115,6 +115,21 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
             }
 
+            if (this.Template.DeleteExtra)
+            {
+                foreach (var name in remoteFiles.Keys)
+                {
+                    if (!versionInfo.fileList.Any(entry => entry.name == name))
+                    {
+                        this.LogInformation($"File {name} in {this.Template.TargetDirectory} does not exist in package.");
+                        return new ProGetPackageConfiguration
+                        {
+                            TargetDirectory = this.Template.TargetDirectory
+                        };
+                    }
+                }
+            }
+
             this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
             return new ProGetPackageConfiguration
             {
@@ -164,6 +179,33 @@ namespace Inedo.Extensions.Operations.ProGet
 
                     await fileOps.CreateDirectoryAsync(this.Template.TargetDirectory).ConfigureAwait(false);
                     dirsCreated.Add(this.Template.TargetDirectory);
+
+                    if (this.Template.DeleteExtra)
+                    {
+                        var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+
+                        foreach (var file in remoteFileList)
+                        {
+                            var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                            var entry = zip.GetEntry("package/" + relativeName);
+                            if (file is SlimDirectoryInfo)
+                            {
+                                if (entry == null || !entry.IsDirectory())
+                                {
+                                    this.LogDebug($"Deleting extra directory: {relativeName}");
+                                    await fileOps.DeleteDirectoryAsync(file.FullName).ConfigureAwait(false);
+                                }
+                            }
+                            else
+                            {
+                                if (entry == null || entry.IsDirectory())
+                                {
+                                    this.LogDebug($"Deleting extra file: {relativeName}");
+                                    await fileOps.DeleteFileAsync(file.FullName).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                    }
 
                     foreach (var entry in zip.Entries)
                     {
