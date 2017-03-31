@@ -25,6 +25,11 @@ namespace Inedo.Extensions.VariableFunctions.Server
         [Description("The name of the server role. If not supplied, the current role in context will be used.")]
         public string RoleName { get; set; }
 
+        [DisplayName("includeInactive")]
+        [VariableFunctionParameter(1, Optional = true)]
+        [Description("If true, include servers marked as inactive.")]
+        public bool IncludeInactive { get; set; }
+
         protected override IEnumerable EvaluateVector(ContextType context)
         {
             int? roleId = FindRole(this.RoleName, context);
@@ -37,6 +42,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
 #elif BuildMaster
                 .Servers
 #endif
+                .Where(s => s.Active_Indicator || this.IncludeInactive)
                 .Select(s => s.Server_Name);
         }
 

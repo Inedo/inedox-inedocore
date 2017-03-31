@@ -81,6 +81,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServerNameVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServerRoleNameVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInEnvironmentVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInRoleAndEnvironmentVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInRoleVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\HtmlEncodeVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\JoinVariableFunction.cs" />
