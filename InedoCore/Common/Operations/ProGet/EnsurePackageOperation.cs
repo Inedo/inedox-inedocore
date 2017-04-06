@@ -10,6 +10,7 @@ using Inedo.Documentation;
 using Inedo.IO;
 using Inedo.Extensions.Configurations.ProGet;
 #if Otter
+using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
@@ -236,6 +237,18 @@ namespace Inedo.Extensions.Operations.ProGet
                         }
                     }
                 }
+
+#if Otter
+                this.LogDebug("Recording server package information...");
+                await new DB.Context(false).ServerPackages_CreateOrUpdatePackageAsync(
+                    Server_Id: context.ServerId,
+                    PackageType_Name: "ProGet",
+                    Package_Name: packageId.ToString(),
+                    Package_Version: version,
+                    CollectedOn_Execution_Id: context.ExecutionId,
+                    Url_Text: client.GetViewPackageUrl(packageId, version)
+                ).ConfigureAwait(false);
+#endif
             }
             catch (ProGetException ex)
             {

@@ -36,16 +36,27 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.UserName = AH.NullIf(userName, string.Empty);
             this.Password = AH.NullIf(password, string.Empty);
-            this.Log = log ?? new NullLogger();
-            this.FeedUrl = ResolveFeedUrl(serverUrl, feedName, this.Log);
+            this.Log = log ?? Logger.Null;
+            var result = ResolveFeedNameAndUrl(serverUrl, feedName, this.Log);
+            this.FeedUrl = result.feedUrl;
+            this.FeedName = result.feedName;
             this.ServerUrl = serverUrl.TrimEnd('/') + '/';
         }
 
         public string FeedUrl { get; }
+        public string FeedName { get; }
         public string ServerUrl { get; }
         public string UserName { get; }
         public string Password { get; }
         public ILogger Log { get; }
+
+        public string GetViewPackageUrl(PackageName id, string version)
+        {
+            if (string.IsNullOrWhiteSpace(id?.Name))
+                throw new ArgumentNullException(nameof(id));
+
+            return $"{this.ServerUrl }feeds/{Uri.EscapeDataString(this.FeedName)}/{id.ToString()}/{version}";
+        }
 
         public async Task<string[]> GetFeedNamesAsync()
         {
@@ -281,7 +292,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             throw new ProGetException((int)response.StatusCode, message);
         }
-        private static string ResolveFeedUrl(string baseUrl, string feedName, ILogger log)
+        private static (string feedUrl, string feedName) ResolveFeedNameAndUrl(string baseUrl, string feedName, ILogger log)
         {
             var match = FeedNameRegex.Match(baseUrl);
 
@@ -292,11 +303,11 @@ namespace Inedo.Extensions.Operations.ProGet
                 string credentialFeedName = match.Groups[2].Value;
                 string resolvedFeedName = AH.CoalesceString(Uri.EscapeUriString(feedName ?? ""), credentialFeedName);
 
-                return credentialUrl + "/upack/" + resolvedFeedName.TrimEnd('/') + '/';
+                return (feedUrl: credentialUrl + "/upack/" + resolvedFeedName.TrimEnd('/') + '/', feedName: Uri.UnescapeDataString(resolvedFeedName));
             }
             else
             {
-                return baseUrl.TrimEnd('/') + "/upack/" + Uri.EscapeUriString(feedName ?? "") + '/';
+                return (feedUrl: baseUrl.TrimEnd('/') + "/upack/" + Uri.EscapeUriString(feedName ?? "") + '/', feedName: feedName ?? "");
             }
         }
     }
@@ -336,17 +347,6 @@ namespace Inedo.Extensions.Operations.ProGet
                 return this.Name;
             else
                 return this.Group + '/' + this.Name;
-        }
-    }
-
-    internal sealed class NullLogger : ILogger
-    {
-#pragma warning disable CS0067
-        public event EventHandler<LogMessageEventArgs> MessageLogged;
-#pragma warning restore CS0067
-
-        public void Log(MessageLevel logLevel, string message)
-        {
         }
     }
 
@@ -547,7 +547,7 @@ namespace Inedo.Extensions.Operations.ProGet
     }
 
 #if Otter
-    internal static class SecureStringExtensions 
+    internal static class SecureStringExtensions
     {
         public static string ToUnsecureString(this SecureString s)
         {

@@ -28,12 +28,10 @@ namespace Inedo.Extensions.Operations.Otter
         {
             if (string.IsNullOrEmpty(server))
                 throw new ArgumentNullException(nameof(server));
-            if (apiKey == null)
-                throw new ArgumentNullException(nameof(apiKey));
 
             this.baseUrl = server.TrimEnd('/');
-            this.apiKey = apiKey;
-            this.log = log ?? new ProGet.NullLogger();
+            this.apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
+            this.log = log ?? Logger.Null;
             this.cancellationToken = cancellationToken ?? CancellationToken.None;
         }
 
