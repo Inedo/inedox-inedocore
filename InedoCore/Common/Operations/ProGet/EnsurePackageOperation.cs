@@ -36,107 +36,116 @@ namespace Inedo.Extensions.Operations.ProGet
 
             var client = new ProGetClient(this.Template.FeedUrl, this.Template.FeedName, this.Template.UserName, this.Template.Password, this);
 
-            var packageId = PackageName.Parse(this.Template.PackageName);
-
-            var packageInfo = await client.GetPackageInfoAsync(packageId).ConfigureAwait(false);
-
-            var version = new ProGetPackageVersionSpecifier(this.Template.PackageVersion).GetBestMatch(packageInfo.versions);
-            if (version == null)
+            try
             {
-                this.LogError($"Package {this.Template.PackageName} does not have a version {this.Template.PackageVersion}.");
-                return null;
-            }
 
-            this.LogInformation($"Resolved package version is {version}.");
+                var packageId = PackageName.Parse(this.Template.PackageName);
 
-            if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
-            {
-                this.LogInformation(this.Template.TargetDirectory + " does not exist.");
-                return new ProGetPackageConfiguration
+                var packageInfo = await client.GetPackageInfoAsync(packageId).ConfigureAwait(false);
+
+                var version = new ProGetPackageVersionSpecifier(this.Template.PackageVersion).GetBestMatch(packageInfo.versions);
+                if (version == null)
                 {
-                    TargetDirectory = this.Template.TargetDirectory
-                };
-            }
+                    this.LogError($"Package {this.Template.PackageName} does not have a version {this.Template.PackageVersion}.");
+                    return null;
+                }
 
-            this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
+                this.LogInformation($"Resolved package version is {version}.");
 
-            var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
-
-            var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
-
-            foreach (var file in remoteFileList)
-            {
-                var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
-                if (file is SlimDirectoryInfo)
-                    relativeName += "/";
-
-                remoteFiles.Add(relativeName, file);
-            }
-
-            remoteFileList = null; // async GC optimization
-
-            this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
-
-            this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}:{version}...");
-            var versionInfo = await client.GetPackageVersionInfoAsync(packageId, version).ConfigureAwait(false);
-            if (versionInfo.fileList == null)
-            {
-                this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
-                return null;
-            }
-
-            this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
-
-            foreach (var entry in versionInfo.fileList)
-            {
-                var relativeName = entry.name;
-                var file = remoteFiles.GetValueOrDefault(relativeName);
-                if (file == null)
+                if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
                 {
-                    this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
+                    this.LogInformation(this.Template.TargetDirectory + " does not exist.");
                     return new ProGetPackageConfiguration
                     {
                         TargetDirectory = this.Template.TargetDirectory
                     };
                 }
 
-                if (!entry.name.EndsWith("/"))
+                this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
+
+                var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+
+                var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var file in remoteFileList)
                 {
-                    var fileInfo = (SlimFileInfo)file;
-                    if (entry.size != fileInfo.Size || entry.date != fileInfo.LastWriteTimeUtc)
+                    var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                    if (file is SlimDirectoryInfo)
+                        relativeName += "/";
+
+                    remoteFiles.Add(relativeName, file);
+                }
+
+                remoteFileList = null; // async GC optimization
+
+                this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
+
+                this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}:{version}...");
+                var versionInfo = await client.GetPackageVersionInfoAsync(packageId, version).ConfigureAwait(false);
+                if (versionInfo.fileList == null)
+                {
+                    this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
+                    return null;
+                }
+
+                this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
+
+                foreach (var entry in versionInfo.fileList)
+                {
+                    var relativeName = entry.name;
+                    var file = remoteFiles.GetValueOrDefault(relativeName);
+                    if (file == null)
                     {
-                        this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
-                        this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
-                        this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
+                        this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
                         return new ProGetPackageConfiguration
                         {
                             TargetDirectory = this.Template.TargetDirectory
                         };
                     }
-                }
-            }
 
-            if (this.Template.DeleteExtra)
-            {
-                foreach (var name in remoteFiles.Keys)
-                {
-                    if (!versionInfo.fileList.Any(entry => entry.name == name))
+                    if (!entry.name.EndsWith("/"))
                     {
-                        this.LogInformation($"File {name} in {this.Template.TargetDirectory} does not exist in package.");
-                        return new ProGetPackageConfiguration
+                        var fileInfo = (SlimFileInfo)file;
+                        if (entry.size != fileInfo.Size || entry.date != fileInfo.LastWriteTimeUtc)
                         {
-                            TargetDirectory = this.Template.TargetDirectory
-                        };
+                            this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
+                            this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
+                            this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
+                            return new ProGetPackageConfiguration
+                            {
+                                TargetDirectory = this.Template.TargetDirectory
+                            };
+                        }
                     }
                 }
-            }
 
-            this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
-            return new ProGetPackageConfiguration
+                if (this.Template.DeleteExtra)
+                {
+                    foreach (var name in remoteFiles.Keys)
+                    {
+                        if (!versionInfo.fileList.Any(entry => entry.name == name))
+                        {
+                            this.LogInformation($"File {name} in {this.Template.TargetDirectory} does not exist in package.");
+                            return new ProGetPackageConfiguration
+                            {
+                                TargetDirectory = this.Template.TargetDirectory
+                            };
+                        }
+                    }
+                }
+
+                this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
+                return new ProGetPackageConfiguration
+                {
+                    Current = true,
+                    TargetDirectory = this.Template.TargetDirectory
+                };
+            }
+            catch (ProGetException ex)
             {
-                Current = true,
-                TargetDirectory = this.Template.TargetDirectory
-            };
+                this.LogError(ex.FullMessage);
+                return null;
+            }
         }
 #endif
 
