@@ -36,6 +36,12 @@ namespace Inedo.Extensions.UniversalPackages
             return new PackageRegistry(agent, root);
         }
 
+        public async Task LockAsync(CancellationToken cancellationToken) => await this.LockRegistryAsync(await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+        public async Task UnlockAsync() => await this.UnlockRegistryAsync(await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false)).ConfigureAwait(false);
+        public async Task<IList<RegisteredPackage>> GetInstalledPackagesAsync()
+        {
+            return await GetInstalledPackagesAsync(await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false), this.RegistryRoot).ConfigureAwait(false);
+        }
         public void Dispose()
         {
             if (!this.disposed)
@@ -44,7 +50,7 @@ namespace Inedo.Extensions.UniversalPackages
                 {
                     try
                     {
-                        Task.Run(() => this.LockRegistryAsync(this.agent.GetService<IFileOperationsExecuter>(), CancellationToken.None)).Wait();
+                        Task.Run(() => this.UnlockRegistryAsync(this.agent.GetService<IFileOperationsExecuter>())).Wait();
                     }
                     catch
                     {
