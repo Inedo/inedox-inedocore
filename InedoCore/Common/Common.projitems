@@ -48,6 +48,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageVersionSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageNameSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\FeedNameSuggestionProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\PackageRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\RegisteredPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\Remote.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonMapVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonScalarVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonVectorVariableFunction.cs" />
