@@ -10,9 +10,7 @@ using Inedo.Documentation;
 using Inedo.IO;
 using Inedo.Extensions.Configurations.ProGet;
 #if Otter
-using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
@@ -27,128 +25,8 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Ensure-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("proget")]
-    public sealed class EnsurePackageOperation : EnsureOperation<ProGetPackageConfiguration>
+    public sealed partial class EnsurePackageOperation : EnsureOperation<ProGetPackageConfiguration>
     {
-#if Otter
-        public override async Task<PersistedConfiguration> CollectAsync(IOperationExecutionContext context)
-        {
-            var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
-
-            var client = new ProGetClient(this.Template.FeedUrl, this.Template.FeedName, this.Template.UserName, this.Template.Password, this);
-
-            try
-            {
-
-                var packageId = PackageName.Parse(this.Template.PackageName);
-
-                var packageInfo = await client.GetPackageInfoAsync(packageId).ConfigureAwait(false);
-
-                var version = new ProGetPackageVersionSpecifier(this.Template.PackageVersion).GetBestMatch(packageInfo.versions);
-                if (version == null)
-                {
-                    this.LogError($"Package {this.Template.PackageName} does not have a version {this.Template.PackageVersion}.");
-                    return null;
-                }
-
-                this.LogInformation($"Resolved package version is {version}.");
-
-                if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
-                {
-                    this.LogInformation(this.Template.TargetDirectory + " does not exist.");
-                    return new ProGetPackageConfiguration
-                    {
-                        TargetDirectory = this.Template.TargetDirectory
-                    };
-                }
-
-                this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
-
-                var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
-
-                var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
-
-                foreach (var file in remoteFileList)
-                {
-                    var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
-                    if (file is SlimDirectoryInfo)
-                        relativeName += "/";
-
-                    remoteFiles.Add(relativeName, file);
-                }
-
-                remoteFileList = null; // async GC optimization
-
-                this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
-
-                this.LogInformation($"Connecting to {this.Template.FeedUrl} to get metadata for {this.Template.PackageName}:{version}...");
-                var versionInfo = await client.GetPackageVersionInfoAsync(packageId, version).ConfigureAwait(false);
-                if (versionInfo.fileList == null)
-                {
-                    this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
-                    return null;
-                }
-
-                this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
-
-                foreach (var entry in versionInfo.fileList)
-                {
-                    var relativeName = entry.name;
-                    var file = remoteFiles.GetValueOrDefault(relativeName);
-                    if (file == null)
-                    {
-                        this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
-                        return new ProGetPackageConfiguration
-                        {
-                            TargetDirectory = this.Template.TargetDirectory
-                        };
-                    }
-
-                    if (!entry.name.EndsWith("/"))
-                    {
-                        var fileInfo = (SlimFileInfo)file;
-                        if (entry.size != fileInfo.Size || entry.date != fileInfo.LastWriteTimeUtc)
-                        {
-                            this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
-                            this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
-                            this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
-                            return new ProGetPackageConfiguration
-                            {
-                                TargetDirectory = this.Template.TargetDirectory
-                            };
-                        }
-                    }
-                }
-
-                if (this.Template.DeleteExtra)
-                {
-                    foreach (var name in remoteFiles.Keys)
-                    {
-                        if (!versionInfo.fileList.Any(entry => entry.name == name))
-                        {
-                            this.LogInformation($"File {name} in {this.Template.TargetDirectory} does not exist in package.");
-                            return new ProGetPackageConfiguration
-                            {
-                                TargetDirectory = this.Template.TargetDirectory
-                            };
-                        }
-                    }
-                }
-
-                this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
-                return new ProGetPackageConfiguration
-                {
-                    Current = true,
-                    TargetDirectory = this.Template.TargetDirectory
-                };
-            }
-            catch (ProGetException ex)
-            {
-                this.LogError(ex.FullMessage);
-                return null;
-            }
-        }
-#endif
-
         public override async Task ConfigureAsync(IOperationExecutionContext context)
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
@@ -247,17 +125,7 @@ namespace Inedo.Extensions.Operations.ProGet
                     }
                 }
 
-#if Otter
-                this.LogDebug("Recording server package information...");
-                await new DB.Context(false).ServerPackages_CreateOrUpdatePackageAsync(
-                    Server_Id: context.ServerId,
-                    PackageType_Name: "ProGet",
-                    Package_Name: packageId.ToString(),
-                    Package_Version: version,
-                    CollectedOn_Execution_Id: context.ExecutionId,
-                    Url_Text: client.GetViewPackageUrl(packageId, version)
-                ).ConfigureAwait(false);
-#endif
+                this.RecordServerPackageInfo(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version));
             }
             catch (ProGetException ex)
             {
@@ -267,17 +135,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.LogInformation("Package deployed!");
         }
-
-#if Otter
-        public override ComparisonResult Compare(PersistedConfiguration other)
-        {
-            var config = (ProGetPackageConfiguration)other;
-            if (config?.Current != true)
-                return new ComparisonResult(new[] { new Difference("Current", true, false) });
-            else
-                return new ComparisonResult(Enumerable.Empty<Difference>());
-        }
-#endif
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
@@ -289,7 +146,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             return new ExtendedRichDescription(
                 new RichDescription(
-                    "Ensure ProGet package contents of ",
+                    "Ensure universal package contents of ",
                     versionText,
                     " of ",
                     new Hilite(config[nameof(ProGetPackageConfiguration.PackageName)])
@@ -301,18 +158,6 @@ namespace Inedo.Extensions.Operations.ProGet
             );
         }
 
-        private static Tuple<string, string> ParseName(string fullName)
-        {
-            fullName = fullName?.Trim('/');
-            if (string.IsNullOrEmpty(fullName))
-                return Tuple.Create(string.Empty, fullName);
-
-            int index = fullName.LastIndexOf('/');
-
-            if (index > 0)
-                return Tuple.Create(fullName.Substring(0, index), fullName.Substring(index + 1));
-            else
-                return Tuple.Create(string.Empty, fullName);
-        }
+        partial void RecordServerPackageInfo(IOperationExecutionContext context, string name, string version, string url);
     }
 }

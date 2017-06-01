@@ -30,33 +30,31 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Inedo.Agents.Client, Version=488.1.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.0\lib\net45\Inedo.Agents.Client.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Inedo.Agents">
+      <HintPath>..\..\..\..\Otter\src\OtterCore\bin\Debug\Inedo.Agents.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Inedo.ExecutionEngine, Version=56.1.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.0\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Inedo.Agents.Client">
+      <HintPath>..\..\..\..\Otter\src\OtterCore\bin\Debug\Inedo.Agents.Client.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="InedoLib, Version=488.1.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.0\lib\net45\InedoLib.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Inedo.ExecutionEngine">
+      <HintPath>..\..\..\..\Otter\src\OtterCore\bin\Debug\Inedo.ExecutionEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="InedoLib">
+      <HintPath>..\..\..\..\Otter\src\OtterCore\bin\Debug\InedoLib.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Otter.Web.Controls, Version=1.5.6.8, Culture=neutral, PublicKeyToken=4da0d93b7176269b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.0\lib\net45\Otter.Web.Controls.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
+    <Reference Include="Otter.Web.Controls">
+      <HintPath>..\..\..\..\Otter\src\Otter.Web.Controls\bin\Debug\Otter.Web.Controls.dll</HintPath>
     </Reference>
-    <Reference Include="OtterCore, Version=1.5.6.8, Culture=neutral, PublicKeyToken=4da0d93b7176269b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.0\lib\net45\OtterCore.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="OtterCore">
+      <HintPath>..\..\..\..\Otter\src\OtterCore\bin\Debug\OtterCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -74,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
+    <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
   </ItemGroup>
