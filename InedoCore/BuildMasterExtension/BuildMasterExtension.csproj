@@ -150,6 +150,7 @@
     <Compile Include="Operations\Otter\RemediateDriftOperation.cs" />
     <Compile Include="Operations\Otter\ScopedVariableJsonModel.cs" />
     <Compile Include="Operations\Otter\SetOtterVariablesOperation.cs" />
+    <Compile Include="Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="PromotionRequirements\DriftStatusPromotionRequirement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SuggestionProviders\OtterRoleNameSuggestionProvider.cs" />

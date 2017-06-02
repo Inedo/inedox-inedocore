@@ -73,6 +73,7 @@
   <ItemGroup>
     <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
+    <Compile Include="Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
   </ItemGroup>

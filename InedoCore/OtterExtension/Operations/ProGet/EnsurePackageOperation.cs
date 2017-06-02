@@ -6,7 +6,6 @@ using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Extensions.Configurations.ProGet;
 using Inedo.IO;
-using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
 
@@ -139,20 +138,6 @@ namespace Inedo.Extensions.Operations.ProGet
                 return new ComparisonResult(new[] { new Difference("Current", true, false) });
             else
                 return new ComparisonResult(Enumerable.Empty<Difference>());
-        }
-
-        partial void RecordServerPackageInfo(IOperationExecutionContext context, string name, string version, string url)
-        {
-            this.LogDebug("Recording server package information...");
-            DB.ServerPackages_CreateOrUpdatePackage(
-                Server_Id: context.ServerId,
-                PackageType_Name: "ProGet",
-                Package_Name: name,
-                Package_Version: version,
-                CollectedOn_Execution_Id: context.ExecutionId,
-                Url_Text: url,
-                CollectedFor_ServerRole_Id: context.ServerRoleId
-            );
         }
     }
 }

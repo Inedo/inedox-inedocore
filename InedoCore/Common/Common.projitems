@@ -39,6 +39,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Network\EnsureHostsEntryOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\GetPackageOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PromotePackageOperation.cs" />
@@ -49,6 +50,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageVersionSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageNameSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\FeedNameSuggestionProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\IProGetPackageInstallTemplate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\PackageRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\RegisteredPackage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\Remote.cs" />
