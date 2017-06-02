@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
+using Inedo.IO;
 using Newtonsoft.Json;
 #if Otter
 using Agent = Inedo.Otter.Extensibility.Agents.OtterAgent;
@@ -72,11 +73,11 @@ namespace Inedo.Extensions.UniversalPackages
 
         private static async Task<string> GetMachineRegistryRootAsync(Agent agent)
         {
-            var linux = await agent.GetServiceAsync<ILinuxFileOperationsExecuter>().ConfigureAwait(false);
+            var linux = await agent.TryGetServiceAsync<ILinuxFileOperationsExecuter>().ConfigureAwait(false);
             if (linux != null)
                 return "/var/lib/upack";
 
-            var windows = await agent.GetServiceAsync<IRemoteMethodExecuter>().ConfigureAwait(false);
+            var windows = await agent.TryGetServiceAsync<IRemoteMethodExecuter>().ConfigureAwait(false);
             if (windows != null)
                 return await windows.InvokeFuncAsync(Remote.GetMachineRegistryRoot).ConfigureAwait(false);
 
@@ -103,12 +104,15 @@ namespace Inedo.Extensions.UniversalPackages
             var lockToken = Guid.NewGuid().ToString();
 
             TryAgain:
-            var fileInfo = await fileOps.GetFileInfoAsync(fileName).ConfigureAwait(false);
+            var fileInfo = await getFileInfoAsync().ConfigureAwait(false);
             while (fileInfo != null && DateTime.UtcNow - fileInfo.LastWriteTimeUtc <= new TimeSpan(0, 0, 10))
             {
                 await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-                fileInfo = await fileOps.GetFileInfoAsync(fileName).ConfigureAwait(false);
+                fileInfo = await getFileInfoAsync().ConfigureAwait(false);
             }
+
+            // ensure registry root exists
+            await fileOps.CreateDirectoryAsync(this.RegistryRoot).ConfigureAwait(false);
 
             try
             {
@@ -139,6 +143,22 @@ namespace Inedo.Extensions.UniversalPackages
 
             // at this point, lock is acquired provided everyone is following the rules
             this.LockToken = lockToken;
+
+            async Task<SlimFileInfo> getFileInfoAsync()
+            {
+                try
+                {
+                    return await fileOps.GetFileInfoAsync(fileName).ConfigureAwait(false);
+                }
+                catch (FileNotFoundException)
+                {
+                    return null;
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    return null;
+                }
+            }
         }
         private async Task UnlockRegistryAsync(IFileOperationsExecuter fileOps)
         {

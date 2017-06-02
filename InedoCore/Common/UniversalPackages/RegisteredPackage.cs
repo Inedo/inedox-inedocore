@@ -6,23 +6,23 @@ namespace Inedo.Extensions.UniversalPackages
     [JsonObject]
     internal sealed class RegisteredPackage
     {
-        [JsonProperty("group")]
+        [JsonProperty("group", NullValueHandling = NullValueHandling.Ignore)]
         public string Group { get; set; }
         [JsonProperty("name")]
         public string Name { get; set;  }
         [JsonProperty("version")]
         public string Version { get; set; }
-        [JsonProperty("installPath")]
+        [JsonProperty("path")]
         public string InstallPath { get; set; }
-        [JsonProperty("feedUrl")]
+        [JsonProperty("feedUrl", NullValueHandling = NullValueHandling.Ignore)]
         public string FeedUrl { get; set; }
-        [JsonProperty("installationDate")]
+        [JsonProperty("installationDate", NullValueHandling = NullValueHandling.Ignore)]
         public string InstallationDate { get; set; }
-        [JsonProperty("installationReason")]
+        [JsonProperty("installationReason", NullValueHandling = NullValueHandling.Ignore)]
         public string InstallationReason { get; set; }
-        [JsonProperty("installedUsing")]
+        [JsonProperty("installedUsing", NullValueHandling = NullValueHandling.Ignore)]
         public string InstalledUsing { get; set; }
-        [JsonProperty("installedBy")]
+        [JsonProperty("installedBy", NullValueHandling = NullValueHandling.Ignore)]
         public string InstalledBy { get; set; }
 
         public static bool NameAndGroupEquals(RegisteredPackage p1, RegisteredPackage p2)
