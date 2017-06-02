@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using Inedo.Documentation;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
+using Inedo.Serialization;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Configurations;
@@ -14,14 +16,13 @@ using Inedo.BuildMaster.Extensibility.Configurations;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Web.Controls;
 #endif
-using Inedo.Serialization;
 
 namespace Inedo.Extensions.Configurations.ProGet
 {
     [Serializable]
     [DisplayName("ProGet Package")]
     [PersistFrom("Inedo.Otter.Extensions.Configurations.ProGet.ProGetPackageConfiguration,OtterCoreEx")]
-    public sealed class ProGetPackageConfiguration : PersistedConfiguration, IHasCredentials<ProGetCredentials>
+    public sealed class ProGetPackageConfiguration : PersistedConfiguration, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
     {
         [Persistent]
         [ScriptAlias("Credentials")]

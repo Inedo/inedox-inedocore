@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\Network\HostsEntryConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\ProGet\ProGetPackageConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Credentials\ProGetApiKeyCredentials.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Namespaces.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ConcatenateFilesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\CopyFilesOperation.cs" />
@@ -38,6 +39,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Network\EnsureHostsEntryOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\GetPackageOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PromotePackageOperation.cs" />
@@ -48,6 +50,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageVersionSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageNameSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\FeedNameSuggestionProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\IProGetPackageInstallTemplate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\PackageRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\RegisteredPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\Remote.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonMapVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonScalarVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\CommonVectorVariableFunction.cs" />
