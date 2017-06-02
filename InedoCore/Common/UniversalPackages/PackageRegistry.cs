@@ -186,7 +186,7 @@ namespace Inedo.Extensions.UniversalPackages
         {
             var fileName = fileOps.CombinePath(registryRoot, "installedPackages.json");
 
-            if (!await fileOps.DirectoryExistsAsync(fileName).ConfigureAwait(false))
+            if (!await fileOps.FileExistsAsync(fileName).ConfigureAwait(false))
                 return new List<RegisteredPackage>();
 
             using (var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
