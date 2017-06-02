@@ -9,12 +9,12 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.IO;
 using Inedo.Extensions.Configurations.ProGet;
+using Inedo.Extensions.UniversalPackages;
 #if Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Configurations;
 using Inedo.BuildMaster.Extensibility.Operations;
 #endif
 
@@ -29,8 +29,7 @@ namespace Inedo.Extensions.Operations.ProGet
     {
         public override async Task ConfigureAsync(IOperationExecutionContext context)
         {
-            var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
-
+            var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
             var client = new ProGetClient(this.Template.FeedUrl, this.Template.FeedName, this.Template.UserName, this.Template.Password, this);
 
             try
@@ -126,6 +125,27 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
 
                 this.RecordServerPackageInfo(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version));
+
+                using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
+                {
+                    var package = new RegisteredPackage
+                    {
+                        Group = packageId.Group,
+                        Name = packageId.Name,
+                        Version = version,
+                        InstallPath = this.Template.TargetDirectory,
+                        FeedUrl = this.Template.FeedUrl,
+                        InstallationDate = DateTimeOffset.Now.ToString("o"),
+                        InstallationReason = "Ensure-Package",
+                        InstalledUsing = $"{Extension.Product}/{Extension.ProductVersion} (InedoCore/{Extension.Version})"
+                    };
+
+                    await registry.LockAsync(context.CancellationToken).ConfigureAwait(false);
+                    await registry.RegisterPackageAsync(package, context.CancellationToken).ConfigureAwait(false);
+
+                    // doesn't need to be in a finally because dispose will unlock if necessary, but prefer doing it asynchronously
+                    await registry.UnlockAsync().ConfigureAwait(false);
+                }
             }
             catch (ProGetException ex)
             {

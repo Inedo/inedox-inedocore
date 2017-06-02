@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
@@ -42,6 +40,17 @@ namespace Inedo.Extensions.UniversalPackages
         {
             return await GetInstalledPackagesAsync(await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false), this.RegistryRoot).ConfigureAwait(false);
         }
+        public async Task RegisterPackageAsync(RegisteredPackage package, CancellationToken cancellationToken)
+        {
+            var fileOps = await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
+            var packages = await GetInstalledPackagesAsync(fileOps, this.RegistryRoot).ConfigureAwait(false);
+
+            packages.RemoveAll(p => RegisteredPackage.NameAndGroupEquals(p, package));
+            packages.Add(package);
+
+            await WriteInstalledPackagesAsync(fileOps, this.RegistryRoot, packages).ConfigureAwait(false);
+        }
+
         public void Dispose()
         {
             if (!this.disposed)
@@ -153,18 +162,29 @@ namespace Inedo.Extensions.UniversalPackages
 
             this.LockToken = null;
         }
-        private static async Task<IList<RegisteredPackage>> GetInstalledPackagesAsync(IFileOperationsExecuter fileOps, string registryRoot)
+        private static async Task<List<RegisteredPackage>> GetInstalledPackagesAsync(IFileOperationsExecuter fileOps, string registryRoot)
         {
             var fileName = fileOps.CombinePath(registryRoot, "installedPackages.json");
 
             if (!await fileOps.DirectoryExistsAsync(fileName).ConfigureAwait(false))
-                return new RegisteredPackage[0];
+                return new List<RegisteredPackage>();
 
             using (var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
             using (var streamReader = new StreamReader(configStream, InedoLib.UTF8Encoding))
             using (var jsonReader = new JsonTextReader(streamReader))
             {
-                return new JsonSerializer().Deserialize<RegisteredPackage[]>(jsonReader) ?? new RegisteredPackage[0];
+                return (new JsonSerializer().Deserialize<RegisteredPackage[]>(jsonReader) ?? new RegisteredPackage[0]).ToList();
+            }
+        }
+        private static async Task WriteInstalledPackagesAsync(IFileOperationsExecuter fileOps, string registryRoot, IEnumerable<RegisteredPackage> packages)
+        {
+            var fileName = fileOps.CombinePath(registryRoot, "installedPackages.json");
+
+            using (var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
+            using (var streamWriter = new StreamWriter(configStream, InedoLib.UTF8Encoding))
+            using (var jsonWriter = new JsonTextWriter(streamWriter))
+            {
+                new JsonSerializer { Formatting = Formatting.Indented }.Serialize(jsonWriter, packages.ToArray());
             }
         }
     }
