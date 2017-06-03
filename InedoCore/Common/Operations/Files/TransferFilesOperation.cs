@@ -69,6 +69,13 @@ namespace Inedo.Extensions.Operations.Files
         public bool SetLastModifiedDate { get; set; } = true;
 
         [Category("Advanced")]
+        [ScriptAlias("BatchSize")]
+        [DisplayName("Batch size")]
+        [Description("The number of files to transfer in each batch.")]
+        [DefaultValue(1)]
+        public int BatchSize { get; set; } = 1;
+
+        [Category("Advanced")]
         [ScriptAlias("Verbose")]
         [DisplayName("Verbose")]
         public bool VerboseLogging { get; set; }
@@ -181,24 +188,24 @@ namespace Inedo.Extensions.Operations.Files
                 Interlocked.Add(ref this.bytesCopied, file.Size);
             };
 
-            int batches = sourceFiles.Count / 10;
+            int batches = sourceFiles.Count / this.BatchSize;
             for (int batch = 0; batch < batches; batch++)
             {
-                var tasks = new Task[10];
-                for (int i = 10; i < 10; i++)
+                var tasks = new Task[this.BatchSize];
+                for (int i = 0; i < this.BatchSize; i++)
                 {
-                    var file = sourceFiles[batch * 10 + i];
+                    var file = sourceFiles[batch * this.BatchSize + i];
                     tasks[i] = transferFile(file);
                 }
                 await Task.WhenAll(tasks).ConfigureAwait(false);
             }
-            if (batches * 10 != sourceFiles.Count)
+            if (batches * this.BatchSize != sourceFiles.Count)
             {
-                var remaining = new Task[sourceFiles.Count % 10];
-                for (int i = batches * 10; i < sourceFiles.Count; i++)
+                var remaining = new Task[sourceFiles.Count % this.BatchSize];
+                for (int i = batches * this.BatchSize; i < sourceFiles.Count; i++)
                 {
                     var file = sourceFiles[i];
-                    remaining[i % 10] = transferFile(file);
+                    remaining[i % this.BatchSize] = transferFile(file);
                 }
                 await Task.WhenAll(remaining).ConfigureAwait(false);
             }
