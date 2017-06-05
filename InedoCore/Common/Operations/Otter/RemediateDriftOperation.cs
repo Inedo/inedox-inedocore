@@ -37,9 +37,11 @@ Otter::Remediate-Drift
     [Note("Either a server name or role name is required, but not both. If both values are entered, role name will be ignored.")]
     public sealed class RemediateDriftOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
     {
+#if !Otter
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
         public string CredentialName { get; set; }
+#endif
 
         [ScriptAlias("Server")]
         [DisplayName("Server name")]
@@ -56,13 +58,28 @@ Otter::Remediate-Drift
         [DefaultValue(true)]
         public bool WaitForCompletion { get; set; } = true;
 
+#if Otter
+        [Category("Set on Other Instance")]
+        [ScriptAlias("Credentials")]
+        [DisplayName("Credentials")]
+        public string CredentialName { get; set; }
+#endif
+
+#if Otter
+        [Category("Set on Other Instance")]
+#else
         [Category("Connection")]
+#endif
         [ScriptAlias("Host")]
         [DisplayName("Otter server URL")]
         [PlaceholderText("Use URL from credentials")]
         [MappedCredential(nameof(OtterCredentials.Host))]
         public string Host { get; set; }
+#if Otter
+        [Category("Set on Other Instance")]
+#else
         [Category("Connection")]
+#endif
         [ScriptAlias("ApiKey")]
         [DisplayName("API key")]
         [PlaceholderText("Use API key from credentials")]
@@ -79,8 +96,8 @@ Otter::Remediate-Drift
             }
 
             this.LogInformation($"Remediating drift for {entity}...");
-            
-            var client = new OtterClient(this.Host, this.ApiKey, this, context.CancellationToken);
+
+            var client = OtterClient.Create(this.Host, this.ApiKey, this, context.CancellationToken);
 
             try
             {

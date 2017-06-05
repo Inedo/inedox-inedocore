@@ -41,7 +41,7 @@ namespace Inedo.Extensions.PromotionRequirements
             
             var credentials = ResourceCredentials.Create<OtterCredentials>(this.CredentialName);
 
-            var client = new OtterClient(credentials.Host, credentials.ApiKey);
+            var client = OtterClient.Create(credentials.Host, credentials.ApiKey);
             try
             {
                 await client.TriggerConfigurationCheckAsync(entity).ConfigureAwait(false);

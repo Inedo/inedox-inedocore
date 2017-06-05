@@ -41,9 +41,11 @@ Otter::Set-Variable
     [Note("If multiple entity scopes are provided, the variable will be multi-scoped. If no entity scope is provided, a global variable will be set.")]
     public sealed class SetOtterVariablesOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
     {
+#if !Otter
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
         public string CredentialName { get; set; }
+#endif
 
         [ScriptAlias("Name")]
         [DisplayName("Variable name")]
@@ -74,13 +76,28 @@ Otter::Set-Variable
         [DisplayName("Sensitive")]
         public bool Sensitive { get; set; }
 
+#if Otter
+        [Category("Set on Other Instance")]
+        [ScriptAlias("Credentials")]
+        [DisplayName("Credentials")]
+        public string CredentialName { get; set; }
+#endif
+
+#if Otter
+        [Category("Set on Other Instance")]
+#else
         [Category("Connection")]
+#endif
         [ScriptAlias("Host")]
         [DisplayName("Otter server URL")]
         [PlaceholderText("Use URL from credentials")]
         [MappedCredential(nameof(OtterCredentials.Host))]
         public string Host { get; set; }
+#if Otter
+        [Category("Set on Other Instance")]
+#else
         [Category("Connection")]
+#endif
         [ScriptAlias("ApiKey")]
         [DisplayName("API key")]
         [PlaceholderText("Use API key from credentials")]
@@ -101,7 +118,7 @@ Otter::Set-Variable
                 Sensitive = this.Sensitive
             };
 
-            var client = new OtterClient(this.Host, this.ApiKey, this, context.CancellationToken);
+            var client = OtterClient.Create(this.Host, this.ApiKey, this, context.CancellationToken);
             try
             {
                 if (string.IsNullOrEmpty(variable.Server) && string.IsNullOrEmpty(variable.ServerRole) && string.IsNullOrEmpty(variable.Environment))

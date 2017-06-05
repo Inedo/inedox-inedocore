@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -15,6 +16,7 @@ using Newtonsoft.Json;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
 #elif Otter
+using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
 #endif
 
@@ -22,14 +24,256 @@ namespace Inedo.Extensions.Operations.Otter
 {
     internal enum RemediationStatus { Pending, Completed, Faulted, Running, Disabled }
 
-    internal sealed class OtterClient
+    internal interface IOtterClient
+    {
+        Task TriggerConfigurationCheckAsync(InfrastructureEntity entity);
+        Task<ConfigurationStatusJsonModel> GetConfigurationStatusAsync(InfrastructureEntity entity);
+        Task<string> TriggerRemediationJobAsync(InfrastructureEntity entity, string jobName = null);
+        Task<RemediationStatus> GetRemediationJobStatusAsync(string jobToken);
+        Task<IList<string>> EnumerateInfrastructureAsync(string entityType);
+        Task SetGlobalVariableAsync(string name, string value);
+        Task SetSingleVariableAsync(ScopedVariableJsonModel variable);
+    }
+
+#if Otter
+    internal sealed class SelfOtterClient : IOtterClient
+    {
+        private ILogger log;
+        private CancellationToken cancellationToken;
+
+        internal SelfOtterClient(ILogger log = null, CancellationToken? cancellationToken = null)
+        {
+            this.log = log;
+            this.cancellationToken = cancellationToken ?? CancellationToken.None;
+        }
+
+        public async Task TriggerConfigurationCheckAsync(InfrastructureEntity entity)
+        {
+            using (var db = new DB.Context())
+            {
+                int? serverId = null;
+                int? serverRoleId = null;
+
+                if (string.Equals(entity.Type, InfrastructureEntity.Server, StringComparison.OrdinalIgnoreCase))
+                {
+                    serverId = (await db.Servers_GetServerByNameAsync(entity.Name).ConfigureAwait(false)).Servers_Extended.FirstOrDefault()?.Server_Id;
+                    if (serverId == null)
+                        throw new OtterException(400, $"Server '{entity.Name}' not found.");
+                }
+                else if (string.Equals(entity.Type, InfrastructureEntity.Role, StringComparison.OrdinalIgnoreCase))
+                {
+                    serverRoleId = (await db.ServerRoles_GetServerRolesAsync().ConfigureAwait(false)).FirstOrDefault(r => string.Equals(r.ServerRole_Name, entity.Name, StringComparison.OrdinalIgnoreCase))?.ServerRole_Id;
+                    if (serverRoleId == null)
+                        throw new OtterException(400, $"Server role '{entity.Name}' not found.");
+                }
+
+                // TODO: Plugins cannot currently trigger configuration checks
+                throw new OtterException(403, "An API key is required to check configuration for a server.");
+            }
+        }
+
+        public async Task<ConfigurationStatusJsonModel> GetConfigurationStatusAsync(InfrastructureEntity entity)
+        {
+            using (var db = new DB.Context())
+            {
+                if (string.Equals(entity.Type, InfrastructureEntity.Server, StringComparison.OrdinalIgnoreCase))
+                {
+                    var server = (await db.Servers_GetServerByNameAsync(entity.Name).ConfigureAwait(false)).Servers_Extended.FirstOrDefault();
+                    if (server == null)
+                        throw new OtterException(404, $"Server {entity.Name} not found.");
+
+                    return new ConfigurationStatusJsonModel(server);
+                }
+                else if (string.Equals(entity.Type, InfrastructureEntity.Role, StringComparison.OrdinalIgnoreCase))
+                {
+                    var role = (await db.ServerRoles_GetServerRolesAsync().ConfigureAwait(false)).FirstOrDefault(r => string.Equals(r.ServerRole_Name, entity.Name, StringComparison.OrdinalIgnoreCase));
+                    if (role == null)
+                        throw new OtterException(404, $"Server role {entity.Name} not found.");
+
+                    return new ConfigurationStatusJsonModel(role);
+                }
+                else if (string.Equals(entity.Type, InfrastructureEntity.Environment, StringComparison.OrdinalIgnoreCase))
+                {
+                    var env = (await db.Environments_GetEnvironmentsAsync().ConfigureAwait(false)).FirstOrDefault(e => string.Equals(e.Environment_Name, entity.Name, StringComparison.OrdinalIgnoreCase));
+                    if (env == null)
+                        throw new OtterException(404, $"Environment {entity.Name} not found.");
+
+                    return new ConfigurationStatusJsonModel(env);
+                }
+                else
+                {
+                    throw new OtterException(400, $"Entity type '{entity.Type}' is invalid, expected server, role, or environment.");
+                }
+            }
+        }
+
+        public async Task<string> TriggerRemediationJobAsync(InfrastructureEntity entity, string jobName = null)
+        {
+            using (var db = new DB.Context())
+            {
+                int? serverId = null;
+                int? serverRoleId = null;
+
+                if (string.Equals(entity.Type, InfrastructureEntity.Server, StringComparison.OrdinalIgnoreCase))
+                {
+                    serverId = (await db.Servers_GetServerByNameAsync(entity.Name).ConfigureAwait(false)).Servers_Extended.FirstOrDefault()?.Server_Id;
+                    if (serverId == null)
+                        throw new OtterException(400, $"Server '{entity.Name}' not found.");
+                }
+                else if (string.Equals(entity.Type, InfrastructureEntity.Role, StringComparison.OrdinalIgnoreCase))
+                {
+                    serverRoleId = (await db.ServerRoles_GetServerRolesAsync().ConfigureAwait(false)).FirstOrDefault(r => string.Equals(r.ServerRole_Name, entity.Name, StringComparison.OrdinalIgnoreCase))?.ServerRole_Id;
+                    if (serverRoleId == null)
+                        throw new OtterException(400, $"Server role '{entity.Name}' not found.");
+                }
+                else
+                {
+                    throw new OtterException(400, $"Entity type '{entity.Type ?? "(null)"}' is invalid, expected server or role.");
+                }
+
+                return (await db.Jobs_CreateJobAsync(
+                    JobType_Code: Domains.JobTypeCode.Configuration,
+                    Plan_Name: null,
+                    Raft_Id: null,
+                    Schedule_Id: null,
+                    Job_Name: jobName,
+                    JobTarget_Code: serverId != null ? Domains.JobTargetCode.Direct : Domains.JobTargetCode.Indirect,
+                    Start_Date: DateTime.UtcNow,
+                    Simulation_Indicator: false,
+                    ServerIds_Csv: serverId?.ToString(),
+                    ServerRoleIds_Csv: serverRoleId?.ToString(),
+                    EnvironmentIds_Csv: null
+                ).ConfigureAwait(false)).Value.ToString();
+            }
+        }
+
+        public async Task<RemediationStatus> GetRemediationJobStatusAsync(string jobToken)
+        {
+            int? id = AH.ParseInt(jobToken);
+            if (id == null)
+                throw new OtterException(400, "A token argument is required.");
+
+            var job = (await new DB.Context(false).Jobs_GetJobAsync(id).ConfigureAwait(false)).Jobs_Extended.FirstOrDefault();
+
+            if (job == null)
+                throw new OtterException(400, "Invalid job token.");
+
+            var status = Domains.JobStateCode.GetName(job.JobState_Code);
+
+            RemediationStatus result;
+            if (Enum.TryParse(status, ignoreCase: true, result: out result))
+                return result;
+            else
+                throw new OtterException(500, "Unexpected remediation job status returned from Otter: " + status);
+        }
+
+        public async Task<IList<string>> EnumerateInfrastructureAsync(string entityType)
+        {
+            using (var db = new DB.Context())
+            {
+                var infrastructure = await db.Infrastructure_GetInfrastructureAsync().ConfigureAwait(false);
+
+                if (string.Equals(entityType, InfrastructureEntity.Server, StringComparison.OrdinalIgnoreCase))
+                {
+                    return infrastructure.Servers_Extended.Select(s => s.Server_Name).ToList();
+                }
+                else if (string.Equals(entityType, InfrastructureEntity.Role, StringComparison.OrdinalIgnoreCase))
+                {
+                    return infrastructure.ServerRoles_Extended.Select(r => r.ServerRole_Name).ToList();
+                }
+                else if (string.Equals(entityType, InfrastructureEntity.Environment, StringComparison.OrdinalIgnoreCase))
+                {
+                    return infrastructure.Environments_Extended.Select(e => e.Environment_Name).ToList();
+                }
+                else
+                {
+                    throw new OtterException(400, "Invalid \"entry-type\" in URL.");
+                }
+            }
+        }
+
+        public async Task SetGlobalVariableAsync(string name, string value)
+        {
+            await new DB.Context(false).Variables_CreateOrUpdateVariableAsync(
+                Variable_Name: name,
+                ValueType_Code: value.StartsWith("@(") ? Domains.VariableValueType.Scalar : value.StartsWith("%(") ? Domains.VariableValueType.Map : Domains.VariableValueType.Scalar,
+                Variable_Value: InedoLib.UTF8Encoding.GetBytes(value),
+                Sensitive_Indicator: false,
+                EvaluateVariables_Indicator: false
+            ).ConfigureAwait(false);
+        }
+
+        public async Task SetSingleVariableAsync(ScopedVariableJsonModel variable)
+        {
+            using (var db = new DB.Context())
+            {
+                db.BeginTransaction();
+
+                int? serverId = null;
+                int? serverRoleId = null;
+                int? environmentId = null;
+
+                if (!string.IsNullOrEmpty(variable.Server))
+                {
+                    serverId = (await db.Servers_GetServerByNameAsync(variable.Server).ConfigureAwait(false)).Servers_Extended.FirstOrDefault()?.Server_Id;
+                    if (serverId == null)
+                        throw new OtterException(400, $"Invalid server \"{variable.Server}\" on {variable.Name} variable.");
+                }
+
+                if (!string.IsNullOrEmpty(variable.ServerRole))
+                {
+                    serverRoleId = (await db.ServerRoles_GetServerRolesAsync().ConfigureAwait(false)).FirstOrDefault(r => string.Equals(r.ServerRole_Name, variable.ServerRole, StringComparison.OrdinalIgnoreCase))?.ServerRole_Id;
+                    if (serverRoleId == null)
+                        throw new OtterException(400, $"Invalid role \"{variable.ServerRole}\" on {variable.Name} variable.");
+                }
+
+                if (!string.IsNullOrEmpty(variable.Environment))
+                {
+                    environmentId = (await db.Environments_GetEnvironmentsAsync().ConfigureAwait(false)).FirstOrDefault(e => string.Equals(e.Environment_Name, variable.Environment, StringComparison.OrdinalIgnoreCase))?.Environment_Id;
+                    if (environmentId == null)
+                        throw new OtterException(400, $"Invalid environment \"{variable.Environment}\" on {variable.Name} variable.");
+                }
+
+                if ((serverId ?? serverRoleId ?? environmentId) == null)
+                    throw new OtterException(400, $"Variable {variable.Name} is missing server, role, and environment properties.");
+
+                await db.Variables_CreateOrUpdateVariableAsync(
+                    Variable_Name: variable.Name,
+                    ValueType_Code: variable.Value.StartsWith("@(") ? Domains.VariableValueType.Scalar : variable.Value.StartsWith("%(") ? Domains.VariableValueType.Map : Domains.VariableValueType.Scalar,
+                    Variable_Value: InedoLib.UTF8Encoding.GetBytes(variable.Value),
+                    Sensitive_Indicator: variable.Sensitive,
+                    EvaluateVariables_Indicator: false,
+                    Server_Id: serverId,
+                    ServerRole_Id: serverRoleId,
+                    Environment_Id: environmentId
+                ).ConfigureAwait(false);
+
+                db.CommitTransaction();
+            }
+        }
+    }
+#endif
+
+    internal sealed class OtterClient : IOtterClient
     {
         private string baseUrl;
         private SecureString apiKey;
         private ILogger log;
         private CancellationToken cancellationToken;
 
-        public OtterClient(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
+        public static IOtterClient Create(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
+        {
+#if Otter
+            if (string.IsNullOrEmpty(server) && (apiKey == null || apiKey.Length == 0))
+            {
+                return new SelfOtterClient(log, cancellationToken);
+            }
+#endif
+
+            return new OtterClient(server, apiKey, log, cancellationToken);
+        }
+
+        private OtterClient(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
         {
             if (string.IsNullOrEmpty(server))
                 throw new ArgumentNullException(nameof(server));

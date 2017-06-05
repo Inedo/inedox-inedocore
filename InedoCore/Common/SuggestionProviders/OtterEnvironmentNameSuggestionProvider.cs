@@ -26,7 +26,7 @@ namespace Inedo.Extensions.SuggestionProviders
 
             var credentials = ResourceCredentials.Create<OtterCredentials>(credentialName);
 
-            var client = new OtterClient(credentials.Host, credentials.ApiKey);
+            var client = OtterClient.Create(credentials.Host, credentials.ApiKey);
             var servers = await client.EnumerateInfrastructureAsync(InfrastructureEntity.Environment).ConfigureAwait(false);
 
             return servers;
