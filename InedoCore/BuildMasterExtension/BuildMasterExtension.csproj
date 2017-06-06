@@ -145,17 +145,9 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Legacy\Actions\HTTP\StatusCodeRanges.cs" />
-    <Compile Include="Operations\Otter\ConfigurationStatusJsonModel.cs" />
-    <Compile Include="Operations\Otter\OtterClient.cs" />
-    <Compile Include="Operations\Otter\RemediateDriftOperation.cs" />
-    <Compile Include="Operations\Otter\ScopedVariableJsonModel.cs" />
-    <Compile Include="Operations\Otter\SetOtterVariablesOperation.cs" />
     <Compile Include="Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="PromotionRequirements\DriftStatusPromotionRequirement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SuggestionProviders\OtterRoleNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\OtterEnvironmentNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\OtterServerNameSuggestionProvider.cs" />
     <Compile Include="SuggestionProviders\OtterCredentialSuggestionProvider.cs" />
     <Compile Include="VariableFunctions\Executions\ExecutionIdVariableFunction.cs" />
     <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />

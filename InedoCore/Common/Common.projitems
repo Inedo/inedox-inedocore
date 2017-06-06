@@ -37,6 +37,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpPostOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\StatusCodeRangeList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Network\EnsureHostsEntryOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\ConfigurationStatusJsonModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\OtterClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\RemediateDriftOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\ScopedVariableJsonModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\SetOtterVariablesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\GetPackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PackageDeployer.cs" />
@@ -47,6 +52,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\UniversalPackageVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PosixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\OtterEnvironmentNameSuggestionProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\OtterRoleNameSuggestionProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\OtterServerNameSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageVersionSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageNameSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\FeedNameSuggestionProvider.cs" />
