@@ -47,7 +47,7 @@ namespace Inedo.Extensions.Operations.ProGet
                     log.LogInformation($"Latest version of {template.PackageName} is {version}.");
                 }
 
-                var deployInfo = PackageDeploymentData.Create(context, log, "Deployed by Ensure-Package operation. See the URL for more info.");
+                var deployInfo = recordDeployment ? PackageDeploymentData.Create(context, log, "Deployed by Ensure-Package operation. See the URL for more info.") : null;
                 var targetRootPath = context.ResolvePath(template.TargetDirectory);
 
                 log.LogInformation("Downloading package...");
@@ -115,8 +115,7 @@ namespace Inedo.Extensions.Operations.ProGet
                     }
                 }
 
-                if (recordDeployment)
-                    await RecordServerPackageInfoAsync(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version), log).ConfigureAwait(false);
+                await RecordServerPackageInfoAsync(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version), log).ConfigureAwait(false);
 
                 using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
                 {
