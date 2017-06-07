@@ -17,7 +17,7 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     internal static partial class PackageDeployer
     {
-        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogger log, string installationReason)
+        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogger log, string installationReason, bool recordDeployment)
         {
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
             var client = new ProGetClient(template.FeedUrl, template.FeedName, template.UserName, template.Password, log);
@@ -115,7 +115,8 @@ namespace Inedo.Extensions.Operations.ProGet
                     }
                 }
 
-                await RecordServerPackageInfoAsync(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version), log).ConfigureAwait(false);
+                if (recordDeployment)
+                    await RecordServerPackageInfoAsync(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version), log).ConfigureAwait(false);
 
                 using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
                 {

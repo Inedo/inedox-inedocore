@@ -85,7 +85,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [MappedCredential(nameof(ProGetCredentials.Password))]
         public string Password { get; set; }
 
-        public override Task ExecuteAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this, this, "Get-Package");
+        [Category("Advanced")]
+        [ScriptAlias("RecordDeployment")]
+        [DisplayName("Record deployment in ProGet")]
+        [DefaultValue(true)]
+        public bool RecordDeployment { get; set; } = true;
+
+        public override Task ExecuteAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this, this, "Get-Package", this.RecordDeployment);
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
