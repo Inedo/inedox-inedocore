@@ -48,22 +48,23 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
 
                 var deployInfo = PackageDeploymentData.Create(context, log, "Deployed by Ensure-Package operation. See the URL for more info.");
+                var targetRootPath = context.ResolvePath(template.TargetDirectory);
 
                 log.LogInformation("Downloading package...");
                 using (var zip = await client.DownloadPackageAsync(packageId, version, deployInfo).ConfigureAwait(false))
                 {
                     var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    await fileOps.CreateDirectoryAsync(template.TargetDirectory).ConfigureAwait(false);
-                    dirsCreated.Add(template.TargetDirectory);
+                    await fileOps.CreateDirectoryAsync(targetRootPath).ConfigureAwait(false);
+                    dirsCreated.Add(targetRootPath);
 
                     if (template.DeleteExtra)
                     {
-                        var remoteFileList = await fileOps.GetFileSystemInfosAsync(template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+                        var remoteFileList = await fileOps.GetFileSystemInfosAsync(targetRootPath, MaskingContext.IncludeAll).ConfigureAwait(false);
 
                         foreach (var file in remoteFileList)
                         {
-                            var relativeName = file.FullName.Substring(template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                            var relativeName = file.FullName.Substring(targetRootPath.Length).Replace('\\', '/').Trim('/');
                             var entry = zip.GetEntry("package/" + relativeName);
                             if (file is SlimDirectoryInfo)
                             {
@@ -91,7 +92,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
                         var relativeName = entry.FullName.Substring("package/".Length);
 
-                        var targetPath = fileOps.CombinePath(template.TargetDirectory, relativeName);
+                        var targetPath = fileOps.CombinePath(targetRootPath, relativeName);
                         if (relativeName.EndsWith("/"))
                         {
                             if (dirsCreated.Add(targetPath))
@@ -123,7 +124,7 @@ namespace Inedo.Extensions.Operations.ProGet
                         Group = packageId.Group,
                         Name = packageId.Name,
                         Version = version,
-                        InstallPath = template.TargetDirectory,
+                        InstallPath = targetRootPath,
                         FeedUrl = template.FeedUrl,
                         InstallationDate = DateTimeOffset.Now.ToString("o"),
                         InstallationReason = installationReason,
