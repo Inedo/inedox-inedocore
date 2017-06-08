@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Inedo.Agents;
@@ -47,71 +48,87 @@ namespace Inedo.Extensions.Operations.ProGet
                     log.LogInformation($"Latest version of {template.PackageName} is {version}.");
                 }
 
-                var deployInfo = recordDeployment ? PackageDeploymentData.Create(context, log, "Deployed by Ensure-Package operation. See the URL for more info.") : null;
+                var deployInfo = recordDeployment ? PackageDeploymentData.Create(context, log, $"Deployed by {installationReason} operation. See the URL for more info.") : null;
                 var targetRootPath = context.ResolvePath(template.TargetDirectory);
 
                 log.LogInformation("Downloading package...");
-                using (var zip = await client.DownloadPackageAsync(packageId, version, deployInfo).ConfigureAwait(false))
+                using (var content = await client.DownloadPackageContentAsync(packageId, version, deployInfo).ConfigureAwait(false))
                 {
-                    var dirsCreated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
+                    var tempZipFileName = tempDirectoryName + ".zip";
 
-                    await fileOps.CreateDirectoryAsync(targetRootPath).ConfigureAwait(false);
-                    dirsCreated.Add(targetRootPath);
-
-                    if (template.DeleteExtra)
+                    try
                     {
-                        var remoteFileList = await fileOps.GetFileSystemInfosAsync(targetRootPath, MaskingContext.IncludeAll).ConfigureAwait(false);
-
-                        foreach (var file in remoteFileList)
+                        using (var remote = await fileOps.OpenFileAsync(tempZipFileName, FileMode.CreateNew, FileAccess.Write).ConfigureAwait(false))
                         {
-                            var relativeName = file.FullName.Substring(targetRootPath.Length).Replace('\\', '/').Trim('/');
-                            var entry = zip.GetEntry("package/" + relativeName);
-                            if (file is SlimDirectoryInfo)
+                            await content.CopyToAsync(remote).ConfigureAwait(false);
+                        }
+                        await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, true).ConfigureAwait(false);
+
+                        var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var expectedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        content.Position = 0;
+                        using (var zip = new ZipArchive(content, ZipArchiveMode.Read, true))
+                        {
+                            foreach (var entry in zip.Entries)
                             {
-                                if (entry == null || !entry.IsDirectory())
+                                if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.FullName.Length <= "package/".Length)
+                                    continue;
+
+                                if (entry.IsDirectory())
+                                    expectedDirectories.Add(entry.FullName.Substring("package/".Length));
+                                else
+                                    expectedFiles.Add(entry.FullName.Substring("package/".Length));
+                            }
+                        }
+
+                        await fileOps.CreateDirectoryAsync(template.TargetDirectory).ConfigureAwait(false);
+
+                        if (template.DeleteExtra)
+                        {
+                            var remoteFileList = await fileOps.GetFileSystemInfosAsync(template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+
+                            foreach (var file in remoteFileList)
+                            {
+                                var relativeName = file.FullName.Substring(template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                                if (file is SlimDirectoryInfo)
                                 {
-                                    log.LogDebug("Deleting extra directory: " + relativeName);
-                                    await fileOps.DeleteDirectoryAsync(file.FullName).ConfigureAwait(false);
+                                    if (!expectedDirectories.Contains(relativeName))
+                                    {
+                                        log.LogDebug("Deleting extra directory: " + relativeName);
+                                        await fileOps.DeleteDirectoryAsync(file.FullName).ConfigureAwait(false);
+                                    }
+                                }
+                                else
+                                {
+                                    if (!expectedFiles.Contains(relativeName))
+                                    {
+                                        log.LogDebug($"Deleting extra file: " + relativeName);
+                                        await fileOps.DeleteFileAsync(file.FullName).ConfigureAwait(false);
+                                    }
                                 }
                             }
-                            else
-                            {
-                                if (entry == null || entry.IsDirectory())
-                                {
-                                    log.LogDebug($"Deleting extra file: " + relativeName);
-                                    await fileOps.DeleteFileAsync(file.FullName).ConfigureAwait(false);
-                                }
-                            }
+                        }
+
+                        foreach (var relativeName in expectedDirectories)
+                        {
+                            await fileOps.CreateDirectoryAsync(fileOps.CombinePath(template.TargetDirectory, relativeName)).ConfigureAwait(false);
+                        }
+
+                        foreach (var relativeName in expectedFiles)
+                        {
+                            var sourcePath = fileOps.CombinePath(tempDirectoryName, "package", relativeName);
+                            var targetPath = fileOps.CombinePath(template.TargetDirectory, relativeName);
+
+                            await fileOps.MoveFileAsync(sourcePath, targetPath, true).ConfigureAwait(false);
                         }
                     }
-
-                    foreach (var entry in zip.Entries)
+                    finally
                     {
-                        if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.FullName.Length <= "package/".Length)
-                            continue;
-
-                        var relativeName = entry.FullName.Substring("package/".Length);
-
-                        var targetPath = fileOps.CombinePath(targetRootPath, relativeName);
-                        if (relativeName.EndsWith("/"))
-                        {
-                            if (dirsCreated.Add(targetPath))
-                                await fileOps.CreateDirectoryAsync(targetPath).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            var dir = PathEx.GetDirectoryName(targetPath);
-                            if (dirsCreated.Add(dir))
-                                await fileOps.CreateDirectoryAsync(dir);
-
-                            using (var targetStream = await fileOps.OpenFileAsync(targetPath, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
-                            using (var sourceStream = entry.Open())
-                            {
-                                await sourceStream.CopyToAsync(targetStream).ConfigureAwait(false);
-                            }
-
-                            await fileOps.SetLastWriteTimeAsync(targetPath, entry.LastWriteTime.DateTime).ConfigureAwait(false);
-                        }
+                        await Task.WhenAll(
+                            fileOps.DeleteFileAsync(tempZipFileName),
+                            fileOps.DeleteDirectoryAsync(tempDirectoryName)
+                        ).ConfigureAwait(false);
                     }
                 }
 

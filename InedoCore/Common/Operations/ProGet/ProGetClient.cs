@@ -130,7 +130,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
             }
         }
-        public async Task<ZipArchive> DownloadPackageAsync(PackageName id, string version, PackageDeploymentData deployInfo)
+        public async Task<Stream> DownloadPackageContentAsync(PackageName id, string version, PackageDeploymentData deployInfo)
         {
             if (string.IsNullOrWhiteSpace(id?.Name))
                 throw new ArgumentNullException(nameof(id));
@@ -152,10 +152,15 @@ namespace Inedo.Extensions.Operations.ProGet
                         var tempStream = TemporaryStream.Create(response.Content.Headers.ContentLength ?? 0L);
                         await responseStream.CopyToAsync(tempStream).ConfigureAwait(false);
                         tempStream.Position = 0;
-                        return new ZipArchive(tempStream, ZipArchiveMode.Read);
+                        return tempStream;
                     }
                 }
             }
+        }
+        public async Task<ZipArchive> DownloadPackageAsync(PackageName id, string version, PackageDeploymentData deployInfo)
+        {
+            var stream = await this.DownloadPackageContentAsync(id, version, deployInfo);
+            return new ZipArchive(stream, ZipArchiveMode.Read);
         }
         public async Task PushPackageAsync(string group, string name, string version, ProGetPackagePushData packageData, Stream content)
         {
