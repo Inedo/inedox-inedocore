@@ -15,6 +15,11 @@ namespace Inedo.Extensions.VariableFunctions.Json
 {
     [ScriptAlias("ToJson")]
     [Description("Converts an OtterScript value to JSON.")]
+    [Example(@"$ToJson(%(abc: @(1, 2, 3), def: true))")]
+    [Example(@"$ToJson(@(1, 2, 3, 4, five, 6, 7, 8, 9))")]
+    [Example(@"$ToJson(>>abc
+123>>)")]
+    [Note("Maps are converted to objects, vectors are converted to arrays, and all other values are converted to strings.")]
     [Tag("json")]
     public sealed class ToJsonVariableFunction : CommonScalarVariableFunction
     {

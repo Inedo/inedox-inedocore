@@ -17,6 +17,10 @@ namespace Inedo.Extensions.VariableFunctions.Json
 {
     [ScriptAlias("FromJson")]
     [Description("Converts JSON to an OtterScript value.")]
+    [Example(@"%FromJson(>>{""abc"":[1,2,3],""def"":true}>>)")]
+    [Example(@"@FromJson(>>[1,2,3,4,""five"",6,7,8,9]>>)")]
+    [Example(@"$FromJson(>>""abc\n123"">>)")]
+    [Note("Objects are converted to maps, arrays are converted to vectors, and all other values are converted to strings.")]
     [Tag("json")]
     public sealed class FromJsonVariableFunction : VariableFunction
     {
