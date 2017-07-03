@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>a6b45ed9-9f67-4e67-8368-71a8bc70ec82</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Common.BuildMasterOtterProGet</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UserDirectories\ADUserDirectory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UserDirectories\LDAP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UserDirectories\PrincipalId.cs" />
+  </ItemGroup>
+</Project>

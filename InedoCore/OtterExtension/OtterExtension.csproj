@@ -56,6 +56,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.DirectoryServices" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.ValueTuple, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -78,6 +79,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="..\Common\Common.projitems" Label="Shared" />
+  <Import Project="..\Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>powershell -Command "if (Test-Path C:\Projects\Otter\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Otter\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\Otter\Extensions\$(TargetName).zip -Destination C:\Projects\Otter\Extensions\$(TargetName).otterx -Force }"</PostBuildEvent>
