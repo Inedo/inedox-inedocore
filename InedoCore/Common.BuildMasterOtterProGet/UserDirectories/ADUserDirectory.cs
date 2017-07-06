@@ -35,7 +35,7 @@ namespace Inedo.Extensions.UserDirectories
     }
 
     [DisplayName("(New) Active Directory Domain")]
-    [Description("BuildMaster will use the global catalog for the current forest, and also all domains which have an inbound trust. If you only have one domain, the LDAP directory should be used instead.")]
+    [Description("Uses the global catalog for the current forest, and also all domains which have an inbound trust. If you only have one domain, the LDAP directory should be used instead.")]
     public sealed class ADUserDirectory : UserDirectory
     {
         private Lazy<HashSet<string>> domainsToSearch;
