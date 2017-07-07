@@ -54,9 +54,9 @@ namespace Inedo.Extensions.UserDirectories
                 return null;
 
             if (isUser)
-                return new UserId(domain, principalName);
+                return new UserId(principalName, domain);
             else
-                return new GroupId(domain, principalName);
+                return new GroupId(principalName, domain);
         }       
 
         public bool Equals(PrincipalId other)

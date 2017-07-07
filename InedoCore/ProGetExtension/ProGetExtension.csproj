@@ -32,15 +32,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="InedoLib, Version=500.6.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.ProGet.SDK.4.7.12\lib\net45\InedoLib.dll</HintPath>
+      <HintPath>..\packages\Inedo.ProGet.SDK.4.8.0\lib\net45\InedoLib.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="ProGet.Web.Controls, Version=4.7.12.4, Culture=neutral, PublicKeyToken=20535527eaf4e568, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.ProGet.SDK.4.7.12\lib\net45\ProGet.Web.Controls.dll</HintPath>
+    <Reference Include="ProGet.Web.Controls, Version=4.8.0.1, Culture=neutral, PublicKeyToken=20535527eaf4e568, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.ProGet.SDK.4.8.0\lib\net45\ProGet.Web.Controls.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="ProGetCore, Version=4.7.12.4, Culture=neutral, PublicKeyToken=20535527eaf4e568, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.ProGet.SDK.4.7.12\lib\net45\ProGetCore.dll</HintPath>
+    <Reference Include="ProGetCore, Version=4.8.0.1, Culture=neutral, PublicKeyToken=20535527eaf4e568, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.ProGet.SDK.4.8.0\lib\net45\ProGetCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />

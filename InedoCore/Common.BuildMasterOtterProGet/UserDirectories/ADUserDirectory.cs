@@ -6,16 +6,21 @@ using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
 #if BuildMaster
+using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.UserDirectories;
 #elif Otter
+using Inedo.Otter.Extensibility.Credentials;
 using Inedo.Otter.Extensibility.UserDirectories;
+using Inedo.Otter.Extensions.Credentials;
 #elif ProGet
+using Inedo.ProGet.Extensibility.Credentials;
 using Inedo.ProGet.Extensibility.UserDirectories;
 using UserDirectory = Inedo.ProGet.Extensibility.UserDirectories.UserDirectoryBase;
 #endif
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Serialization;
+using System.Security;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -38,7 +43,7 @@ namespace Inedo.Extensions.UserDirectories
     [Description("Uses the global catalog for the current forest, and also all domains which have an inbound trust. If you only have one domain, the LDAP directory should be used instead.")]
     public sealed class ADUserDirectory : UserDirectory
     {
-        private Lazy<HashSet<string>> domainsToSearch;
+        private Lazy<HashSet<CredentialedDomain>> domainsToSearch;
 
         [Persistent]
         [DisplayName("Search mode")]
@@ -47,6 +52,8 @@ namespace Inedo.Extensions.UserDirectories
         [Persistent]
         [DisplayName("Domains to search")]
         [PlaceholderText("Only used when Search mode is Specific List")]
+        [Description("With Specific List selected, domains entered (one per line) may contain the name of AD username/password credentials after a comma; "
+            + "e.g. us.kramerica.local,KramericaCredentials")]
         [Category("Advanced")]
         public string[] DomainsToSearch { get; set; }
 
@@ -65,36 +72,40 @@ namespace Inedo.Extensions.UserDirectories
 
         public ADUserDirectory()
         {
-            this.domainsToSearch = new Lazy<HashSet<string>>(() => buildDomainsToSearch(this));
+            this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
         }
 
         public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm)
             => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
 
-        private static HashSet<string> buildDomainsToSearch(ADUserDirectory instance)
+        private HashSet<CredentialedDomain> BuildDomainsToSearch()
         {
-            instance.LogDebug($"Building Search Root Paths for SearchMode \"{ADSearchMode.CurrentDomain}\"...");
+            this.LogDebug($"Building Search Root Paths for SearchMode \"{this.SearchMode}\"...");
 
-            if (instance.SearchMode == ADSearchMode.SpecificDomains)
-                return new HashSet<string>(instance.DomainsToSearch ?? new string[0], StringComparer.OrdinalIgnoreCase);
+            if (this.SearchMode == ADSearchMode.SpecificDomains)
+            {
+                return new HashSet<CredentialedDomain>(
+                    this.DomainsToSearch?.Select(d => CredentialedDomain.Create(d)).Where(d => d != null) ?? new CredentialedDomain[0]
+                );
+            }
 
             var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             using (var domain = Domain.GetCurrentDomain())
             {
                 paths.Add(domain.Name);
-                instance.LogDebug($"Domain  \"{domain.Name}\" added.");
+                this.LogDebug($"Domain \"{domain.Name}\" added.");
 
-                if (instance.SearchMode == ADSearchMode.TrustedDomains)
+                if (this.SearchMode == ADSearchMode.TrustedDomains)
                 {
                     Action<TrustRelationshipInformationCollection> addTrusts = trusts =>
                     {
                         foreach (TrustRelationshipInformation trust in trusts)
                         {
-                            instance.LogDebug($"Trust relationship found, source: {trust.SourceName}, target: {trust.TargetName}, type: {trust.TrustType}, direction: {trust.TrustDirection} ");
+                            this.LogDebug($"Trust relationship found, source: {trust.SourceName}, target: {trust.TargetName}, type: {trust.TrustType}, direction: {trust.TrustDirection} ");
                             if (trust.TrustDirection == TrustDirection.Outbound)
                             {
-                                instance.LogDebug("Trust direction was Outbound, ignoring.");
+                                this.LogDebug("Trust direction was Outbound, ignoring.");
                             }
                             else
                             {
@@ -102,22 +113,22 @@ namespace Inedo.Extensions.UserDirectories
                             }
                         }
                         if (trusts.Count == 0)
-                            instance.LogDebug("No trust relationships found.");
+                            this.LogDebug("No trust relationships found.");
                     };
 
-                    instance.LogDebug($"Adding domain trust relationships...");
+                    this.LogDebug($"Adding domain trust relationships...");
                     addTrusts(domain.GetAllTrustRelationships());
 
-                    instance.LogDebug($"Getting current forest...");
+                    this.LogDebug($"Getting current forest...");
                     using (var forest = Forest.GetCurrentForest())
                     {
-                        instance.LogDebug($"Adding trust relationships from \"{forest.Name}\"...");
+                        this.LogDebug($"Adding trust relationships from \"{forest.Name}\"...");
                         addTrusts(forest.GetAllTrustRelationships());
                     }
                 }
             }
 
-            return paths;
+            return paths.Select(p => new CredentialedDomain(p)).ToHashSet();
         }
 
 #if !ProGet
@@ -199,7 +210,7 @@ namespace Inedo.Extensions.UserDirectories
                 throw new ArgumentOutOfRangeException(nameof(searchType));
             }
 
-            HashSet<string> domains;
+            HashSet<CredentialedDomain> domains;
             if (principalId == null)
             {
                 this.LogDebug($"No domain specified, searching through aliases.");
@@ -208,13 +219,13 @@ namespace Inedo.Extensions.UserDirectories
             else
             {
                 this.LogDebug($"Domain alias \"{principalId.DomainAlias}\" will be used.");
-                domains = new HashSet<string>();
-                domains.Add(principalId.DomainAlias);
+                domains = new HashSet<CredentialedDomain>();
+                domains.Add(new CredentialedDomain(principalId.DomainAlias));
             }
             foreach (var domain in domains)
             {
                 this.LogDebug($"Searching domain {domain}...");
-                using (var entry = new DirectoryEntry("LDAP://DC=" + domain.Replace(".", ",DC=")))
+                using (var entry = new DirectoryEntry("LDAP://DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
                 using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = searchString.ToString();
@@ -240,9 +251,9 @@ namespace Inedo.Extensions.UserDirectories
             var st = LDAP.Escape(searchTerm);
             var filter = $"(&{categoryFilter}(|(userPrincipalName={st}*)(sAMAccountName={st}*)(name={st}*)(displayName={st}*)))";
 
-            foreach (var domainName in this.domainsToSearch.Value)
+            foreach (var domain in this.domainsToSearch.Value)
             {
-                using (var entry = new DirectoryEntry("LDAP://DC=" + domainName.Replace(".", ",DC=")))
+                using (var entry = new DirectoryEntry("LDAP://DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
                 using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = filter;
@@ -313,9 +324,10 @@ namespace Inedo.Extensions.UserDirectories
         [Flags]
         private enum PrincipalSearchType
         {
+            None = 0,
             Users = 1,
             Groups = 2,
-            UsersAndGroups = Users + Groups
+            UsersAndGroups = Users | Groups
         }
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
@@ -410,6 +422,66 @@ namespace Inedo.Extensions.UserDirectories
             }
             public override string ToString() => this.GroupName;
             
+        }
+
+        private sealed class CredentialedDomain : IEquatable<CredentialedDomain>
+        {
+            public static CredentialedDomain Create(string input)
+            {
+                if (string.IsNullOrWhiteSpace(input))
+                    return null;
+
+                var split = input.Split(',');
+
+                if (split.Length < 2)
+                    return new CredentialedDomain(split[0], null);
+
+                var creds = ResourceCredentials.Create<UsernamePasswordCredentials>(split[1]);
+                return new CredentialedDomain(split[0], creds.UserName, Unprotect(creds.Password));
+            }
+
+            public CredentialedDomain(string name, string userName = null, string password = null)
+            {
+                this.Name = name ?? throw new ArgumentNullException(nameof(name));
+                this.UserName = userName;
+                this.Password = password;
+            }
+
+            public string Name { get; }
+            public string UserName { get; }
+            public string Password { get; }
+
+            public bool Equals(CredentialedDomain other) => Equals(this, other);
+            public override bool Equals(object obj) => Equals(this, obj as CredentialedDomain);
+            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(this.Name);
+
+            public override string ToString()
+            {
+                if (this.UserName == null)
+                    return this.Name;
+                else
+                    return $"{this.UserName}@{this.Name}";
+            }
+
+            private static bool Equals(CredentialedDomain x, CredentialedDomain y)
+            {
+                if (object.ReferenceEquals(x, y))
+                    return true;
+                if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null))
+                    return false;
+
+                return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name);
+            }
+
+            private static string Unprotect(SecureString s)
+            {
+                // remove this method and just use AH.Unprotect() when BuildMaster SDK is upgraded to v5.7
+#if BuildMaster
+                return s?.ToUnsecureString();
+#else
+                return AH.Unprotect(s);
+#endif
+            }
         }
     }
 }
