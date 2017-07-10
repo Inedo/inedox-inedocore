@@ -34,13 +34,13 @@ namespace Inedo.Extensions.UserDirectories
         // Searches all domains with an Inbound or Bidirectional Trust relationship of the current user credentials in effect for the security context under which the application is running.
         TrustedDomains,
 
-        [Description("Specify list...")]
+        [Description("Specific list...")]
         // Searches an explicit list of domains
         SpecificDomains
     }
 
-    [DisplayName("(New) Active Directory Domain")]
-    [Description("Uses the global catalog for the current forest, and also all domains which have an inbound trust. If you only have one domain, the LDAP directory should be used instead.")]
+    [DisplayName("Active Directory (New)")]
+    [Description("Queries the current domain, global catalog for trusted domains, or a specific list of domains for users and group membership.")]
     public sealed class ADUserDirectory : UserDirectory
     {
         private Lazy<HashSet<CredentialedDomain>> domainsToSearch;
@@ -66,9 +66,9 @@ namespace Inedo.Extensions.UserDirectories
         public string[] NetBiosNameMaps { get; set; }
 
 #if BuildMaster
-        public override RichDescription GetDescription() => new RichDescription("ADUserDirectory");
+        public override RichDescription GetDescription() => new RichDescription("Active Directory with the ability to query specific domains and/or trusted domains.");
 #elif Otter || ProGet
-        public override string GetDescription() => "ADUserDirectory";
+        public override string GetDescription() => "Active Directory with the ability to query specific domains and/or trusted domains.";
 #endif
 
         public ADUserDirectory()
