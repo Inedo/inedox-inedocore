@@ -96,6 +96,9 @@ namespace Inedo.Extensions.UserDirectories
         }
         public static string GetPropertyValue(this SearchResult sr, string propertyName)
         {
+            if (sr == null)
+                throw new ArgumentNullException(nameof(sr));
+
             var propertyCollection = sr.Properties[propertyName];
             if (propertyCollection.Count == 0)
                 return string.Empty;

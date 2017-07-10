@@ -141,6 +141,8 @@ namespace Inedo.Extensions.UserDirectories
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
             var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
+            if (result == null)
+                return null;
 
             using (var entry = new DirectoryEntry(result.Path, userName, password))
             using (var searcher = new DirectorySearcher(entry))

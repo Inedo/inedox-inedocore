@@ -35,6 +35,9 @@ namespace Inedo.Extensions.UserDirectories
 
         public static PrincipalId FromSearchResult(SearchResult result)
         {
+            if (result == null)
+                return null;
+
             var objectCategory = result.GetPropertyValue("objectCategory");
             if (objectCategory == null)
                 return null;
