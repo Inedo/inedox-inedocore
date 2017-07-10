@@ -44,6 +44,7 @@ namespace Inedo.Extensions.UserDirectories
     public sealed class ADUserDirectory : UserDirectory
     {
         private Lazy<HashSet<CredentialedDomain>> domainsToSearch;
+        private Lazy<IDictionary<string, string>> netBiosNameMaps;
 
         [Persistent]
         [DisplayName("Search mode")]
@@ -73,6 +74,7 @@ namespace Inedo.Extensions.UserDirectories
         public ADUserDirectory()
         {
             this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
+            this.netBiosNameMaps = new Lazy<IDictionary<string, string>>(this.BuildNetBiosNameMaps);
         }
 
         public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm)
@@ -131,6 +133,20 @@ namespace Inedo.Extensions.UserDirectories
             return paths.Select(p => new CredentialedDomain(p)).ToHashSet();
         }
 
+        private IDictionary<string, string> BuildNetBiosNameMaps()
+        {
+            if (this.NetBiosNameMaps?.Length < 1)
+                return new Dictionary<string, string>(0);
+
+            var maps = this.NetBiosNameMaps
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries))
+                .Where(m => m.Length == 2)
+                .ToDictionary(m => m[0], m => m[1], StringComparer.OrdinalIgnoreCase);
+
+            return maps;
+        }
+
 #if !ProGet
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
         {
@@ -181,7 +197,7 @@ namespace Inedo.Extensions.UserDirectories
             if (parts.Length != 2)
                 return null;
 
-            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0]);
+            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value);
             return this.TryGetUser($"{parts[1]}@{domain}");
         }
 

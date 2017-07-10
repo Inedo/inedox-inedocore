@@ -13,8 +13,16 @@ namespace Inedo.Extensions.UserDirectories
         private static readonly LazyRegex LdapUnescapeRegex = new LazyRegex(@"\\([,\\#+<>;""=])", RegexOptions.Compiled);
         private static readonly LazyRegex LdapSplitRegex = new LazyRegex(@"(?<!\\),", RegexOptions.Compiled);
 
-        public static string GetDomainNameFromNetbiosName(string netbiosName)
+        public static string GetDomainNameFromNetbiosName(string netbiosName, IDictionary<string, string> manualOverride)
         {
+            if (manualOverride == null)
+                throw new ArgumentNullException(nameof(manualOverride));
+            if (string.IsNullOrEmpty(netbiosName))
+                return null;
+
+            if (manualOverride.TryGetValue(netbiosName, out string overridden))
+                return overridden;
+
             using (var rootDSE = new DirectoryEntry("LDAP://RootDSE"))
             using (var rootDSEConfig = new DirectoryEntry("LDAP://cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
             using (var searcher = new DirectorySearcher(rootDSEConfig))
