@@ -135,7 +135,7 @@ namespace Inedo.Extensions.UserDirectories
 
         private IDictionary<string, string> BuildNetBiosNameMaps()
         {
-            if (this.NetBiosNameMaps?.Length < 1)
+            if (this.NetBiosNameMaps == null || this.NetBiosNameMaps.Length == 0)
                 return new Dictionary<string, string>(0);
 
             var maps = this.NetBiosNameMaps
