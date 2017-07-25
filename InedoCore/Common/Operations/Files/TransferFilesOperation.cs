@@ -69,6 +69,13 @@ namespace Inedo.Extensions.Operations.Files
         public bool SetLastModifiedDate { get; set; } = true;
 
         [Category("Advanced")]
+        [ScriptAlias("BatchSize")]
+        [DisplayName("Batch size")]
+        [Description("The number of files to transfer in each batch.")]
+        [DefaultValue(1)]
+        public int BatchSize { get; set; } = 1;
+
+        [Category("Advanced")]
         [ScriptAlias("Verbose")]
         [DisplayName("Verbose")]
         public bool VerboseLogging { get; set; }
@@ -158,9 +165,11 @@ namespace Inedo.Extensions.Operations.Files
             int filesDeleted = 0;
             int directoriesDeleted = 0;
 
-            Interlocked.Exchange(ref this.totalBytes, sourceItems.OfType<SlimFileInfo>().Sum(f => f.Size));
+            var sourceFiles = sourceItems.OfType<SlimFileInfo>().ToList();
+            var sourceDirs = sourceItems.OfType<SlimDirectoryInfo>().ToList();
+            Interlocked.Exchange(ref this.totalBytes, sourceFiles.Sum(f => f.Size));
 
-            foreach (var file in sourceItems.OfType<SlimFileInfo>())
+            Func<SlimFileInfo, Task> transferFile = async (file) =>
             {
                 var targetFileName = PathEx.Combine(targetPath, file.FullName.Substring(sourcePath.Length).TrimStart('/', '\\')).Replace(sourceFileOps.DirectorySeparator, targetFileOps.DirectorySeparator);
                 if (this.VerboseLogging)
@@ -169,7 +178,7 @@ namespace Inedo.Extensions.Operations.Files
                 try
                 {
                     await this.TransferFileAsync(sourceFileOps, file, targetFileOps, targetItems.GetValueOrDefault(targetFileName.Replace('\\', '/')), PathEx.GetDirectoryName(targetFileName)).ConfigureAwait(false);
-                    filesCopied++;
+                    Interlocked.Increment(ref filesCopied);
                 }
                 catch (Exception ex)
                 {
@@ -177,10 +186,31 @@ namespace Inedo.Extensions.Operations.Files
                 }
 
                 Interlocked.Add(ref this.bytesCopied, file.Size);
+            };
+
+            int batches = sourceFiles.Count / this.BatchSize;
+            for (int batch = 0; batch < batches; batch++)
+            {
+                var tasks = new Task[this.BatchSize];
+                for (int i = 0; i < this.BatchSize; i++)
+                {
+                    var file = sourceFiles[batch * this.BatchSize + i];
+                    tasks[i] = transferFile(file);
+                }
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
+            if (batches * this.BatchSize != sourceFiles.Count)
+            {
+                var remaining = new Task[sourceFiles.Count % this.BatchSize];
+                for (int i = batches * this.BatchSize; i < sourceFiles.Count; i++)
+                {
+                    var file = sourceFiles[i];
+                    remaining[i % this.BatchSize] = transferFile(file);
+                }
+                await Task.WhenAll(remaining).ConfigureAwait(false);
             }
 
-            var dirs = sourceItems.OfType<SlimDirectoryInfo>();
-            foreach (var dir in dirs)
+            foreach (var dir in sourceDirs)
             {
                 var targetDir = PathEx.Combine(targetPath, dir.FullName.Substring(sourcePath.Length).TrimStart('/', '\\')).Replace(sourceFileOps.DirectorySeparator, targetFileOps.DirectorySeparator);
                 if (this.VerboseLogging)
@@ -273,13 +303,17 @@ namespace Inedo.Extensions.Operations.Files
             var targetFile = target as SlimFileInfo;
             if (targetFile != null)
             {
-                this.LogDebug($"{sourceFile.Name} already exists in {targetDirectory}.");
+                if (this.VerboseLogging)
+                {
+                    this.LogDebug($"{sourceFile.Name} already exists in {targetDirectory}.");
 
-                this.LogDebug($"Source timestamp: {sourceFile.LastWriteTimeUtc}, Target timestamp: {targetFile.LastWriteTimeUtc}");
-                this.LogDebug($"Source size: {sourceFile.Size}, Target size: {targetFile.Size}");
+                    this.LogDebug($"Source timestamp: {sourceFile.LastWriteTimeUtc}, Target timestamp: {targetFile.LastWriteTimeUtc}");
+                    this.LogDebug($"Source size: {sourceFile.Size}, Target size: {targetFile.Size}");
+                }
                 if (sourceFile.LastWriteTimeUtc == targetFile.LastWriteTimeUtc && sourceFile.Size == targetFile.Size)
                 {
-                    this.LogDebug($"Size and timestamp are the same; skipping {sourceFile.Name}...");
+                    if (this.VerboseLogging)
+                        this.LogDebug($"Size and timestamp are the same; skipping {sourceFile.Name}...");
                     return;
                 }
             }
@@ -287,8 +321,10 @@ namespace Inedo.Extensions.Operations.Files
             {
                 this.LogDebug($"{sourceFile.Name} is a file in {sourceFile.DirectoryName}, but a directory in {targetDirectory}.");
 
-                this.LogDebug($"Deleting directory {target.FullName}...");
-                await targetFileOps.DeleteDirectoriesAsync(new[] { target.FullName }).ConfigureAwait(false);
+                if (this.VerboseLogging)
+                    this.LogDebug($"Deleting directory {target.FullName}...");
+
+                await targetFileOps.DeleteDirectoryAsync(target.FullName).ConfigureAwait(false);
             }
             else
             {
@@ -298,7 +334,8 @@ namespace Inedo.Extensions.Operations.Files
 
             var targetFileName = PathEx.Combine(targetDirectory, sourceFile.Name).Replace(sourceFileOps.DirectorySeparator, targetFileOps.DirectorySeparator);
 
-            this.LogDebug($"Transferring {sourceFile.Name} to {targetDirectory}...");
+            if (this.VerboseLogging)
+                this.LogDebug($"Transferring {sourceFile.Name} to {targetDirectory}...");
 
             using (var sourceStream = await sourceFileOps.OpenFileAsync(sourceFile.FullName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
             using (var targetStream = await targetFileOps.OpenFileAsync(targetFileName, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
