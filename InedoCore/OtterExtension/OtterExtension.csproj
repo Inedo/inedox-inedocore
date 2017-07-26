@@ -30,28 +30,34 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Inedo.Agents.Client, Version=501.5.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.1\lib\net45\Inedo.Agents.Client.dll</HintPath>
+    <Reference Include="Inedo.Agents.Client, Version=503.1.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.Otter.SDK.1.7.0\lib\net45\Inedo.Agents.Client.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Inedo.ExecutionEngine, Version=59.1.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.1\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
+    <Reference Include="Inedo.ExecutionEngine, Version=60.2.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.Otter.SDK.1.7.0\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="InedoLib, Version=501.5.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.1\lib\net45\InedoLib.dll</HintPath>
+    <Reference Include="InedoLib, Version=503.1.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.Otter.SDK.1.7.0\lib\net45\InedoLib.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Otter.Web.Controls, Version=1.6.1.2, Culture=neutral, PublicKeyToken=4da0d93b7176269b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.1\lib\net45\Otter.Web.Controls.dll</HintPath>
+    <Reference Include="Otter.Web.Controls, Version=1.7.0.1, Culture=neutral, PublicKeyToken=4da0d93b7176269b, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.Otter.SDK.1.7.0\lib\net45\Otter.Web.Controls.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="OtterCore, Version=1.6.1.2, Culture=neutral, PublicKeyToken=4da0d93b7176269b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.Otter.SDK.1.6.1\lib\net45\OtterCore.dll</HintPath>
+    <Reference Include="OtterCore, Version=1.7.0.1, Culture=neutral, PublicKeyToken=4da0d93b7176269b, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.Otter.SDK.1.7.0\lib\net45\OtterCore.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -69,15 +75,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Operations\General\ApplyTemplateOperation.cs" />
     <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SuggestionProviders\TextTemplateRaftSuggestionProvider.cs" />
     <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="..\Common\Common.projitems" Label="Shared" />
   <Import Project="..\Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
