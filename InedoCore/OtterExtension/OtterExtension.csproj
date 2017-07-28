@@ -75,6 +75,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Operations\General\ApplyTemplateOperation.cs" />
     <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="Operations\ProGet\PackageDeployer.cs" />
@@ -85,9 +86,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Operations\General\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="..\Common\Common.projitems" Label="Shared" />
   <Import Project="..\Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
