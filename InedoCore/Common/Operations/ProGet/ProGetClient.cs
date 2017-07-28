@@ -519,18 +519,14 @@ namespace Inedo.Extensions.Operations.ProGet
 
         public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
         {
-            if (application == null)
-                throw new ArgumentNullException(nameof(application));
             if (baseUrl == null)
                 throw new ArgumentNullException(nameof(baseUrl));
             if (relativeUrl == null)
                 throw new ArgumentNullException(nameof(relativeUrl));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
 
-            this.Application = application;
+            this.Application = application ?? throw new ArgumentNullException(nameof(application));
             this.Url = baseUrl.TrimEnd('/') + '/' + relativeUrl.TrimStart('/');
-            this.Target = target;
+            this.Target = target ?? throw new ArgumentNullException(nameof(target));
             this.Description = description ?? "";
         }
 
@@ -547,27 +543,4 @@ namespace Inedo.Extensions.Operations.ProGet
             public const string Target = "X-ProGet-Deployment-Target";
         }
     }
-
-#if Otter
-    internal static class SecureStringExtensions
-    {
-        public static string ToUnsecureString(this SecureString s)
-        {
-            if (s == null)
-                return null;
-
-            var str = IntPtr.Zero;
-            try
-            {
-                str = Marshal.SecureStringToGlobalAllocUnicode(s);
-                return Marshal.PtrToStringUni(str, s.Length);
-            }
-            finally
-            {
-                if (str != IntPtr.Zero)
-                    Marshal.ZeroFreeGlobalAllocUnicode(str);
-            }
-        }
-    }
-#endif
 }
