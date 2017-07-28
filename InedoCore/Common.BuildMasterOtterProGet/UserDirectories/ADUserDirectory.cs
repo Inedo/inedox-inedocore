@@ -20,7 +20,6 @@ using UserDirectory = Inedo.ProGet.Extensibility.UserDirectories.UserDirectoryBa
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Serialization;
-using System.Security;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -381,9 +380,9 @@ namespace Inedo.Extensions.UserDirectories
             
             public bool Equals(ActiveDirectoryUser other)
             {
-                if (object.ReferenceEquals(this, other))
+                if (ReferenceEquals(this, other))
                     return true;
-                if (object.ReferenceEquals(other, null))
+                if (ReferenceEquals(other, null))
                     return false;
 
                 return string.Equals(this.Domain, other.Domain, StringComparison.OrdinalIgnoreCase)
@@ -422,9 +421,9 @@ namespace Inedo.Extensions.UserDirectories
 
             public bool Equals(ActiveDirectoryGroup other)
             {
-                if (object.ReferenceEquals(this, other))
+                if (ReferenceEquals(this, other))
                     return true;
-                if (object.ReferenceEquals(other, null))
+                if (ReferenceEquals(other, null))
                     return false;
 
                 return string.Equals(this.Domain, other.Domain, StringComparison.OrdinalIgnoreCase)
@@ -455,7 +454,7 @@ namespace Inedo.Extensions.UserDirectories
                     return new CredentialedDomain(split[0], null);
 
                 var creds = ResourceCredentials.Create<UsernamePasswordCredentials>(split[1]);
-                return new CredentialedDomain(split[0], creds.UserName, Unprotect(creds.Password));
+                return new CredentialedDomain(split[0], creds.UserName, AH.Unprotect(creds.Password));
             }
 
             public CredentialedDomain(string name, string userName = null, string password = null)
@@ -483,22 +482,12 @@ namespace Inedo.Extensions.UserDirectories
 
             private static bool Equals(CredentialedDomain x, CredentialedDomain y)
             {
-                if (object.ReferenceEquals(x, y))
+                if (ReferenceEquals(x, y))
                     return true;
-                if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null))
+                if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
                     return false;
 
                 return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name);
-            }
-
-            private static string Unprotect(SecureString s)
-            {
-                // remove this method and just use AH.Unprotect() when BuildMaster SDK is upgraded to v5.7
-#if BuildMaster
-                return s?.ToUnsecureString();
-#else
-                return AH.Unprotect(s);
-#endif
             }
         }
     }

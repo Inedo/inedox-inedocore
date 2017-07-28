@@ -13,7 +13,6 @@ using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security;
-using System.Runtime.InteropServices;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Data;
@@ -241,9 +240,7 @@ namespace Inedo.Extensions.Operations.ProGet
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetClient).Assembly.GetName().Version.ToString()));
 
             if (apiKey != null)
-            {
-                client.DefaultRequestHeaders.Add("X-ApiKey", apiKey.ToUnsecureString());
-            }
+                client.DefaultRequestHeaders.Add("X-ApiKey", AH.Unprotect(apiKey));
 
             if (deployInfo != null)
             {

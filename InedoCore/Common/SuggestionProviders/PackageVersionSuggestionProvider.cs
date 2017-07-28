@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading.Tasks;
 using Inedo.Extensions.Operations.ProGet;
 
@@ -30,7 +27,7 @@ namespace Inedo.Extensions.SuggestionProviders
                 return Enumerable.Empty<string>();
 
             var credentials = ResourceCredentials.Create<ProGetCredentials>(credentialName);
-            var client = new ProGetClient(credentials.Url, feedName, credentials.UserName, credentials.Password.ToUnsecureString());
+            var client = new ProGetClient(credentials.Url, feedName, credentials.UserName, AH.Unprotect(credentials.Password));
 
             var package = await client.GetPackageInfoAsync(PackageName.Parse(packageName));
 

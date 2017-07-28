@@ -447,17 +447,15 @@ namespace Inedo.Extensions.Operations.Otter
 
         private HttpClient CreateClient()
         {
-            var client = new HttpClient();
-            client.BaseAddress = new Uri(this.baseUrl, UriKind.Absolute);
+            var client = new HttpClient
+            {
+                BaseAddress = new Uri(this.baseUrl, UriKind.Absolute)
+            };
+
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(OtterClient).Assembly.GetName().Version.ToString()));
-#if BuildMaster
-            client.DefaultRequestHeaders.Add("X-ApiKey", this.apiKey.ToUnsecureString());
-#elif Otter
             client.DefaultRequestHeaders.Add("X-ApiKey", AH.Unprotect(this.apiKey));
-#endif
-
             return client;
         }
 
