@@ -28,6 +28,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\SetFileAttributesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\TransferFilesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\UnzipFileOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\General\ApplyTemplateOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\ExecuteProcessOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SendEmailOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SleepOperation.cs" />
