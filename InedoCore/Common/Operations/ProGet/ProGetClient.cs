@@ -14,8 +14,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security;
 #if BuildMaster
-using Inedo.BuildMaster.Extensibility.Operations;
+using Inedo.BuildMaster;
 using Inedo.BuildMaster.Data;
+using Inedo.BuildMaster.Extensibility.Operations;
 #elif Otter
 using Inedo.Otter;
 using Inedo.Otter.Data;
@@ -488,10 +489,10 @@ namespace Inedo.Extensions.Operations.ProGet
 #if BuildMaster
         public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
         {
-            string baseUrl = DB.Configuration_GetValue("CoreEx", "BuildMaster_BaseUrl");
+            string baseUrl = BuildMasterConfig.System.BaseUrl;
             if (string.IsNullOrEmpty(baseUrl))
             {
-                log.LogDebug("Deployment will not be recorded in ProGet because the BuildMaster_BaseUrl configuration setting is not set.");
+                log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
                 return null;
             }
 
