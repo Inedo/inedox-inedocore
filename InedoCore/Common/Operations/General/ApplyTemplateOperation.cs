@@ -8,23 +8,29 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using Inedo.ExecutionEngine.Executer;
+using Inedo.Extensions.SuggestionProviders;
 #if Otter
 using Inedo.Otter.Documentation;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensibility.RaftRepositories;
 using Inedo.Otter.Extensions;
+using Inedo.Otter.Web.Controls;
 using Inedo.Otter.Web.Controls.Plans;
 #elif BuildMaster
 using Inedo.BuildMaster;
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
+using Inedo.BuildMaster.Extensibility.RaftRepositories;
 using Inedo.BuildMaster.Web;
+using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Plans;
 #endif
 
 namespace Inedo.Extensions.Operations.General
 {
+    [DefaultProperty(nameof(Asset))]
+    [Description("Applies full template transformation on a literal, a file, or a template asset.")]
     [DisplayName("Apply Template")]
     [ScriptAlias("Apply-Template")]
     [Tag(Tags.Variables)]
@@ -41,9 +47,21 @@ $MyName
     AdditionalVariables: %(MyName: Steve)
 );
 ")]
+    [Example(@"
+# applies the hdars template and stores the result in $text
+Apply-Template hdars
+(
+    OutputVariable => $text
+);
+")]
     [Note("When reading from or writing to a file, there must be a valid server context.")]
     public sealed partial class ApplyTemplateOperation : ExecuteOperation
     {
+        [ScriptAlias("Asset")]
+        [SuggestibleValue(typeof(TextTemplateRaftSuggestionProvider))]
+        [PlaceholderText("not using an asset")]
+        public string Asset { get; set; }
+
         [Output]
         [ScriptAlias("OutputVariable")]
         [DisplayName("Store to variable")]
@@ -126,7 +144,7 @@ $MyName
                     return await fileOps.ReadAllTextAsync(path).ConfigureAwait(false);
                 }
 
-#if Otter
+
                 if (!string.IsNullOrEmpty(this.Asset))
                 {
                     string templateName;
@@ -162,7 +180,6 @@ $MyName
                         }
                     }
                 }
-#endif
 
                 this.LogWarning("No template specified. Setting output to empty string.");
                 return string.Empty;

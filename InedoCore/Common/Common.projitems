@@ -58,6 +58,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageVersionSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\PackageNameSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\FeedNameSuggestionProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SuggestionProviders\TextTemplateRaftSuggestionProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\IProGetPackageInstallTemplate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\PackageRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UniversalPackages\RegisteredPackage.cs" />

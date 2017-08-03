@@ -1,9 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+#if BuildMaster
+using Inedo.BuildMaster.Extensibility;
+using Inedo.BuildMaster.Extensibility.RaftRepositories;
+using Inedo.BuildMaster.Web.Controls;
+#elif Otter
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.RaftRepositories;
 using Inedo.Otter.Web.Controls;
+#endif
 
 namespace Inedo.Extensions.SuggestionProviders
 {
