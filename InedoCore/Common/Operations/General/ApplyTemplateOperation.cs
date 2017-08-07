@@ -158,7 +158,12 @@ Apply-Template hdars
                     }
                     else
                     {
+#if BuildMaster
+                        raftName = (await context.TryEvaluateFunctionAsync(RuntimeVariableName.Parse("$ApplicationName"), new List<RuntimeValue>()).ConfigureAwait(false))?.AsString()
+                            ?? RaftRepository.DefaultName;
+#elif Otter
                         raftName = RaftRepository.DefaultName;
+#endif
                         templateName = templateNameParts[0];
                     }
 
@@ -209,15 +214,11 @@ Apply-Template hdars
                     );
                 }
 
-#if Otter
                 return new RichDescription(
                     "Apply ",
                     new Hilite((string)config[nameof(Asset)] ?? "<unspecified>"),
                     " template"
                 );
-#elif BuildMaster
-                return new RichDescription("Apply ", new Hilite("<unspecified>"), " template");
-#endif
             }
 
             RichDescription getSecondPart()
