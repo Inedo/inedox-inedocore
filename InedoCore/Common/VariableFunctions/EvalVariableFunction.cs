@@ -11,6 +11,11 @@ using Inedo.Otter.Extensibility.VariableFunctions;
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Extensibility.VariableFunctions;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Hedgehog.Extensibility.VariableFunctions;
 #endif
 
 namespace Inedo.Extensions.VariableFunctions
@@ -44,6 +49,8 @@ Log-Information $Result;
         public override RuntimeValue Evaluate(IOtterContext context)
 #elif BuildMaster
         public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
+#elif Hedgehog
+        public override RuntimeValue Evaluate(IHedgehogContext context)
 #endif
         {
             var execContext = context as IOperationExecutionContext;

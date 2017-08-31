@@ -5,6 +5,11 @@ using Inedo.Documentation;
 #if Otter
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Data;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;

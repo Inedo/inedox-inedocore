@@ -7,6 +7,12 @@ using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 using ContextType = Inedo.Otter.IOtterContext;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Data;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using ContextType = Inedo.Hedgehog.IHedgehogContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -37,7 +43,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
                 return null;
 
             return DB.Servers_SearchServers(Has_ServerRole_Id: roleId, In_Environment_Id: null)
-#if Otter
+#if Otter || Hedgehog
                 .Servers_Extended
 #elif BuildMaster
                 .Servers

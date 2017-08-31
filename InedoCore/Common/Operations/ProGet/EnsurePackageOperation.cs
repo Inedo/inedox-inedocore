@@ -8,6 +8,16 @@ using Inedo.Otter.Extensibility.Operations;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Configurations;
+using Inedo.Hedgehog.Extensibility.Credentials;
+using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Hedgehog.Extensibility.RaftRepositories;
+using Inedo.Hedgehog.Web;
+using Inedo.Hedgehog.Web.Controls;
+using Inedo.Hedgehog.Web.Controls.Plans;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet

@@ -18,6 +18,8 @@ using Inedo.BuildMaster.Extensibility.Operations;
 #elif Otter
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
+#elif Hedgehog
+using Inedo.Hedgehog.Extensibility.Operations;
 #endif
 
 namespace Inedo.Extensions.Operations.Otter
@@ -260,6 +262,11 @@ namespace Inedo.Extensions.Operations.Otter
         private SecureString apiKey;
         private ILogger log;
         private CancellationToken cancellationToken;
+
+#if Hedgehog
+        public static IOtterClient Create(string server, SecureString apiKey, ILogSink log, CancellationToken? cancellationToken = null)
+            => Create(server, apiKey, new ShimLogger(log), cancellationToken);
+#endif
 
         public static IOtterClient Create(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
         {

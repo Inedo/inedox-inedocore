@@ -18,6 +18,12 @@ using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.Otter.Documentation;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Configurations;
+using Inedo.Hedgehog.Extensibility.Credentials;
+using Inedo.Hedgehog.Extensibility.Operations;
 #endif
 
 namespace Inedo.Extensions.Operations.Files

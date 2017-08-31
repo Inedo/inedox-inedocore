@@ -21,6 +21,17 @@ using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.Otter;
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Data;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Configurations;
+using Inedo.Hedgehog.Extensibility.Credentials;
+using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Hedgehog.Extensibility.RaftRepositories;
+using Inedo.Hedgehog.Web;
+using Inedo.Hedgehog.Web.Controls;
+using Inedo.Hedgehog.Web.Controls.Plans;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -28,6 +39,11 @@ namespace Inedo.Extensions.Operations.ProGet
     internal sealed class ProGetClient
     {
         private static readonly LazyRegex FeedNameRegex = new LazyRegex(@"(?<1>(https?://)?[^/]+)/upack(/?(?<2>.+))", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+#if Hedgehog
+        public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogSink log)
+            : this(serverUrl, feedName, userName, password, new ShimLogger(log)) { }
+#endif
 
         public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogger log = null)
         {
@@ -502,6 +518,23 @@ namespace Inedo.Extensions.Operations.ProGet
             string relativeUrl = $"applications/{context.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(context.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(context.BuildNumber)}";
 
             return new PackageDeploymentData("BuildMaster", baseUrl, relativeUrl, serverName, description);
+        }
+#elif Hedgehog
+        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
+        {
+            string baseUrl = HedgehogConfig.System.BaseUrl;
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
+                return null;
+            }
+
+            var server = DB.Servers_GetServer(context.ServerId).Servers_Extended.FirstOrDefault();
+            string serverName = server?.Server_Name ?? Environment.MachineName;
+
+            string relativeUrl = $"/package-sets?packageSetId=" + context.PackageSetId;
+
+            return new PackageDeploymentData("Hedgehog", baseUrl, relativeUrl, serverName, description);
         }
 #elif Otter
         public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)

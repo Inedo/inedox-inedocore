@@ -8,6 +8,12 @@ using Inedo.IO;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensibility.VariableFunctions;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Data;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Hedgehog.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;

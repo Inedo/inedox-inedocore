@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.14
+VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common", "Common\Common.shproj", "{D75D5F6D-A865-44CC-BF0C-D911BCA78591}"
 EndProject
@@ -13,11 +13,15 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common.BuildMasterOtterProG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProGetExtension", "ProGetExtension\ProGetExtension.csproj", "{27CB211C-A2A6-4BED-8F06-AD1DB370418E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgehogExtension", "HedgehogExtension\HedgehogExtension\HedgehogExtension.csproj", "{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems*{24566677-bc7c-4976-9b2b-820c15c66ee6}*SharedItemsImports = 4
 		Common\Common.projitems*{24566677-bc7c-4976-9b2b-820c15c66ee6}*SharedItemsImports = 4
 		Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems*{27cb211c-a2a6-4bed-8f06-ad1db370418e}*SharedItemsImports = 4
+		Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems*{7481fb80-9de1-4afc-90a0-9e077dc6ef61}*SharedItemsImports = 4
+		Common\Common.projitems*{7481fb80-9de1-4afc-90a0-9e077dc6ef61}*SharedItemsImports = 4
 		Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems*{9502377c-6a97-4421-a7ca-a8cf4c204c2c}*SharedItemsImports = 4
 		Common\Common.projitems*{9502377c-6a97-4421-a7ca-a8cf4c204c2c}*SharedItemsImports = 4
 		Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems*{a6b45ed9-9f67-4e67-8368-71a8bc70ec82}*SharedItemsImports = 13
@@ -40,8 +44,15 @@ Global
 		{27CB211C-A2A6-4BED-8F06-AD1DB370418E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27CB211C-A2A6-4BED-8F06-AD1DB370418E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27CB211C-A2A6-4BED-8F06-AD1DB370418E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F9C9200B-AE9D-4541-A707-60D7DDD40DA3}
 	EndGlobalSection
 EndGlobal

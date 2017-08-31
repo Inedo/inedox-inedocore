@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 using Agent = Inedo.Otter.Extensibility.Agents.OtterAgent;
 #elif BuildMaster
 using Agent = Inedo.BuildMaster.Extensibility.Agents.BuildMasterAgent;
+#elif Hedgehog
+using Agent = Inedo.Hedgehog.Extensibility.Agents.HedgehogAgent;
 #endif
 
 namespace Inedo.Extensions.UniversalPackages

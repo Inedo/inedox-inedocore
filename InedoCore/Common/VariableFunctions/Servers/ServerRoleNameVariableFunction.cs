@@ -10,6 +10,12 @@ using Inedo.Otter.Extensibility.VariableFunctions;
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.VariableFunctions;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Data;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Hedgehog.Extensibility.VariableFunctions;
 #endif
 using Inedo.Documentation;
 
@@ -25,6 +31,8 @@ namespace Inedo.Extensions.VariableFunctions.Server
             int? serverRoleId =
 #if BuildMaster
                 (context as IGenericBuildMasterContext)
+#elif Hedgehog
+                (context as IHedgehogContext)
 #elif Otter
                 (context as IOtterContext)
 #endif

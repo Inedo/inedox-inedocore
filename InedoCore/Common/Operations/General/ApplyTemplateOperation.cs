@@ -25,6 +25,16 @@ using Inedo.BuildMaster.Extensibility.RaftRepositories;
 using Inedo.BuildMaster.Web;
 using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Plans;
+#elif Hedgehog
+using Inedo.Hedgehog;
+using Inedo.Hedgehog.Extensibility;
+using Inedo.Hedgehog.Extensibility.Configurations;
+using Inedo.Hedgehog.Extensibility.Credentials;
+using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Hedgehog.Extensibility.RaftRepositories;
+using Inedo.Hedgehog.Web;
+using Inedo.Hedgehog.Web.Controls;
+using Inedo.Hedgehog.Web.Controls.Plans;
 #endif
 
 namespace Inedo.Extensions.Operations.General
@@ -166,7 +176,10 @@ Apply-Template hdars
 #endif
                         templateName = templateNameParts[0];
                     }
-
+#if Hedgehog
+#warning FIX
+                    throw new NotImplementedException("Hedgehog needs basic raft support");
+#else
                     using (var raft = RaftRepository.OpenRaft(raftName))
                     {
                         if (raft == null)
@@ -184,6 +197,7 @@ Apply-Template hdars
                             }
                         }
                     }
+#endif
                 }
 
                 this.LogWarning("No template specified. Setting output to empty string.");

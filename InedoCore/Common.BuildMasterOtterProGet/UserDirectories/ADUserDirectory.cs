@@ -8,6 +8,9 @@ using System.Text;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.UserDirectories;
+#elif Hedgehog
+using Inedo.Hedgehog.Extensibility.Credentials;
+using Inedo.Hedgehog.Extensibility.UserDirectories;
 #elif Otter
 using Inedo.Otter.Extensibility.Credentials;
 using Inedo.Otter.Extensibility.UserDirectories;
