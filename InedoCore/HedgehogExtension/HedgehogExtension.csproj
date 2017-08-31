@@ -31,32 +31,32 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Hedgehog.Web.Controls, Version=0.0.1.12, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\Hedgehog.Web.Controls.dll</HintPath>
+      <HintPath>..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\Hedgehog.Web.Controls.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="HedgehogCore, Version=0.0.1.12, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\HedgehogCore.dll</HintPath>
+      <HintPath>..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\HedgehogCore.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="Inedo.Agents.Client, Version=504.2.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\Inedo.Agents.Client.dll</HintPath>
+      <HintPath>..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\Inedo.Agents.Client.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="Inedo.ExecutionEngine, Version=60.2.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
+      <HintPath>..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="InedoLib, Version=504.2.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\InedoLib.dll</HintPath>
+      <HintPath>..\packages\Inedo.Hedgehog.SDK.0.1\lib\net45\InedoLib.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
@@ -66,7 +66,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>True</Private>
     </Reference>
@@ -87,8 +87,8 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <Import Project="..\..\Common\Common.projitems" Label="Shared" />
-  <Import Project="..\..\Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems" Label="Shared" />
+  <Import Project="..\Common\Common.projitems" Label="Shared" />
+  <Import Project="..\Common.BuildMasterOtterProGet\Common.BuildMasterOtterProGet.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>powershell -Command "if (Test-Path C:\Projects\Hedgehog\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Hedgehog\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\Hedgehog\Extensions\$(TargetName).zip -Destination C:\Projects\Hedgehog\Extensions\$(TargetName).hedgehogx -Force }"</PostBuildEvent>
