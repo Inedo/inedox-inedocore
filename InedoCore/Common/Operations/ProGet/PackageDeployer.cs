@@ -35,7 +35,7 @@ namespace Inedo.Extensions.Operations.ProGet
         public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogger log, string installationReason, bool recordDeployment)
         {
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-            var client = new ProGetClient(template.FeedUrl, template.FeedName, template.UserName, template.Password, log);
+            var client = new ProGetClient(template.FeedUrl, template.FeedName, template.UserName, template.Password, log, context.CancellationToken);
 
             try
             {
@@ -75,7 +75,7 @@ namespace Inedo.Extensions.Operations.ProGet
                     {
                         using (var remote = await fileOps.OpenFileAsync(tempZipFileName, FileMode.CreateNew, FileAccess.Write).ConfigureAwait(false))
                         {
-                            await content.CopyToAsync(remote).ConfigureAwait(false);
+                            await content.CopyToAsync(remote, 81920, context.CancellationToken).ConfigureAwait(false);
                         }
                         await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, true).ConfigureAwait(false);
 
