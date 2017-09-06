@@ -67,9 +67,7 @@ namespace Inedo.Extensions.UserDirectories
         [Category("Advanced")]
         public string[] NetBiosNameMaps { get; set; }
 
-#if BuildMaster
-        public override RichDescription GetDescription() => new RichDescription("Active Directory with the ability to query specific domains and/or trusted domains.");
-#elif Otter || ProGet
+#if Otter || ProGet
         public override string GetDescription() => "Active Directory with the ability to query specific domains and/or trusted domains.";
 #endif
 
