@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
+using Inedo.Diagnostics;
 using Inedo.IO;
 using Newtonsoft.Json;
 #if Otter
@@ -20,12 +21,14 @@ namespace Inedo.Extensions.UniversalPackages
     internal sealed class PackageRegistry : IDisposable
     {
         private Agent agent;
+        private ILogger logger;
         private bool disposed;
 
-        private PackageRegistry(Agent agent, string registryRoot)
+        private PackageRegistry(Agent agent, string registryRoot, ILogger logger = null)
         {
             this.agent = agent;
             this.RegistryRoot = registryRoot;
+            this.logger = logger;
         }
 
         public string RegistryRoot { get; }
@@ -102,13 +105,19 @@ namespace Inedo.Extensions.UniversalPackages
         {
             var fileName = fileOps.CombinePath(this.RegistryRoot, ".lock");
 
-            var lockDescription = "Locked by Otter";
+            var lockDescription = "Locked by " + Extension.Product;
             var lockToken = Guid.NewGuid().ToString();
 
             TryAgain:
             var fileInfo = await getFileInfoAsync().ConfigureAwait(false);
-            while (fileInfo != null && DateTime.UtcNow - fileInfo.LastWriteTimeUtc <= new TimeSpan(0, 0, 10))
+            string lastToken = null;
+            while (fileInfo.Item1 != null && DateTime.UtcNow - fileInfo.Item1.LastWriteTimeUtc <= new TimeSpan(0, 0, 10))
             {
+                if ((lastToken == null || !string.Equals(lastToken, fileInfo.Item3)) && fileInfo.Item3 != null)
+                {
+                    this.logger?.LogDebug("Package registry is locked: " + fileInfo.Item2);
+                    lastToken = fileInfo.Item3;
+                }
                 await Task.Delay(500, cancellationToken).ConfigureAwait(false);
                 fileInfo = await getFileInfoAsync().ConfigureAwait(false);
             }
@@ -123,7 +132,7 @@ namespace Inedo.Extensions.UniversalPackages
                 using (var writer = new StreamWriter(lockStream, InedoLib.UTF8Encoding))
                 {
                     writer.WriteLine(lockDescription);
-                    writer.WriteLine(lockToken.ToString());
+                    writer.WriteLine(lockToken);
                 }
 
                 // verify that we acquired the lock
@@ -137,8 +146,10 @@ namespace Inedo.Extensions.UniversalPackages
                         goto TryAgain;
                 }
             }
-            catch (IOException)
+            catch (IOException ex)
             {
+                this.logger?.LogDebug("Locking package registry failed: " + ex.Message);
+
                 // file may be in use by other process
                 goto TryAgain;
             }
@@ -146,19 +157,35 @@ namespace Inedo.Extensions.UniversalPackages
             // at this point, lock is acquired provided everyone is following the rules
             this.LockToken = lockToken;
 
-            async Task<SlimFileInfo> getFileInfoAsync()
+            async Task<(SlimFileInfo, string, string)> getFileInfoAsync()
             {
                 try
                 {
-                    return await fileOps.GetFileInfoAsync(fileName).ConfigureAwait(false);
+                    var info = await fileOps.GetFileInfoAsync(fileName).ConfigureAwait(false);
+
+                    string description = null, token = null;
+                    try
+                    {
+                        using (var lockStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
+                        using (var reader = new StreamReader(lockStream, InedoLib.UTF8Encoding))
+                        {
+                            description = await reader.ReadLineAsync().ConfigureAwait(false);
+                            token = await reader.ReadLineAsync().ConfigureAwait(false);
+                        }
+                    }
+                    catch (IOException)
+                    {
+                    }
+
+                    return (info, description, token);
                 }
                 catch (FileNotFoundException)
                 {
-                    return null;
+                    return (null, null, null);
                 }
                 catch (DirectoryNotFoundException)
                 {
-                    return null;
+                    return (null, null, null);
                 }
             }
         }
