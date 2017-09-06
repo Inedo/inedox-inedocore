@@ -162,11 +162,23 @@ namespace Inedo.Extensions.Operations.ProGet
                         InstalledUsing = $"{Extension.Product}/{Extension.ProductVersion} (InedoCore/{Extension.Version})"
                     };
 
-                    await registry.LockAsync(context.CancellationToken).ConfigureAwait(false);
-                    await registry.RegisterPackageAsync(package, context.CancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        using (var cancellationTokenSource = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10)))
+                        using (context.CancellationToken.Register(() => cancellationTokenSource.Cancel()))
+                        {
+                            await registry.LockAsync(cancellationTokenSource.Token).ConfigureAwait(false);
 
-                    // doesn't need to be in a finally because dispose will unlock if necessary, but prefer doing it asynchronously
-                    await registry.UnlockAsync().ConfigureAwait(false);
+                            await registry.RegisterPackageAsync(package, context.CancellationToken).ConfigureAwait(false);
+
+                            // doesn't need to be in a finally because dispose will unlock if necessary, but prefer doing it asynchronously
+                            await registry.UnlockAsync().ConfigureAwait(false);
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        log.LogWarning("Registering the package in the machine package registry timed out.");
+                    }
                 }
             }
             catch (ProGetException ex)
