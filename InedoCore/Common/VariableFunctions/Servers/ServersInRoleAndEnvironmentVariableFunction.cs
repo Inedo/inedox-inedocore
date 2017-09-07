@@ -8,11 +8,9 @@ using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 using ContextType = Inedo.Otter.IOtterContext;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
-using ContextType = Inedo.Hedgehog.IHedgehogContext;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
+using ContextType = Inedo.Extensibility.IStandardContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -51,6 +49,11 @@ namespace Inedo.Extensions.VariableFunctions.Server
             if (environmentId == null)
                 return null;
 
+#if Hedgehog
+            var serversInRole = SDK.GetServersInRole(roleId.Value).Select(s => s.Name);
+            var serversInEnvironment = SDK.GetServersInEnvironment(environmentId.Value).Select(s => s.Name);
+            return serversInRole.Intersect(serversInEnvironment);
+#else
             return DB.Servers_SearchServers(Has_ServerRole_Id: roleId, In_Environment_Id: environmentId)
 #if Otter || Hedgehog
                 .Servers_Extended
@@ -59,10 +62,18 @@ namespace Inedo.Extensions.VariableFunctions.Server
 #endif
                 .Where(s => s.Active_Indicator || this.IncludeInactive)
                 .Select(s => s.Server_Name);
+#endif
         }
 
         private int? FindRole(string roleName, ContextType context)
         {
+#if Hedgehog
+            var allRoles = SDK.GetServerRoles();
+            if (!string.IsNullOrEmpty(roleName))
+                return allRoles.FirstOrDefault(r => r.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase))?.Id;
+            else
+                return context.ServerRoleId;
+#else
             var allRoles = DB.ServerRoles_GetServerRoles();
 
             if (!string.IsNullOrEmpty(roleName))
@@ -77,10 +88,18 @@ namespace Inedo.Extensions.VariableFunctions.Server
                     .FirstOrDefault(r => r.ServerRole_Id == context.ServerRoleId)
                     ?.ServerRole_Id;
             }
+#endif
         }
 
         private int? FindEnvironment(string environmentName, ContextType context)
         {
+#if Hedgehog
+            var allEnvironments = SDK.GetServerRoles();
+            if (!string.IsNullOrEmpty(environmentName))
+                return allEnvironments.FirstOrDefault(e => e.Name.Equals(environmentName, StringComparison.OrdinalIgnoreCase))?.Id;
+            else
+                return context.EnvironmentId;
+#else
             var allEnvironments = DB.Environments_GetEnvironments();
 
             if (!string.IsNullOrEmpty(environmentName))
@@ -95,6 +114,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
                     .FirstOrDefault(e => e.Environment_Id == context.EnvironmentId)
                     ?.Environment_Id;
             }
+#endif
         }
     }
 }

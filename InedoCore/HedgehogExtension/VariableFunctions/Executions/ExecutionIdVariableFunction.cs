@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel;
 using Inedo.Documentation;
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Executions
 {
@@ -11,6 +10,6 @@ namespace Inedo.Extensions.VariableFunctions.Executions
     [Tag("executions")]
     public sealed class ExecutionIdVariableFunction : ScalarVariableFunction
     {
-        protected override object EvaluateScalar(IHedgehogContext context) => context.ExecutionId;
+        protected override object EvaluateScalar(IStandardContext context) => context.ExecutionId;
     }
 }

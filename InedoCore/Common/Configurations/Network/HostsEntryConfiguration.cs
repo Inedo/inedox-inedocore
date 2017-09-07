@@ -6,8 +6,8 @@ using Inedo.BuildMaster.Extensibility.Configurations;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Configurations;
 #elif Hedgehog
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Configurations;
 #endif
 using Inedo.Documentation;
 using Inedo.Serialization;

@@ -8,11 +8,9 @@ using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 using ContextType = Inedo.Otter.IOtterContext;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
-using ContextType = Inedo.Hedgehog.IHedgehogContext;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
+using ContextType = Inedo.Extensibility.IStandardContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -42,6 +40,11 @@ namespace Inedo.Extensions.VariableFunctions.Server
             if (roleId == null)
                 return null;
 
+#if Hedgehog
+            return SDK.GetServersInRole(roleId.Value)
+                .Where(s => this.IncludeInactive || s.Active)
+                .Select(s => s.Name);
+#else
             return DB.Servers_SearchServers(Has_ServerRole_Id: roleId, In_Environment_Id: null)
 #if Otter || Hedgehog
                 .Servers_Extended
@@ -50,8 +53,26 @@ namespace Inedo.Extensions.VariableFunctions.Server
 #endif
                 .Where(s => s.Active_Indicator || this.IncludeInactive)
                 .Select(s => s.Server_Name);
+#endif
         }
 
+#if Hedgehog
+        private int? FindRole(string roleName, ContextType context)
+        {
+            var allRoles = SDK.GetServerRoles();
+
+            if (!string.IsNullOrEmpty(roleName))
+            {
+                return allRoles
+                    .FirstOrDefault(r => r.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase))
+                    ?.Id;
+            }
+            else
+            {
+                return context.ServerRoleId;
+            }
+        }
+#else
         private int? FindRole(string roleName, ContextType context)
         {
             var allRoles = DB.ServerRoles_GetServerRoles();
@@ -69,5 +90,6 @@ namespace Inedo.Extensions.VariableFunctions.Server
                     ?.ServerRole_Id;
             }
         }
+#endif
     }
 }

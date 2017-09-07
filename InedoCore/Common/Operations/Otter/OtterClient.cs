@@ -19,7 +19,7 @@ using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
 #elif Hedgehog
-using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Extensibility.Operations;
 #endif
 
 namespace Inedo.Extensions.Operations.Otter

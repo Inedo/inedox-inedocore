@@ -19,11 +19,10 @@ using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensions.Credentials;
 using Inedo.Otter.Web.Controls;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Web.Controls;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.Web;
 #endif
 
 namespace Inedo.Extensions.Operations.Otter

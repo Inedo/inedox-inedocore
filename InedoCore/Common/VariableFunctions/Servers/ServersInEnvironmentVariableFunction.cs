@@ -8,12 +8,9 @@ using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 using ContextType = Inedo.Otter.IOtterContext;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
-using ContextType = Inedo.Hedgehog.IHedgehogContext;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
+using ContextType = Inedo.Extensibility.IStandardContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -43,6 +40,13 @@ namespace Inedo.Extensions.VariableFunctions.Server
             if (environmentId == null)
                 return null;
 
+#if Hedgehog
+            return SDK.GetServersInEnvironment(environmentId.Value)
+                .Where(s => this.IncludeInactive || s.Active)
+                .Select(s => s.Name);
+
+#else
+
             return DB.Servers_SearchServers(Has_ServerRole_Id: null, In_Environment_Id: environmentId)
 #if Otter || Hedgehog
                 .Servers_Extended
@@ -51,8 +55,28 @@ namespace Inedo.Extensions.VariableFunctions.Server
 #endif
                 .Where(s => s.Active_Indicator || this.IncludeInactive)
                 .Select(s => s.Server_Name);
+#endif
         }
 
+#if Hedgehog
+        private int? FindEnvironment(string environmentName, ContextType context)
+        {
+            var allEnvironments = SDK.GetEnvironments();
+
+            if (!string.IsNullOrEmpty(environmentName))
+            {
+                return allEnvironments
+                    .FirstOrDefault(e => e.Name.Equals(environmentName, StringComparison.OrdinalIgnoreCase))
+                    ?.Id;
+            }
+            else
+            {
+                return allEnvironments
+                    .FirstOrDefault(e => e.Id == context.EnvironmentId)
+                    ?.Id;
+            }
+        }
+#else
         private int? FindEnvironment(string environmentName, ContextType context)
         {
             var allEnvironments = DB.Environments_GetEnvironments();
@@ -70,5 +94,6 @@ namespace Inedo.Extensions.VariableFunctions.Server
                     ?.Environment_Id;
             }
         }
+#endif
     }
 }

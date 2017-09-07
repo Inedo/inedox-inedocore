@@ -16,11 +16,10 @@ using Inedo.Otter.Documentation;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
 #endif
 
 namespace Inedo.Extensions.Operations.Files
@@ -37,10 +36,18 @@ namespace Inedo.Extensions.Operations.Files
         public string SourceDirectory { get; set; }
         [ScriptAlias("Include")]
         [PlaceholderText("* (top-level items)")]
+#if Hedgehog
+        [MaskingDescription]
+#else
         [Description(CommonDescriptions.MaskingHelp)]
+#endif
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
+#if Hedgehog
+        [MaskingDescription]
+#else
         [Description(CommonDescriptions.MaskingHelp)]
+#endif
         public IEnumerable<string> Excludes { get; set; }
 
         [ScriptAlias("ReadOnly")]

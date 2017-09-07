@@ -21,15 +21,12 @@ using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Operations;
 using Inedo.Otter.Extensions;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.RaftRepositories;
-using Inedo.Hedgehog.Web;
-using Inedo.Hedgehog.Web.Controls;
-using Inedo.Hedgehog.Web.Controls.Plans;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.RaftRepositories;
+using Inedo.Extensibility.Web;
 #endif
 
 namespace Inedo.Extensions.Operations.General
@@ -86,6 +83,8 @@ This email was sent from BuildMaster on $Date.>>
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
+#warning REIMPLEMENT or fix for hedgehog
+#if !Hedgehog
             var addresses = this.To?.ToList() ?? new List<string>();
             if (addresses.Count == 0)
             {
@@ -187,6 +186,7 @@ This email was sent from BuildMaster on $Date.>>
                     }
                 }
             }
+#endif
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

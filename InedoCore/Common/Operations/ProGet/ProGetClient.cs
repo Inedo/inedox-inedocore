@@ -23,16 +23,11 @@ using Inedo.Otter;
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility.Operations;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.RaftRepositories;
-using Inedo.Hedgehog.Web;
-using Inedo.Hedgehog.Web.Controls;
-using Inedo.Hedgehog.Web.Controls.Plans;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.RaftRepositories;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -465,17 +460,17 @@ namespace Inedo.Extensions.Operations.ProGet
 #elif Hedgehog
         public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
         {
-            string baseUrl = HedgehogConfig.System.BaseUrl;
+            var baseUrl = SDK.BaseUrl;
             if (string.IsNullOrEmpty(baseUrl))
             {
                 log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
                 return null;
             }
 
-            var server = DB.Servers_GetServer(context.ServerId).Servers_Extended.FirstOrDefault();
-            string serverName = server?.Server_Name ?? Environment.MachineName;
+            var server = SDK.GetServers(true).FirstOrDefault(s => s.Name.Equals(context.ServerName, StringComparison.OrdinalIgnoreCase));
+            string serverName = server?.Name ?? Environment.MachineName;
 
-            string relativeUrl = $"/package-sets?packageSetId=" + context.PackageSetId;
+            string relativeUrl = $"/package-sets?packageSetId=" + ((IStandardContext)context).PackageSetId;
 
             return new PackageDeploymentData("Hedgehog", baseUrl, relativeUrl, serverName, description);
         }

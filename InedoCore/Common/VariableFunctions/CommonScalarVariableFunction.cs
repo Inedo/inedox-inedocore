@@ -2,9 +2,8 @@
 using Inedo.Otter;
 using Inedo.Otter.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.VariableFunctions;
@@ -23,7 +22,7 @@ namespace Inedo.Extensions.VariableFunctions
 #elif BuildMaster
         protected sealed override object EvaluateScalar(IGenericBuildMasterContext context) => this.EvaluateScalar(context);
 #elif Hedgehog
-        protected sealed override object EvaluateScalar(IHedgehogContext context) => this.EvaluateScalar(context);
+        protected sealed override object EvaluateScalar(IStandardContext context) => this.EvaluateScalar(context);
 #endif
 
         protected abstract object EvaluateScalar(object context);

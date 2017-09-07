@@ -22,15 +22,12 @@ using Inedo.BuildMaster.Web;
 using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Plans;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.RaftRepositories;
-using Inedo.Hedgehog.Web;
-using Inedo.Hedgehog.Web.Controls;
-using Inedo.Hedgehog.Web.Controls.Plans;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.RaftRepositories;
+using Inedo.Extensibility.Web;
 #endif
 using Inedo.Diagnostics;
 using Inedo.Documentation;

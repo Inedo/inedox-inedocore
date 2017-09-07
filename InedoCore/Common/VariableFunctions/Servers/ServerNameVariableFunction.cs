@@ -11,11 +11,7 @@ using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
 #endif
 using Inedo.Documentation;
 
@@ -31,11 +27,17 @@ namespace Inedo.Extensions.VariableFunctions.Server
     {
         protected override object EvaluateScalar(object context)
         {
+#if Hedgehog
+            int? serverId = (context as IStandardContext)?.ServerId;
+            if (serverId != null)
+                return SDK.GetServers(true).FirstOrDefault(s => s.Id == serverId)?.Name;
+            else
+                return string.Empty;
+
+#else
             int? serverId =
 #if BuildMaster
                 (context as IGenericBuildMasterContext)
-#elif Hedgehog
-                (context as IHedgehogContext)
 #elif Otter
                 (context as IOtterContext)
 #endif
@@ -46,13 +48,14 @@ namespace Inedo.Extensions.VariableFunctions.Server
                 return DB.Servers_GetServer(serverId)
 #if BuildMaster
                 .Servers
-#elif Otter || Hedgehog
+#elif Otter
                 .Servers_Extended
 #endif
                 .FirstOrDefault()?.Server_Name;
             }
 
             return string.Empty;
+#endif
         }
     }
 }

@@ -6,10 +6,8 @@ using Inedo.Documentation;
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -29,6 +27,13 @@ foreach $Role in @AllRoles
 ")]
     public sealed class AllRolesVariableFunction : CommonVectorVariableFunction
     {
-        protected override IEnumerable EvaluateVector(object context) => DB.ServerRoles_GetServerRoles().Select(s => s.ServerRole_Name);
+        protected override IEnumerable EvaluateVector(object context)
+        {
+#if Hedgehog
+            return SDK.GetServerRoles().Select(r => r.Name);
+#else
+            return DB.ServerRoles_GetServerRoles().Select(s => s.ServerRole_Name);
+#endif
+        }
     }
 }

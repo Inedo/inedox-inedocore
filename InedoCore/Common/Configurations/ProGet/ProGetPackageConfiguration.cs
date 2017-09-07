@@ -16,11 +16,10 @@ using Inedo.BuildMaster.Extensibility.Configurations;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Web.Controls;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Web.Controls;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Web;
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Credentials;
 #endif
 
 namespace Inedo.Extensions.Configurations.ProGet

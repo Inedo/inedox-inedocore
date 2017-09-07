@@ -10,10 +10,9 @@ using Inedo.Otter;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.VariableFunctions;
 #endif
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
@@ -37,7 +36,7 @@ namespace Inedo.Extensions.VariableFunctions.Json
 #if BuildMaster
         public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
 #elif Hedgehog
-        public override RuntimeValue Evaluate(IHedgehogContext context)
+        public override RuntimeValue Evaluate(IStandardContext context)
 #elif Otter
         public override RuntimeValue Evaluate(IOtterContext context)
 #endif

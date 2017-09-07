@@ -17,15 +17,12 @@ using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Web;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
-using Inedo.Hedgehog.Extensibility.Operations;
-using Inedo.Hedgehog.Extensibility.RaftRepositories;
-using Inedo.Hedgehog.Web;
-using Inedo.Hedgehog.Web.Controls;
-using Inedo.Hedgehog.Web.Controls.Plans;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.RaftRepositories;
+using Inedo.Extensibility.Web;
 #endif
 
 namespace Inedo.Extensions.Operations.HTTP

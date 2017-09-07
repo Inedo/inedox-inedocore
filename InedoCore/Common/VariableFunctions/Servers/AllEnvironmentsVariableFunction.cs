@@ -6,10 +6,8 @@ using Inedo.Documentation;
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -29,6 +27,13 @@ foreach $Env in @AllEnvironments
 ")]
     public sealed class AllEnvironmentsVariableFunction : CommonVectorVariableFunction
     {
-        protected override IEnumerable EvaluateVector(object context) => DB.Environments_GetEnvironments().Select(e => e.Environment_Name);
+        protected override IEnumerable EvaluateVector(object context)
+        {
+#if Hedgehog
+            return SDK.GetEnvironments().Select(e => e.Name);
+#else
+            return DB.Environments_GetEnvironments().Select(e => e.Environment_Name);
+#endif
+        }
     }
 }

@@ -4,9 +4,8 @@ using Inedo.Documentation;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.VariableFunctions;

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Inedo.Diagnostics;
-using Inedo.Hedgehog.Extensibility.Operations;
+using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.ProGet
 {

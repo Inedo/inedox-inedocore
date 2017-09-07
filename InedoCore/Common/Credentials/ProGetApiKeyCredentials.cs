@@ -13,10 +13,7 @@ using Inedo.Otter.Extensibility.Credentials;
 using Inedo.Otter.Extensions;
 using Inedo.Otter.Extensions.Credentials;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.Configurations;
-using Inedo.Hedgehog.Extensibility.Credentials;
+using Inedo.Extensibility;
 #endif
 
 namespace Inedo.Extensions.Credentials

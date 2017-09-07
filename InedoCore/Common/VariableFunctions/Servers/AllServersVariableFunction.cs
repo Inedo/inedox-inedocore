@@ -7,10 +7,8 @@ using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Hedgehog;
-using Inedo.Hedgehog.Data;
-using Inedo.Hedgehog.Extensibility;
-using Inedo.Hedgehog.Extensibility.VariableFunctions;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -36,6 +34,13 @@ foreach $Server in @AllServers
         [Description("If true, include servers marked as inactive.")]
         public bool IncludeInactive { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context) => DB.Servers_GetServers(IncludeInactive_Indicator: this.IncludeInactive).Select(s => s.Server_Name);
+        protected override IEnumerable EvaluateVector(object context)
+        {
+#if Hedgehog
+            return SDK.GetServers(this.IncludeInactive).Select(s => s.Name);
+#else
+            return DB.Servers_GetServers(IncludeInactive_Indicator: this.IncludeInactive).Select(s => s.Server_Name);
+#endif
+        }
     }
 }
