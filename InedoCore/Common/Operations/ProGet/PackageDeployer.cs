@@ -25,10 +25,10 @@ namespace Inedo.Extensions.Operations.ProGet
     internal static partial class PackageDeployer
     {
 #if Hedgehog
-        public static Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment)
-            => DeployAsync(context, template, new ShimLogger(log), installationReason, recordDeployment);
+        public static Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
+            => DeployAsync(context, template, new ShimLogger(log), installationReason, recordDeployment, setProgress);
 #endif
-        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogger log, string installationReason, bool recordDeployment)
+        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogger log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
         {
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
             var client = new ProGetClient(template.FeedUrl, template.FeedName, template.UserName, template.Password, log, context.CancellationToken);
@@ -62,17 +62,19 @@ namespace Inedo.Extensions.Operations.ProGet
                 var targetRootPath = context.ResolvePath(template.TargetDirectory);
 
                 log.LogInformation("Downloading package...");
-                using (var content = await client.DownloadPackageContentAsync(packageId, version, deployInfo).ConfigureAwait(false))
+                using (var content = await client.DownloadPackageContentAsync(packageId, version, deployInfo, (position, length) => setProgress?.Invoke(new OperationProgress(length == 0 ? null : (int?)(100 * position / length), "downloading package"))).ConfigureAwait(false))
                 {
                     var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
                     var tempZipFileName = tempDirectoryName + ".zip";
 
                     try
                     {
+                        setProgress?.Invoke(new OperationProgress(0, "copying package to agent"));
                         using (var remote = await fileOps.OpenFileAsync(tempZipFileName, FileMode.CreateNew, FileAccess.Write).ConfigureAwait(false))
                         {
-                            await content.CopyToAsync(remote, 81920, context.CancellationToken).ConfigureAwait(false);
+                            await content.CopyToAsync(remote, 81920, context.CancellationToken, position => setProgress?.Invoke(new OperationProgress((int)(100 * position / content.Length), "copying package to agent"))).ConfigureAwait(false);
                         }
+                        setProgress?.Invoke(new OperationProgress("extracting package to temporary directory"));
                         await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, true).ConfigureAwait(false);
 
                         var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -86,20 +88,26 @@ namespace Inedo.Extensions.Operations.ProGet
                                     continue;
 
                                 if (entry.IsDirectory())
-                                    expectedDirectories.Add(entry.FullName.Substring("package/".Length));
+                                    expectedDirectories.Add(entry.FullName.Substring("package/".Length).Trim('/'));
                                 else
                                     expectedFiles.Add(entry.FullName.Substring("package/".Length));
                             }
                         }
 
+                        setProgress?.Invoke(new OperationProgress("ensuring target directory exists"));
                         await fileOps.CreateDirectoryAsync(template.TargetDirectory).ConfigureAwait(false);
 
+                        int index = 0;
                         if (template.DeleteExtra)
                         {
+                            setProgress?.Invoke(new OperationProgress("checking existing files"));
                             var remoteFileList = await fileOps.GetFileSystemInfosAsync(template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
 
                             foreach (var file in remoteFileList)
                             {
+                                index++;
+                                setProgress?.Invoke(new OperationProgress(100 * index / remoteFileList.Count, "checking existing files"));
+
                                 var relativeName = file.FullName.Substring(template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
                                 if (file is SlimDirectoryInfo)
                                 {
@@ -120,18 +128,28 @@ namespace Inedo.Extensions.Operations.ProGet
                             }
                         }
 
+                        index = 0;
                         foreach (var relativeName in expectedDirectories)
                         {
+                            index++;
+                            setProgress?.Invoke(new OperationProgress(100 * index / expectedDirectories.Count, "ensuring target subdirectories exist"));
+
                             await fileOps.CreateDirectoryAsync(fileOps.CombinePath(template.TargetDirectory, relativeName)).ConfigureAwait(false);
                         }
 
+                        index = 0;
                         foreach (var relativeName in expectedFiles)
                         {
                             var sourcePath = fileOps.CombinePath(tempDirectoryName, "package", relativeName);
                             var targetPath = fileOps.CombinePath(template.TargetDirectory, relativeName);
 
+                            index++;
+                            setProgress?.Invoke(new OperationProgress(100 * index / expectedFiles.Count, "moving files to target directory"));
+
                             await fileOps.MoveFileAsync(sourcePath, targetPath, true).ConfigureAwait(false);
                         }
+
+                        setProgress?.Invoke(new OperationProgress("cleaning temporary files"));
                     }
                     finally
                     {
@@ -142,8 +160,10 @@ namespace Inedo.Extensions.Operations.ProGet
                     }
                 }
 
+                setProgress?.Invoke(new OperationProgress("recording server package information"));
                 await RecordServerPackageInfoAsync(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version), log).ConfigureAwait(false);
 
+                setProgress?.Invoke(new OperationProgress("recording package installation in machine registry"));
                 using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
                 {
                     var package = new RegisteredPackage
@@ -183,6 +203,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 return;
             }
 
+            setProgress?.Invoke(null);
             log.LogInformation("Package deployed!");
         }
     }
