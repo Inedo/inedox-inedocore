@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Inedo.Documentation;
 using Inedo.Extensions.SuggestionProviders;
@@ -99,7 +100,10 @@ namespace Inedo.Extensions.Operations.ProGet
         [DefaultValue(true)]
         public bool RecordDeployment { get; set; } = true;
 
-        public override Task ExecuteAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this, this, "Get-Package", this.RecordDeployment);
+        private volatile OperationProgress progress = null;
+        public override OperationProgress GetProgress() => progress;
+
+        public override Task ExecuteAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this, this, "Get-Package", this.RecordDeployment, p => this.progress = p);
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {

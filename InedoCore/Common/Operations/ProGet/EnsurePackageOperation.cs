@@ -25,7 +25,10 @@ namespace Inedo.Extensions.Operations.ProGet
     [Tag("proget")]
     public sealed partial class EnsurePackageOperation : EnsureOperation<ProGetPackageConfiguration>
     {
-        public override Task ConfigureAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this.Template, this, "Ensure-Package", true);
+        private volatile OperationProgress progress = null;
+        public override OperationProgress GetProgress() => progress;
+
+        public override Task ConfigureAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this.Template, this, "Ensure-Package", true, p => this.progress = p);
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
