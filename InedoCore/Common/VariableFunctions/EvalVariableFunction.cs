@@ -49,7 +49,7 @@ Log-Information $Result;
 #elif BuildMaster
         public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
 #elif Hedgehog
-        public override RuntimeValue Evaluate(IStandardContext context)
+        public override RuntimeValue Evaluate(IVariableFunctionContext context)
 #endif
         {
             var execContext = context as IOperationExecutionContext;

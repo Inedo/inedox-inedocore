@@ -3,7 +3,6 @@
 using Inedo.Otter;
 using Inedo.Otter.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
@@ -23,7 +22,7 @@ namespace Inedo.Extensions.VariableFunctions
 #elif BuildMaster
         protected sealed override IEnumerable EvaluateVector(IGenericBuildMasterContext context) => this.EvaluateVector(context);
 #elif Hedgehog
-        protected sealed override IEnumerable EvaluateVector(IStandardContext context) => this.EvaluateVector(context);
+        protected sealed override IEnumerable EvaluateVector(IVariableFunctionContext context) => this.EvaluateVector(context);
 #endif
 
         protected abstract IEnumerable EvaluateVector(object context);

@@ -10,6 +10,6 @@ namespace Inedo.Extensions.VariableFunctions.Executions
     [Tag("executions")]
     public sealed class ExecutionIdVariableFunction : ScalarVariableFunction
     {
-        protected override object EvaluateScalar(IStandardContext context) => context.ExecutionId;
+        protected override object EvaluateScalar(IVariableFunctionContext context) => context.ExecutionId;
     }
 }

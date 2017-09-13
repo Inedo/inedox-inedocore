@@ -5,7 +5,6 @@ using Inedo.ExecutionEngine;
 using Inedo.Otter;
 using Inedo.Otter.Extensibility.VariableFunctions;
 #elif Hedgehog
-using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
@@ -25,7 +24,7 @@ namespace Inedo.Extensions.VariableFunctions
 #elif BuildMaster
         public sealed override RuntimeValue Evaluate(IGenericBuildMasterContext context) => new RuntimeValue(this.EvaluateMap(context));
 #elif Hedgehog
-        public sealed override RuntimeValue Evaluate(IStandardContext context) => new RuntimeValue(this.EvaluateMap(context));
+        public sealed override RuntimeValue Evaluate(IVariableFunctionContext context) => new RuntimeValue(this.EvaluateMap(context));
 #endif
 
         protected abstract IDictionary<string, RuntimeValue> EvaluateMap(object context);

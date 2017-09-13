@@ -10,7 +10,7 @@ using ContextType = Inedo.Otter.IOtterContext;
 #elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
-using ContextType = Inedo.Extensibility.IStandardContext;
+using ContextType = Inedo.Extensibility.VariableFunctions.IVariableFunctionContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;

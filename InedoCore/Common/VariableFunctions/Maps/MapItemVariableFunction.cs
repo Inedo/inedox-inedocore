@@ -34,7 +34,7 @@ namespace Inedo.Extensions.VariableFunctions.Maps
 #if BuildMaster
         public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
 #elif Hedgehog
-        public override RuntimeValue Evaluate(IStandardContext context)
+        public override RuntimeValue Evaluate(IVariableFunctionContext context)
 #elif Otter
         public override RuntimeValue Evaluate(IOtterContext context)
 #endif

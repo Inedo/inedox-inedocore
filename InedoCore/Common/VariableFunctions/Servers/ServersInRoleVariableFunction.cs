@@ -10,7 +10,7 @@ using ContextType = Inedo.Otter.IOtterContext;
 #elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
-using ContextType = Inedo.Extensibility.IStandardContext;
+using ContextType = Inedo.Extensibility.VariableFunctions.IVariableFunctionContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
@@ -69,7 +69,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
             }
             else
             {
-                return context.ServerRoleId;
+                return (context as IStandardContext)?.ServerRoleId;
             }
         }
 #else
