@@ -83,8 +83,11 @@ This email was sent from BuildMaster on $Date.>>
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
+#if Hedgehog
 #warning REIMPLEMENT or fix for hedgehog
-#if !Hedgehog
+            await InedoLib.NullTask;
+            throw new NotImplementedException();
+#else
             var addresses = this.To?.ToList() ?? new List<string>();
             if (addresses.Count == 0)
             {
