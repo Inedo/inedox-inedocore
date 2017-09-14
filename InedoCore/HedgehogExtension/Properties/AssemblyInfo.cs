@@ -1,3 +1,3 @@
 ﻿using System.Reflection;
 
-[assembly: AssemblyProduct("Otter")]
+[assembly: AssemblyProduct("Hedgehog")]
