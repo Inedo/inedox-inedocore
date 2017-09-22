@@ -9,6 +9,7 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.IO;
 #if Otter
 using Inedo.Otter.Documentation;
 using Inedo.Otter.Extensibility;
@@ -127,6 +128,7 @@ Apply-Template hdars
                 if (this.NewLineMode == TemplateNewLineMode.Auto)
                     result = result.Replace("\n", fileOps.NewLine);
 
+                await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(path));
                 await fileOps.WriteAllTextAsync(path, result).ConfigureAwait(false);
             }
 
