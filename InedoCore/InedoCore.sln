@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.3
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common", "Common\Common.shproj", "{D75D5F6D-A865-44CC-BF0C-D911BCA78591}"
 EndProject
@@ -13,7 +13,7 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common.BuildMasterOtterProG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProGetExtension", "ProGetExtension\ProGetExtension.csproj", "{27CB211C-A2A6-4BED-8F06-AD1DB370418E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgehogExtension", "HedgehogExtension\HedgehogExtension.csproj", "{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InedoExtension", "InedoExtension\InedoExtension.csproj", "{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
