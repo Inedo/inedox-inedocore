@@ -27,7 +27,8 @@ using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.RaftRepositories;
-using Inedo.Extensibility.Web;
+using Inedo.Web;
+using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 using Inedo.Diagnostics;
 using Inedo.Documentation;

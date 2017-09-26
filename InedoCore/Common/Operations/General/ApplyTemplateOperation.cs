@@ -10,6 +10,7 @@ using Inedo.ExecutionEngine;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
+using Inedo.Web;
 #if Otter
 using Inedo.Otter.Documentation;
 using Inedo.Otter.Extensibility;
@@ -32,8 +33,8 @@ using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.RaftRepositories;
-using Inedo.Extensibility.Web;
-using Inedo.Extensibility.Web.Plans.ArgumentEditors;
+using Inedo.Web.Plans.ArgumentEditors;
+using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 
 namespace Inedo.Extensions.Operations.General

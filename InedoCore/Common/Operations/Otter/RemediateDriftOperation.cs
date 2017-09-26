@@ -22,7 +22,8 @@ using Inedo.Otter.Web.Controls;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.Web;
+using Inedo.Web;
+using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 
 namespace Inedo.Extensions.Operations.Otter

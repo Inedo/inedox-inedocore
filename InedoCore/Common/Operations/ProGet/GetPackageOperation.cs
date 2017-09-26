@@ -22,8 +22,9 @@ using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.RaftRepositories;
-using Inedo.Extensibility.Web;
-using Inedo.Extensibility.Web.Plans.ArgumentEditors;
+using Inedo.Web;
+using Inedo.Web.Plans.ArgumentEditors;
+using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet

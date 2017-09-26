@@ -17,9 +17,10 @@ using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Web.Controls;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Web;
+using Inedo.Web;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
+using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 
 namespace Inedo.Extensions.Configurations.ProGet
