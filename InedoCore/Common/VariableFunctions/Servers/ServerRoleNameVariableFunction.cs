@@ -22,6 +22,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [ScriptAlias("RoleName")]
     [Description("name of the current server role in context")]
     [Tag("servers")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class ServerRoleNameVariableFunction : CommonScalarVariableFunction
     {
         protected override object EvaluateScalar(object context)

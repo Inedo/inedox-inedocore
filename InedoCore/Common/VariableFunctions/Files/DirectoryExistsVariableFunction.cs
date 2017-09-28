@@ -20,6 +20,9 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("DirectoryExists")]
     [Description("Returns \"true\" if the specified directory exists on the current server.")]
     [Tag("files")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class DirectoryExistsVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

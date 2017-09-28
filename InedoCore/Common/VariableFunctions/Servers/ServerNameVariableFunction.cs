@@ -23,6 +23,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [LegacyAlias("SVRNAME")]
 #endif 
     [Tag("servers")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class ServerNameVariableFunction : CommonScalarVariableFunction
     {
         protected override object EvaluateScalar(object context)

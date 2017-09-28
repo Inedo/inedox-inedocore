@@ -22,6 +22,9 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("FileContents")]
     [Description("Returns the contents of a file on the current server.")]
     [Tag("files")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class FileContentsVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

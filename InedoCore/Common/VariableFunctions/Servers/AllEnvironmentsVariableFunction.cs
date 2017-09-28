@@ -25,6 +25,9 @@ foreach $Env in @AllEnvironments
     Log-Information $Env;
 }
 ")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class AllEnvironmentsVariableFunction : CommonVectorVariableFunction
     {
         protected override IEnumerable EvaluateVector(object context)

@@ -27,6 +27,9 @@ foreach $Server in @AllServers
     Log-Information $Server;
 }
 ")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class AllServersVariableFunction : CommonVectorVariableFunction
     {
         [DisplayName("includeInactive")]

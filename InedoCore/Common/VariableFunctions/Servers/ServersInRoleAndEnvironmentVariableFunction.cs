@@ -22,6 +22,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
 {
     [ScriptAlias("ServersInRoleAndEnvironment")]
     [Description("Returns a list of all the servers in the specified role and environment name.")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class ServersInRoleAndEnvironmentVariableFunction : VectorVariableFunction
     {
         [DisplayName("roleName")]

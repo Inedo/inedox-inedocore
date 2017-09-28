@@ -25,6 +25,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
 set $Path = $EnvironmentVariable(PATH);
 Log-Information $Path;
 ")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class EnvironmentVariableVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

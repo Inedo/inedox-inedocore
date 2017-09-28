@@ -25,6 +25,9 @@ foreach $Role in @AllRoles
     Log-Information $Role;
 }
 ")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class AllRolesVariableFunction : CommonVectorVariableFunction
     {
         protected override IEnumerable EvaluateVector(object context)

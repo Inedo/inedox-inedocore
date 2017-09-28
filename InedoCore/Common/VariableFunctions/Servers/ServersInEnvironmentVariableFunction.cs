@@ -22,6 +22,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
 {
     [ScriptAlias("ServersInEnvironment")]
     [Description("Returns a list of all the servers in the specified environment name.")]
+#if Hedgehog
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+#endif
     public sealed class ServersInEnvironmentVariableFunction : VectorVariableFunction
     {
         [DisplayName("environmentName")]
