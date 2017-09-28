@@ -77,6 +77,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileContentsVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileExistsVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Json\FromJsonVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Json\JSEncodeVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Json\ToJsonVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListCountVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Lists\ListIndexOfVariableFunction.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInEnvironmentVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInRoleAndEnvironmentVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Servers\ServersInRoleVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\CoalesceVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\HtmlEncodeVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\JoinVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\JSEncodeVariableFunction.cs" />
@@ -116,5 +118,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\TrimStartVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\TrimVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Strings\UrlEncodeVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Xml\XmlEncode.cs" />
   </ItemGroup>
 </Project>
