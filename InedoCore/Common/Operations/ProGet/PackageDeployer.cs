@@ -90,9 +90,19 @@ namespace Inedo.Extensions.Operations.ProGet
                                     continue;
 
                                 if (entry.IsDirectory())
+                                {
                                     expectedDirectories.Add(fullName.Substring("package/".Length).Trim('/'));
+                                }
                                 else
+                                {
                                     expectedFiles.Add(fullName.Substring("package/".Length));
+                                    var parts = fullName.Substring("package/".Length).Split('/');
+                                    for (int i = 1; i < parts.Length; i++)
+                                    {
+                                        // Add directories that are not explicitly in the zip file.
+                                        expectedDirectories.Add(string.Join("/", parts.Take(i)));
+                                    }
+                                }
                             }
                         }
 
