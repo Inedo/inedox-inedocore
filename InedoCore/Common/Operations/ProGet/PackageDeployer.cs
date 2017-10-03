@@ -84,13 +84,15 @@ namespace Inedo.Extensions.Operations.ProGet
                         {
                             foreach (var entry in zip.Entries)
                             {
-                                if (!entry.FullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || entry.FullName.Length <= "package/".Length)
+                                // TODO: use AH.ReadZip when it is available in Otter.
+                                var fullName = entry.FullName.Replace('\\', '/');
+                                if (!fullName.StartsWith("package/", StringComparison.OrdinalIgnoreCase) || fullName.Length <= "package/".Length)
                                     continue;
 
                                 if (entry.IsDirectory())
-                                    expectedDirectories.Add(entry.FullName.Substring("package/".Length).Trim('/'));
+                                    expectedDirectories.Add(fullName.Substring("package/".Length).Trim('/'));
                                 else
-                                    expectedFiles.Add(entry.FullName.Substring("package/".Length));
+                                    expectedFiles.Add(fullName.Substring("package/".Length));
                             }
                         }
 
