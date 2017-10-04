@@ -60,6 +60,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 var deployInfo = recordDeployment ? PackageDeploymentData.Create(context, log, $"Deployed by {installationReason} operation. See the URL for more info.") : null;
                 var targetRootPath = context.ResolvePath(template.TargetDirectory);
+                log.LogDebug("Target path: " + targetRootPath);
 
                 log.LogInformation("Downloading package...");
                 using (var content = await client.DownloadPackageContentAsync(packageId, version, deployInfo, (position, length) => setProgress?.Invoke(new OperationProgress(length == 0 ? null : (int?)(100 * position / length), "downloading package"))).ConfigureAwait(false))
@@ -107,20 +108,20 @@ namespace Inedo.Extensions.Operations.ProGet
                         }
 
                         setProgress?.Invoke(new OperationProgress("ensuring target directory exists"));
-                        await fileOps.CreateDirectoryAsync(template.TargetDirectory).ConfigureAwait(false);
+                        await fileOps.CreateDirectoryAsync(targetRootPath).ConfigureAwait(false);
 
                         int index = 0;
                         if (template.DeleteExtra)
                         {
                             setProgress?.Invoke(new OperationProgress("checking existing files"));
-                            var remoteFileList = await fileOps.GetFileSystemInfosAsync(template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+                            var remoteFileList = await fileOps.GetFileSystemInfosAsync(targetRootPath, MaskingContext.IncludeAll).ConfigureAwait(false);
 
                             foreach (var file in remoteFileList)
                             {
                                 index++;
                                 setProgress?.Invoke(new OperationProgress(100 * index / remoteFileList.Count, "checking existing files"));
 
-                                var relativeName = file.FullName.Substring(template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                                var relativeName = file.FullName.Substring(targetRootPath.Length).Replace('\\', '/').Trim('/');
                                 if (file is SlimDirectoryInfo)
                                 {
                                     if (!expectedDirectories.Contains(relativeName))
@@ -146,14 +147,14 @@ namespace Inedo.Extensions.Operations.ProGet
                             index++;
                             setProgress?.Invoke(new OperationProgress(100 * index / expectedDirectories.Count, "ensuring target subdirectories exist"));
 
-                            await fileOps.CreateDirectoryAsync(fileOps.CombinePath(template.TargetDirectory, relativeName)).ConfigureAwait(false);
+                            await fileOps.CreateDirectoryAsync(fileOps.CombinePath(targetRootPath, relativeName)).ConfigureAwait(false);
                         }
 
                         index = 0;
                         foreach (var relativeName in expectedFiles)
                         {
                             var sourcePath = fileOps.CombinePath(tempDirectoryName, "package", relativeName);
-                            var targetPath = fileOps.CombinePath(template.TargetDirectory, relativeName);
+                            var targetPath = fileOps.CombinePath(targetRootPath, relativeName);
 
                             index++;
                             setProgress?.Invoke(new OperationProgress(100 * index / expectedFiles.Count, "moving files to target directory"));
