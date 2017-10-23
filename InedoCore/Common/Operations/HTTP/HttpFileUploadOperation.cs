@@ -17,16 +17,13 @@ using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 #endif
 
 namespace Inedo.Extensions.Operations.HTTP
 {
     [DisplayName("Upload File to URL")]
-    [Description("Uploads a file to a specified URL using an HTTP POST.")]
+    [Description("Uploads a file to a specified URL using an HTTP POST or PUT.")]
     [ScriptAlias("Upload-Http")]
     [ScriptNamespace("HTTP", PreferUnqualified = true)]
     [DefaultProperty(nameof(FileName))]
@@ -39,6 +36,9 @@ Upload-Http ReleaseNotes.xml (
     [Serializable]
     public sealed class HttpFileUploadOperation : HttpOperationBase
     {
+        [ScriptAlias("Method")]
+        [DefaultValue(PostHttpMethod.POST)]
+        public PostHttpMethod Method { get; set; }
         [Required]
         [DisplayName("File name")]
         [ScriptAlias("FileName")]
@@ -59,10 +59,19 @@ Upload-Http ReleaseNotes.xml (
                 return;
             }
 
-            var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-
             this.ResolvedFilePath = context.ResolvePath(this.FileName);
             this.LogDebug("File path resolved to: " + this.ResolvedFilePath);
+            if (!this.ProxyRequest)
+            {
+                var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
+                using (var fileStream = await fileOps.OpenFileAsync(this.ResolvedFilePath, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
+                {
+                    this.LogInformation($"Uploading file {this.FileName} to {this.Url}...");
+                    await this.PerformRequestAsync(fileStream, context.CancellationToken).ConfigureAwait(false);
+                    this.LogInformation("HTTP file upload completed.");
+                    return;
+                }
+            }
 
             this.LogInformation($"Uploading file {this.FileName} to {this.Url}...");
             await this.CallRemoteAsync(context).ConfigureAwait(false);
@@ -77,17 +86,34 @@ Upload-Http ReleaseNotes.xml (
                 return;
             }
 
-            using (var client = this.CreateClient())
             using (var fileStream = new FileStream(this.ResolvedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+            {
+                await this.PerformRequestAsync(fileStream, cancellationToken);
+            }
+        }
+
+        private async Task PerformRequestAsync(Stream fileStream, CancellationToken cancellationToken)
+        {
+            using (var client = this.CreateClient())
             using (var streamContent = new StreamContent(fileStream))
             using (var formData = new MultipartFormDataContent())
             {
                 streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
                 formData.Add(streamContent, "file", PathEx.GetFileName(this.ResolvedFilePath));
 
-                using (var response = await client.PostAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
+                if (this.Method == PostHttpMethod.PUT)
                 {
-                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
+                    using (var response = await client.PutAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
+                    {
+                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    using (var response = await client.PostAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
+                    {
+                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
+                    }
                 }
             }
         }
