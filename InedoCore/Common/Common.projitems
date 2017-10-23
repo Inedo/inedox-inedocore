@@ -76,6 +76,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\DirectoryExistsVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileContentsVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileExistsVariableFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Files\FileMaskVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Json\FromJsonVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Json\JSEncodeVariableFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VariableFunctions\Json\ToJsonVariableFunction.cs" />
