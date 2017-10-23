@@ -32,6 +32,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\ExecuteProcessOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SendEmailOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\General\SleepOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpFileDownloadOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpFileUploadOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpGetOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\HTTP\HttpOperationBase.cs" />
