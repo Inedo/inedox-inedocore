@@ -2,6 +2,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Linq;
+using Inedo.Documentation;
 #if Otter
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
@@ -22,6 +23,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
 {
     [ScriptAlias("ServersInRole")]
     [Description("Returns a list of servers in the specified role.")]
+    [Tag("servers")]
 #if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
 #endif
