@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Web;
 #if BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.VariableFunctions;
@@ -21,6 +22,6 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [VariableFunctionParameter(0)]
         public string Text { get; set; }
 
-        protected override object EvaluateScalar(object context) => InedoLib.Util.JavaScript.JsonEncode(this.Text);
+        protected override object EvaluateScalar(object context) => HttpUtility.JavaScriptStringEncode(this.Text ?? string.Empty);
     }
 }

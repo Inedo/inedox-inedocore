@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if Otter || Hedgehog
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,8 +7,13 @@ using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Extensions.Configurations.ProGet;
 using Inedo.IO;
+#if Otter
 using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
+#else
+using Inedo.Extensibility.Configurations;
+using Inedo.Extensibility.Operations;
+#endif
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -141,3 +147,4 @@ namespace Inedo.Extensions.Operations.ProGet
         }
     }
 }
+#endif

@@ -44,7 +44,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\RemediateDriftOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\ScopedVariableJsonModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Otter\SetOtterVariablesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\CollectPackagesOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\EnsurePackageOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\EnsurePackageOperation.Otter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\GetPackageOperation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\ProGet\ProGetClient.cs" />

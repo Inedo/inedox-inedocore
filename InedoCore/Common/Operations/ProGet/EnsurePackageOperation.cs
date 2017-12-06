@@ -10,10 +10,7 @@ using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Operations;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -26,7 +23,8 @@ namespace Inedo.Extensions.Operations.ProGet
     public sealed partial class EnsurePackageOperation : EnsureOperation<ProGetPackageConfiguration>
     {
         private volatile OperationProgress progress = null;
-        public override OperationProgress GetProgress() => progress;
+
+        public override OperationProgress GetProgress() => this.progress;
 
         public override Task ConfigureAsync(IOperationExecutionContext context) => PackageDeployer.DeployAsync(context, this.Template, this, "Ensure-Package", true, p => this.progress = p);
 

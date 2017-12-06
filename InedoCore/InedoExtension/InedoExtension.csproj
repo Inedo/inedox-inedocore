@@ -30,23 +30,23 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Inedo.Agents.Client, Version=511.10.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0008\lib\net45\Inedo.Agents.Client.dll</HintPath>
+    <Reference Include="Inedo.Agents.Client, Version=511.14.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0038\lib\net45\Inedo.Agents.Client.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Inedo.ExecutionEngine, Version=62.4.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0008\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
+    <Reference Include="Inedo.ExecutionEngine, Version=62.6.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0038\lib\net45\Inedo.ExecutionEngine.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Inedo.SDK, Version=0.1.0.8, Culture=neutral, PublicKeyToken=29fae5dec3001603, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0008\lib\net45\Inedo.SDK.dll</HintPath>
+    <Reference Include="Inedo.SDK, Version=0.1.0.0, Culture=neutral, PublicKeyToken=29fae5dec3001603, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0038\lib\net45\Inedo.SDK.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="InedoLib, Version=511.10.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0008\lib\net45\InedoLib.dll</HintPath>
+    <Reference Include="InedoLib, Version=511.14.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.SDK.0.1.0-pre0038\lib\net45\InedoLib.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
@@ -65,6 +65,7 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
@@ -86,6 +87,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>powershell -Command "if (Test-Path C:\Projects\Hedgehog\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Hedgehog\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\Hedgehog\Extensions\$(TargetName).zip -Destination C:\Projects\Hedgehog\Extensions\$(TargetName).inedox -Force }"
-powershell -Command "if (Test-Path C:\Projects\ProGet\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\ProGet\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\ProGet\Extensions\$(TargetName).zip -Destination C:\Projects\ProGet\Extensions\$(TargetName).inedox -Force }"</PostBuildEvent>
+powershell -Command "if (Test-Path C:\Projects\ProGet\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\ProGet\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\ProGet\Extensions\$(TargetName).zip -Destination C:\Projects\ProGet\Extensions\$(TargetName).inedox -Force }"
+powershell -Command "if (Test-Path C:\Projects\Otter\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Otter\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\Otter\Extensions\$(TargetName).zip -Destination C:\Projects\Otter\Extensions\$(TargetName).inedox -Force }"</PostBuildEvent>
   </PropertyGroup>
 </Project>
