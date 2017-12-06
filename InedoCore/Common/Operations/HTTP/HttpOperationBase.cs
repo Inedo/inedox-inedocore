@@ -96,6 +96,18 @@ namespace Inedo.Extensions.Operations.HTTP
         [MappedCredential(nameof(UsernamePasswordCredentials.Password))]
         public string Password { get; set; }
 
+        protected long TotalSize = 0;
+        protected long CurrentPosition = 0;
+
+        public override OperationProgress GetProgress()
+        {
+            if (this.TotalSize == 0)
+            {
+                return null;
+            }
+            return new OperationProgress((int)(100 * this.CurrentPosition / this.TotalSize), AH.FormatSize(this.TotalSize - this.CurrentPosition) + " remaining");
+        }
+
         protected HttpClient CreateClient()
         {
             HttpClient client;
