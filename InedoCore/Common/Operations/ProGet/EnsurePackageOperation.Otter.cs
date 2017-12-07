@@ -10,16 +10,18 @@ using Inedo.IO;
 #if Otter
 using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
+using CollectContext = Inedo.Otter.Extensibility.Operations.IOperationExecutionContext;
 #else
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Operations;
+using CollectContext = Inedo.Extensibility.Operations.IOperationCollectionContext;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet
 {
     partial class EnsurePackageOperation
     {
-        public override async Task<PersistedConfiguration> CollectAsync(IOperationExecutionContext context)
+        public override async Task<PersistedConfiguration> CollectAsync(CollectContext context)
         {
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 

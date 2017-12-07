@@ -5,16 +5,17 @@ using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Extensions.UniversalPackages;
-
 #if Otter
 using Inedo.Otter.Data;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
+using CollectContext = Inedo.Otter.Extensibility.Operations.IOperationExecutionContext;
 #else
 using Inedo.Extensibility;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Operations;
+using CollectContext = Inedo.Extensibility.Operations.IOperationCollectionContext;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -25,7 +26,7 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptNamespace(Namespaces.ProGet)]
     public sealed class CollectPackagesOperation : CollectOperation
     {
-        public override async Task<PersistedConfiguration> CollectAsync(IOperationExecutionContext context)
+        public override async Task<PersistedConfiguration> CollectAsync(CollectContext context)
         {
             IList<RegisteredPackage> packages;
             this.LogDebug("Connecting to machine package registry...");
@@ -71,7 +72,13 @@ namespace Inedo.Extensions.Operations.ProGet
                 db.CommitTransaction();
             }
 #else
-#warning FIX
+            using (var collect = context.GetServerCollectionContext())
+            {
+                await collect.ClearAllPackagesAsync("ProGet");
+
+                foreach (var p in packages)
+                    await collect.CreateOrUpdatePackageAsync("ProGet", p.Name, p.Version, p.FeedUrl);
+            }
 #endif
 
             this.LogInformation("Package collection complete.");
