@@ -189,7 +189,7 @@ Exec c:\tools\7za.exe (
                 var match = regex.Match(e.Data);
                 if (match.Success)
                 {
-                    this.LogWarning(match.Groups["m"]?.Value ?? e.Data);
+                    this.LogWarning(AH.CoalesceString(match.Groups["m"]?.Value, e.Data));
                     return;
                 }
             }
