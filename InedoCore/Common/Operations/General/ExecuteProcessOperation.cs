@@ -46,7 +46,6 @@ Exec c:\tools\7za.exe (
 
         public string Target { get; set; }
 
-        [Required]
         [ScriptAlias("FileName")]
         [DisplayName("File name")]
         public string FileName { get; set; }
