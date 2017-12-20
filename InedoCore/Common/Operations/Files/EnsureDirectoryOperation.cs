@@ -9,6 +9,7 @@ using Inedo.Extensions.Configurations.Files;
 using Inedo.Otter.Extensibility;
 using Inedo.Otter.Extensibility.Configurations;
 using Inedo.Otter.Extensibility.Operations;
+using CollectContext = Inedo.Otter.Extensibility.Operations.IOperationExecutionContext;
 #elif BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Configurations;
@@ -18,6 +19,7 @@ using Inedo.Extensibility;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using CollectContext = Inedo.Extensibility.Operations.IOperationCollectionContext;
 #endif
 
 namespace Inedo.Extensions.Operations.Files
@@ -36,8 +38,8 @@ Ensure-Directory(
 ")]
     public sealed class EnsureDirectoryOperation : EnsureOperation<DirectoryConfiguration>
     {
-#if Otter
-        public override async Task<PersistedConfiguration> CollectAsync(IOperationExecutionContext context)
+#if Otter || Hedgehog
+        public override async Task<PersistedConfiguration> CollectAsync(CollectContext context)
         {
             var path = this.Template.Name;
 
