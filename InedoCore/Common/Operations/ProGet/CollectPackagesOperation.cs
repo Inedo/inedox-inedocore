@@ -74,10 +74,26 @@ namespace Inedo.Extensions.Operations.ProGet
 #else
             using (var collect = context.GetServerCollectionContext())
             {
-                await collect.ClearAllPackagesAsync("ProGet");
+                await collect.ClearAllPackagesAsync("UPack");
 
                 foreach (var p in packages)
-                    await collect.CreateOrUpdatePackageAsync("ProGet", p.Name, p.Version, p.FeedUrl);
+                {
+                    await collect.CreateOrUpdateUniversalPackageAsync(
+                        "UPack",
+                        p.Name,
+                        p.Version,
+                        p.FeedUrl,
+                        new CollectedUniversalPackageData
+                        {
+                            Path = p.InstallPath,
+                            Cached = false,
+                            Date = p.InstallationDate,
+                            Reason = p.InstallationReason,
+                            Tool = p.InstalledUsing,
+                            User = p.InstalledBy
+                        }
+                    );
+                }
             }
 #endif
 
