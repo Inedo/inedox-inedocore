@@ -80,7 +80,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 {
                     await collect.CreateOrUpdateUniversalPackageAsync(
                         "UPack",
-                        p.Name,
+                        string.IsNullOrWhiteSpace(p.Group) ? p.Name : (p.Group + "/" + p.Name),
                         p.Version,
                         p.FeedUrl,
                         new CollectedUniversalPackageData

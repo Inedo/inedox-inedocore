@@ -66,6 +66,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 using (var content = await client.DownloadPackageContentAsync(packageId, version, deployInfo, (position, length) => setProgress?.Invoke(new OperationProgress(length == 0 ? null : (int?)(100 * position / length), "downloading package"))).ConfigureAwait(false))
                 {
                     var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
+                    // ensure directory exists on server
+                    await fileOps.CreateDirectoryAsync(tempDirectoryName);
                     var tempZipFileName = tempDirectoryName + ".zip";
 
                     try

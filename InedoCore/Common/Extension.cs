@@ -9,7 +9,7 @@
         public const string Product = "BuildMaster";
         public static string ProductVersion => typeof(BuildMaster.IBuildMasterContext).Assembly.GetName().Version.ToString();
 #elif Hedgehog
-        public const string Product = "Hedgehog";
+        public static string Product = SDK.ProductName;
         public static string ProductVersion => SDK.ProductVersion.ToString();
 #endif
 
