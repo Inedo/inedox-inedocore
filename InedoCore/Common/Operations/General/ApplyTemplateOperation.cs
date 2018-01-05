@@ -43,7 +43,7 @@ namespace Inedo.Extensions.Operations.General
     [Description("Applies full template transformation on a literal, a file, or a template asset.")]
     [DisplayName("Apply Template")]
     [ScriptAlias("Apply-Template")]
-    [Tag(Tags.Variables)]
+    [Tag("variables")]
     [Example(@"
 # applies the a literal template and stores the result in $text
 Apply-Template

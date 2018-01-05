@@ -31,7 +31,7 @@ namespace Inedo.Extensions.Operations.Files
     [Description("Copies files from a directory on a source server to a directory on a target server.")]
     [ScriptAlias("Transfer-Files")]
     [ScriptNamespace("Files", PreferUnqualified = true)]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     public sealed class TransferFilesOperation : ExecuteOperation
     {
         private long totalBytes;

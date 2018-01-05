@@ -30,7 +30,7 @@ namespace Inedo.Extensions.Operations.Files
     [Description("Concatenates files on a server.")]
     [ScriptAlias("Concatenate-Files")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [Example(@"
 # concatenates all SQL files in the working directory into a 
 # single file, each script separated by a GO statement

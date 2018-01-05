@@ -28,7 +28,7 @@ namespace Inedo.Extensions.Operations.Files
     [Description("Copies files on a server.")]
     [ScriptAlias("Copy-Files")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [Example(@"
 # copy all files and all subdirectories beneath it to the target,
 # and log each individual file that is copied, and overwrite any files

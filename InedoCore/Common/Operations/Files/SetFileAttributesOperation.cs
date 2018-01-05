@@ -27,7 +27,7 @@ namespace Inedo.Extensions.Operations.Files
     [Serializable]
     [DisplayName("Set File Attributes")]
     [Description("Sets or clears attributes on matching files.")]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [ScriptAlias("Set-FileAttributes")]
     [ScriptNamespace("Files", PreferUnqualified = true)]
     public sealed class SetFileAttributesOperation : RemoteExecuteOperation

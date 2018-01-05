@@ -26,7 +26,7 @@ namespace Inedo.Extensions.Operations.Files
     [ScriptAlias("Create-ZipFile")]
     [SeeAlso(typeof(UnzipFileOperation))]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [Example(@"
 # zip all log files and place them in the backup directory
 Create-ZipFile(

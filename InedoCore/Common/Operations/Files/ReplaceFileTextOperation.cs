@@ -28,7 +28,7 @@ namespace Inedo.Extensions.Operations.Files
 {
     [DisplayName("Search/Replace File Contents")]
     [Description("Searches a text file for a specified string and replaces it.")]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [ScriptAlias("Replace-Text")]
     [ScriptNamespace("Files", PreferUnqualified = true)]
     public sealed class ReplaceFileTextOperation : ExecuteOperation

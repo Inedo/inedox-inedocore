@@ -33,7 +33,7 @@ namespace Inedo.Extensions.Operations.Otter
     [ScriptAlias("Set-Variable")]
     [ScriptNamespace(Namespaces.Otter)]
     [Tag("otter")]
-    [Tag(Tags.Variables)]
+    [Tag("variables")]
     [Example(@"
 # sets the variable for the hdars-web-1k-tokyo server to the name of the current application
 Otter::Set-Variable

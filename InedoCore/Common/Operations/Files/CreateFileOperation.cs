@@ -26,7 +26,7 @@ namespace Inedo.Extensions.Operations.Files
     [Description("Creates a file on a server.")]
     [ScriptAlias("Create-File")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [DefaultProperty(nameof(FileName))]
     [Example(@"
 # write the name of the current working directory to my desktop

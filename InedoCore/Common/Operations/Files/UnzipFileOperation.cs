@@ -34,7 +34,7 @@ Extract-ZipFile(
     ClearTarget: true
 );
 ")]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     public sealed class UnzipFileOperation : ExecuteOperation
     {
         [Required]

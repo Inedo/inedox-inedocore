@@ -26,7 +26,7 @@ namespace Inedo.Extensions.Operations.Files
     [ScriptAlias("Rename-File")]
     [Note("To rename multiple files at once, running a PowerShell script is recommended.")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag(Tags.Files)]
+    [Tag("files")]
     [Example(@"
 # renames logs.txt to include the environment name in context
 Rename-File (
