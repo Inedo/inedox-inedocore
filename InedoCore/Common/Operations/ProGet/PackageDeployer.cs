@@ -42,7 +42,15 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 string version;
 
-                if (!string.IsNullOrEmpty(template.PackageVersion) && !string.Equals(template.PackageVersion, "latest", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(template.PackageVersion, "latest-stable", StringComparison.OrdinalIgnoreCase))
+                {
+                    version = packageInfo.versions
+                        .Select(v => UniversalPackageVersion.TryParse(v))
+                        .Where(v => string.IsNullOrEmpty(v?.Prerelease))
+                        .Max().ToString();
+                    log.LogInformation($"Latest stable version of {template.PackageName} is {version}.");
+                }
+                else if (!string.IsNullOrEmpty(template.PackageVersion) && !string.Equals(template.PackageVersion, "latest", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!packageInfo.versions.Contains(template.PackageVersion, StringComparer.OrdinalIgnoreCase))
                     {

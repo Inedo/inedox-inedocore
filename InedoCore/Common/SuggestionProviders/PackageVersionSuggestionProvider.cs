@@ -38,7 +38,7 @@ namespace Inedo.Extensions.SuggestionProviders
 
             var package = await client.GetPackageInfoAsync(PackageName.Parse(packageName));
 
-            return new[] { "latest" }.Concat(package.versions);
+            return new[] { "latest", "latest-stable" }.Concat(package.versions);
         }
     }
 }
