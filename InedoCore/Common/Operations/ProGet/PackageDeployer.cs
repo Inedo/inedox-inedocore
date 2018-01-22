@@ -8,6 +8,8 @@ using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
+using System.Threading;
+using Inedo.Serialization;
 #if Otter
 using Inedo.Otter.Extensibility.Operations;
 #elif BuildMaster
@@ -109,59 +111,80 @@ namespace Inedo.Extensions.Operations.ProGet
                             }
                         }
 
-                        setProgress?.Invoke(new OperationProgress("ensuring target directory exists"));
-                        await fileOps.CreateDirectoryAsync(targetRootPath).ConfigureAwait(false);
-
-                        int index = 0;
-                        if (template.DeleteExtra)
+                        var jobExec = await context.Agent.TryGetServiceAsync<IRemoteJobExecuter>().ConfigureAwait(false);
+                        if (jobExec != null)
                         {
-                            setProgress?.Invoke(new OperationProgress("checking existing files"));
-                            var remoteFileList = await fileOps.GetFileSystemInfosAsync(targetRootPath, MaskingContext.IncludeAll).ConfigureAwait(false);
-
-                            foreach (var file in remoteFileList)
+                            var job = new PackageDeploymentJob
                             {
-                                index++;
-                                setProgress?.Invoke(new OperationProgress(100 * index / remoteFileList.Count, "checking existing files"));
+                                DeleteExtra = template.DeleteExtra,
+                                TargetRootPath = targetRootPath,
+                                TempDirectoryName = tempDirectoryName,
+                                ExpectedDirectories = expectedDirectories.ToArray(),
+                                ExpectedFiles = expectedFiles.ToArray()
+                            };
 
-                                var relativeName = file.FullName.Substring(targetRootPath.Length).Replace('\\', '/').Trim('/');
-                                if (file is SlimDirectoryInfo)
+                            job.MessageLogged += (s, e) => log.Log(e.Level, e.Message);
+                            job.ProgressChanged += (s, e) => setProgress?.Invoke(e);
+
+                            setProgress?.Invoke(new OperationProgress("starting remote job on agent"));
+                            await jobExec.ExecuteJobAsync(job, context.CancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            setProgress?.Invoke(new OperationProgress("ensuring target directory exists"));
+                            await fileOps.CreateDirectoryAsync(targetRootPath).ConfigureAwait(false);
+
+                            int index = 0;
+                            if (template.DeleteExtra)
+                            {
+                                setProgress?.Invoke(new OperationProgress("checking existing files"));
+                                var remoteFileList = await fileOps.GetFileSystemInfosAsync(targetRootPath, MaskingContext.IncludeAll).ConfigureAwait(false);
+
+                                foreach (var file in remoteFileList)
                                 {
-                                    if (!expectedDirectories.Contains(relativeName))
+                                    index++;
+                                    setProgress?.Invoke(new OperationProgress(100 * index / remoteFileList.Count, "checking existing files"));
+
+                                    var relativeName = file.FullName.Substring(targetRootPath.Length).Replace('\\', '/').Trim('/');
+                                    if (file is SlimDirectoryInfo)
                                     {
-                                        log.LogDebug("Deleting extra directory: " + relativeName);
-                                        await fileOps.DeleteDirectoryAsync(file.FullName).ConfigureAwait(false);
+                                        if (!expectedDirectories.Contains(relativeName))
+                                        {
+                                            log.LogDebug("Deleting extra directory: " + relativeName);
+                                            await fileOps.DeleteDirectoryAsync(file.FullName).ConfigureAwait(false);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (!expectedFiles.Contains(relativeName))
+                                    else
                                     {
-                                        log.LogDebug($"Deleting extra file: " + relativeName);
-                                        await fileOps.DeleteFileAsync(file.FullName).ConfigureAwait(false);
+                                        if (!expectedFiles.Contains(relativeName))
+                                        {
+                                            log.LogDebug($"Deleting extra file: " + relativeName);
+                                            await fileOps.DeleteFileAsync(file.FullName).ConfigureAwait(false);
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        index = 0;
-                        foreach (var relativeName in expectedDirectories)
-                        {
-                            index++;
-                            setProgress?.Invoke(new OperationProgress(100 * index / expectedDirectories.Count, "ensuring target subdirectories exist"));
+                            index = 0;
+                            foreach (var relativeName in expectedDirectories)
+                            {
+                                index++;
+                                setProgress?.Invoke(new OperationProgress(100 * index / expectedDirectories.Count, "ensuring target subdirectories exist"));
 
-                            await fileOps.CreateDirectoryAsync(fileOps.CombinePath(targetRootPath, relativeName)).ConfigureAwait(false);
-                        }
+                                await fileOps.CreateDirectoryAsync(fileOps.CombinePath(targetRootPath, relativeName)).ConfigureAwait(false);
+                            }
 
-                        index = 0;
-                        foreach (var relativeName in expectedFiles)
-                        {
-                            var sourcePath = fileOps.CombinePath(tempDirectoryName, "package", relativeName);
-                            var targetPath = fileOps.CombinePath(targetRootPath, relativeName);
+                            index = 0;
+                            foreach (var relativeName in expectedFiles)
+                            {
+                                var sourcePath = fileOps.CombinePath(tempDirectoryName, "package", relativeName);
+                                var targetPath = fileOps.CombinePath(targetRootPath, relativeName);
 
-                            index++;
-                            setProgress?.Invoke(new OperationProgress(100 * index / expectedFiles.Count, "moving files to target directory"));
+                                index++;
+                                setProgress?.Invoke(new OperationProgress(100 * index / expectedFiles.Count, "moving files to target directory"));
 
-                            await fileOps.MoveFileAsync(sourcePath, targetPath, true).ConfigureAwait(false);
+                                await fileOps.MoveFileAsync(sourcePath, targetPath, true).ConfigureAwait(false);
+                            }
                         }
 
                         setProgress?.Invoke(new OperationProgress("cleaning temporary files"));
@@ -220,6 +243,117 @@ namespace Inedo.Extensions.Operations.ProGet
 
             setProgress?.Invoke(null);
             log.LogInformation("Package deployed!");
+        }
+
+        private sealed class PackageDeploymentJob : RemoteJob
+        {
+            public bool DeleteExtra { get; set; }
+            public string TempDirectoryName { get; set; }
+            public string TargetRootPath { get; set; }
+            public string[] ExpectedDirectories { get; set; }
+            public string[] ExpectedFiles { get; set; }
+
+            public override Task<object> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                this.SetProgress(cancellationToken, "ensuring target directory exists");
+                DirectoryEx.Create(this.TargetRootPath);
+
+                int index = 0;
+                if (this.DeleteExtra)
+                {
+                    this.SetProgress(cancellationToken, "checking existing files");
+                    var remoteFileList = DirectoryEx.GetFileSystemInfos(this.TargetRootPath, MaskingContext.IncludeAll);
+
+                    foreach (var file in remoteFileList)
+                    {
+                        index++;
+                        this.SetProgress(cancellationToken, "checking existing files", 100 * index / remoteFileList.Count);
+
+                        var relativeName = file.FullName.Substring(this.TargetRootPath.Length).Replace('\\', '/').Trim('/');
+                        if (file is SlimDirectoryInfo)
+                        {
+                            if (!this.ExpectedDirectories.Contains(relativeName))
+                            {
+                                this.LogDebug("Deleting extra directory: " + relativeName);
+                                DirectoryEx.Delete(file.FullName);
+                            }
+                        }
+                        else
+                        {
+                            if (!this.ExpectedFiles.Contains(relativeName))
+                            {
+                                this.LogDebug($"Deleting extra file: " + relativeName);
+                                FileEx.Delete(file.FullName);
+                            }
+                        }
+                    }
+                }
+
+                index = 0;
+                foreach (var relativeName in this.ExpectedDirectories)
+                {
+                    index++;
+                    this.SetProgress(cancellationToken, "ensuring target subdirectories exist", 100 * index / this.ExpectedDirectories.Length);
+
+                    DirectoryEx.Create(PathEx.Combine(Path.DirectorySeparatorChar, this.TargetRootPath, relativeName));
+                }
+
+                index = 0;
+                foreach (var relativeName in this.ExpectedFiles)
+                {
+                    var sourcePath = PathEx.Combine(PathEx.Combine(Path.DirectorySeparatorChar, this.TempDirectoryName, "package"), relativeName);
+                    var targetPath = PathEx.Combine(Path.DirectorySeparatorChar, this.TargetRootPath, relativeName);
+
+                    index++;
+                    this.SetProgress(cancellationToken, "moving files to target directory", 100 * index / this.ExpectedFiles.Length);
+
+                    FileEx.Move(sourcePath, targetPath, true);
+                }
+
+                return InedoLib.NullTask;
+            }
+
+            public event EventHandler<OperationProgress> ProgressChanged;
+
+            private void SetProgress(CancellationToken cancellationToken, string message, int? percent = null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                this.Post(SlimBinaryFormatter.SerializeToByteArray((message, percent)));
+            }
+
+            protected override void DataReceived(byte[] data)
+            {
+                var (message, percent) = ((string message, int? percent))SlimBinaryFormatter.DeserializeFromByteArray(data);
+                this.ProgressChanged?.Invoke(this, new OperationProgress(percent, message));
+            }
+
+            public override void Serialize(Stream stream)
+            {
+                SlimBinaryFormatter.Serialize(this.DeleteExtra, stream);
+                SlimBinaryFormatter.Serialize(this.TempDirectoryName, stream);
+                SlimBinaryFormatter.Serialize(this.TargetRootPath, stream);
+                SlimBinaryFormatter.Serialize(this.ExpectedDirectories, stream);
+                SlimBinaryFormatter.Serialize(this.ExpectedFiles, stream);
+            }
+
+            public override void Deserialize(Stream stream)
+            {
+                this.DeleteExtra = (bool)SlimBinaryFormatter.Deserialize(stream);
+                this.TempDirectoryName = (string)SlimBinaryFormatter.Deserialize(stream);
+                this.TargetRootPath = (string)SlimBinaryFormatter.Deserialize(stream);
+                this.ExpectedDirectories = (string[])SlimBinaryFormatter.Deserialize(stream);
+                this.ExpectedFiles = (string[])SlimBinaryFormatter.Deserialize(stream);
+            }
+
+            public override void SerializeResponse(Stream stream, object result)
+            {
+                // do nothing
+            }
+
+            public override object DeserializeResponse(Stream stream)
+            {
+                return null;
+            }
         }
     }
 }
