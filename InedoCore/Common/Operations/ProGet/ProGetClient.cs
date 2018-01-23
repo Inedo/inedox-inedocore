@@ -18,16 +18,9 @@ using Inedo.IO;
 using Inedo.BuildMaster;
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility.Operations;
-#elif Otter
-using Inedo.Otter;
-using Inedo.Otter.Data;
-using Inedo.Otter.Extensibility.Operations;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -478,19 +471,6 @@ namespace Inedo.Extensions.Operations.ProGet
             string relativeUrl = $"/package-sets?packageSetId=" + ((IStandardContext)context).PackageSetId;
 
             return new PackageDeploymentData("Hedgehog", baseUrl, relativeUrl, serverName, description);
-        }
-#elif Otter
-        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
-        {
-            if (string.IsNullOrEmpty(OtterConfig.OtterBaseUrl))
-            {
-                log.LogDebug("Deployment will not be recorded in ProGet because the OtterBaseUrl configuration setting is not set.");
-                return null;
-            }
-
-            string relativeUrl = $"servers/details?serverId={context.ServerId}";
-
-            return new PackageDeploymentData("Otter", OtterConfig.OtterBaseUrl, relativeUrl, context.ServerName, description);
         }
 #endif
 

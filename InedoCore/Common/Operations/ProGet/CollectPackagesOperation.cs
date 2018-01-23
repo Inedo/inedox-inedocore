@@ -1,22 +1,13 @@
-﻿#if Otter || Hedgehog
+﻿#if Hedgehog
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Extensions.UniversalPackages;
-#if Otter
-using Inedo.Otter.Data;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Configurations;
-using Inedo.Otter.Extensibility.Operations;
-using CollectContext = Inedo.Otter.Extensibility.Operations.IOperationExecutionContext;
-#else
 using Inedo.Extensibility;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Operations;
-using CollectContext = Inedo.Extensibility.Operations.IOperationCollectionContext;
-#endif
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -26,7 +17,7 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptNamespace(Namespaces.ProGet)]
     public sealed class CollectPackagesOperation : CollectOperation
     {
-        public override async Task<PersistedConfiguration> CollectAsync(CollectContext context)
+        public override async Task<PersistedConfiguration> CollectAsync(IOperationCollectionContext context)
         {
             IList<RegisteredPackage> packages;
             this.LogDebug("Connecting to machine package registry...");
@@ -46,32 +37,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.LogDebug("Recording installed packages...");
 
-#if Otter
-            using (var db = new DB.Context())
-            {
-                db.BeginTransaction();
-
-                await db.ServerPackages_DeletePackagesAsync(
-                    Server_Id: context.ServerId,
-                    PackageType_Name: "ProGet"
-                ).ConfigureAwait(false);
-
-                foreach (var p in packages)
-                {
-                    await db.ServerPackages_CreateOrUpdatePackageAsync(
-                        Server_Id: context.ServerId,
-                        PackageType_Name: "ProGet",
-                        Package_Name: p.Name,
-                        Package_Version: p.Version,
-                        CollectedOn_Execution_Id: context.ExecutionId,
-                        Url_Text: p.FeedUrl,
-                        CollectedFor_ServerRole_Id: context.ServerRoleId
-                    ).ConfigureAwait(false);
-                }
-
-                db.CommitTransaction();
-            }
-#else
             using (var collect = context.GetServerCollectionContext())
             {
                 await collect.ClearAllPackagesAsync("UPack");
@@ -95,7 +60,6 @@ namespace Inedo.Extensions.Operations.ProGet
                     );
                 }
             }
-#endif
 
             this.LogInformation("Package collection complete.");
             return null;

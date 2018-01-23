@@ -4,13 +4,7 @@ using System.Threading.Tasks;
 using Inedo.Documentation;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensions.Credentials;
-using Inedo.Otter.Web.Controls;
-#elif BuildMaster
+#if BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.Operations;
@@ -18,11 +12,8 @@ using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Plans;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
-using Inedo.Web;
 using Inedo.Web.Plans.ArgumentEditors;
 using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
@@ -35,6 +26,9 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("proget")]
     public sealed class GetPackageOperation : ExecuteOperation, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
+#if Hedgehog
+        , IHasCredentials<InedoProductCredentials>
+#endif
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
@@ -62,9 +56,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Directory")]
         [DisplayName("Target directory")]
         [Description("The directory path on disk of the package contents.")]
-#if BuildMaster || Hedgehog
         [FilePathEditor]
-#endif
         public string TargetDirectory { get; set; }
 
         [ScriptAlias("DeleteExtra")]

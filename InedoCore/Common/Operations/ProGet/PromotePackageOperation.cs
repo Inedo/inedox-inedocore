@@ -3,7 +3,6 @@ using System.Security;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.Extensions.Credentials;
 using Inedo.Extensions.SuggestionProviders;
 
 #if Otter

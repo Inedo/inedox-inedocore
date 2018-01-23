@@ -11,18 +11,10 @@ using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Extensibility.Operations;
 using Inedo.BuildMaster.Web.Controls;
-#elif Otter
-using Inedo.Otter.Documentation;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensions.Credentials;
-using Inedo.Otter.Web.Controls;
 #elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Web;
 using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 
@@ -45,13 +37,16 @@ Otter::Set-Variable
     Sensitive: false
 );")]
     [Note("If multiple entity scopes are provided, the variable will be multi-scoped. If no entity scope is provided, a global variable will be set.")]
+#pragma warning disable CS0618 // Type or member is obsolete
     public sealed class SetOtterVariablesOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
+#pragma warning restore CS0618 // Type or member is obsolete
+#if Hedgehog
+        , IHasCredentials<InedoProductCredentials>
+#endif
     {
-#if !Otter
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
         public string CredentialName { get; set; }
-#endif
 
         [ScriptAlias("Name")]
         [DisplayName("Variable name")]
@@ -82,32 +77,22 @@ Otter::Set-Variable
         [DisplayName("Sensitive")]
         public bool Sensitive { get; set; }
 
-#if Otter
-        [Category("Set on Other Instance")]
-        [ScriptAlias("Credentials")]
-        [DisplayName("Credentials")]
-        public string CredentialName { get; set; }
-#endif
 
-#if Otter
-        [Category("Set on Other Instance")]
-#else
         [Category("Connection")]
-#endif
         [ScriptAlias("Host")]
         [DisplayName("Otter server URL")]
         [PlaceholderText("Use URL from credentials")]
+#pragma warning disable CS0618 // Type or member is obsolete
         [MappedCredential(nameof(OtterCredentials.Host))]
+#pragma warning restore CS0618 // Type or member is obsolete
         public string Host { get; set; }
-#if Otter
-        [Category("Set on Other Instance")]
-#else
         [Category("Connection")]
-#endif
         [ScriptAlias("ApiKey")]
         [DisplayName("API key")]
         [PlaceholderText("Use API key from credentials")]
+#pragma warning disable CS0618 // Type or member is obsolete
         [MappedCredential(nameof(OtterCredentials.ApiKey))]
+#pragma warning restore CS0618 // Type or member is obsolete
         public SecureString ApiKey { get; set; }
 
         public async override Task ExecuteAsync(IOperationExecutionContext context)

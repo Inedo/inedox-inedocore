@@ -4,20 +4,13 @@ using Inedo.Documentation;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.Serialization;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Configurations;
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensions.Credentials;
-using Inedo.Otter.Web.Controls;
-#elif BuildMaster
+#if BuildMaster
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Configurations;
 using Inedo.BuildMaster.Extensibility.Credentials;
 using Inedo.BuildMaster.Web.Controls;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Web;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
@@ -29,6 +22,9 @@ namespace Inedo.Extensions.Configurations.ProGet
     [DisplayName("ProGet Package")]
     [PersistFrom("Inedo.Otter.Extensions.Configurations.ProGet.ProGetPackageConfiguration,OtterCoreEx")]
     public sealed class ProGetPackageConfiguration : PersistedConfiguration, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
+#if Hedgehog
+        , IHasCredentials<InedoProductCredentials>
+#endif
     {
         [Persistent]
         [ScriptAlias("Credentials")]

@@ -10,16 +10,10 @@ using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using System.Threading;
 using Inedo.Serialization;
-#if Otter
-using Inedo.Otter.Extensibility.Operations;
-#elif BuildMaster
+#if BuildMaster
 using Inedo.BuildMaster.Extensibility.Operations;
 #elif Hedgehog
-using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 #endif
 
 namespace Inedo.Extensions.Operations.ProGet

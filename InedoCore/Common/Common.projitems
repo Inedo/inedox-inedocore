@@ -13,7 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\Files\FileConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\Network\HostsEntryConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configurations\ProGet\ProGetPackageConfiguration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Credentials\ProGetApiKeyCredentials.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Namespaces.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Operations\Files\ConcatenateFilesOperation.cs" />

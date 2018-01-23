@@ -5,15 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Inedo.Agents;
-#if Otter
-using Inedo.Otter.Data;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensions;
-using Inedo.Otter.Extensions.Credentials;
-using Inedo.Otter.Web.Controls;
-#elif BuildMaster
+#if BuildMaster
 using Inedo.BuildMaster.Data;
 using Inedo.BuildMaster.Extensibility;
 using Inedo.BuildMaster.Extensibility.Credentials;
@@ -23,16 +15,13 @@ using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Plans;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 using Inedo.Web;
 using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
 #endif
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.Extensions;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 
@@ -45,6 +34,9 @@ namespace Inedo.Extensions.Operations.ProGet
     [Tag("ProGet")]
     [Serializable]
     public sealed class PushPackageOperation : RemoteExecuteOperation, IHasCredentials<ProGetCredentials>
+#if Hedgehog
+        , IHasCredentials<InedoProductCredentials>
+#endif
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
