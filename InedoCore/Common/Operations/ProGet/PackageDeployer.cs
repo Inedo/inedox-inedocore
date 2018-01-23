@@ -312,13 +312,28 @@ namespace Inedo.Extensions.Operations.ProGet
             private void SetProgress(CancellationToken cancellationToken, string message, int? percent = null)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                this.Post(SlimBinaryFormatter.SerializeToByteArray((message, percent)));
+
+                using (var stream = new MemoryStream())
+                {
+                    using (var writer = new BinaryWriter(stream, InedoLib.UTF8Encoding, true))
+                    {
+                        writer.Write(percent ?? -1);
+                        writer.Write(message ?? string.Empty);
+                    }
+
+                    this.Post(stream.ToArray());
+                }
             }
 
             protected override void DataReceived(byte[] data)
             {
-                var (message, percent) = ((string message, int? percent))SlimBinaryFormatter.DeserializeFromByteArray(data);
-                this.ProgressChanged?.Invoke(this, new OperationProgress(percent, message));
+                using (var stream = new MemoryStream(data, false))
+                using (var reader = new BinaryReader(stream, InedoLib.UTF8Encoding))
+                {
+                    int percent = reader.ReadInt32();
+                    var message = reader.ReadString();
+                    this.ProgressChanged?.Invoke(this, new OperationProgress(AH.NullIf(percent, -1), message));
+                }
             }
 
             public override void Serialize(Stream stream)
