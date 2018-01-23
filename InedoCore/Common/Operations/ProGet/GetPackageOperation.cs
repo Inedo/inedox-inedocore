@@ -25,7 +25,9 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Get-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("proget")]
+#pragma warning disable CS0618 // Type or member is obsolete
     public sealed class GetPackageOperation : ExecuteOperation, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
+#pragma warning restore CS0618 // Type or member is obsolete
 #if Hedgehog
         , IHasCredentials<InedoProductCredentials>
 #endif
@@ -68,7 +70,9 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("FeedUrl")]
         [DisplayName("ProGet server URL")]
         [PlaceholderText("Use server URL from credential")]
+#pragma warning disable CS0618 // Type or member is obsolete
         [MappedCredential(nameof(ProGetCredentials.Url))]
+#pragma warning restore CS0618 // Type or member is obsolete
         public string FeedUrl { get; set; }
 
         [Category("Connection/Identity")]
@@ -76,7 +80,9 @@ namespace Inedo.Extensions.Operations.ProGet
         [DisplayName("ProGet user name")]
         [Description("The name of a user in ProGet that can access the specified feed.")]
         [PlaceholderText("Use user name from credential")]
+#pragma warning disable CS0618 // Type or member is obsolete
         [MappedCredential(nameof(ProGetCredentials.UserName))]
+#pragma warning restore CS0618 // Type or member is obsolete
         public string UserName { get; set; }
 
         [Category("Connection/Identity")]
@@ -84,7 +90,9 @@ namespace Inedo.Extensions.Operations.ProGet
         [DisplayName("ProGet password")]
         [Description("The password of a user in ProGet that can access the specified feed.")]
         [PlaceholderText("Use password from credential")]
+#pragma warning disable CS0618 // Type or member is obsolete
         [MappedCredential(nameof(ProGetCredentials.Password))]
+#pragma warning restore CS0618 // Type or member is obsolete
         public string Password { get; set; }
 
         [Category("Advanced")]

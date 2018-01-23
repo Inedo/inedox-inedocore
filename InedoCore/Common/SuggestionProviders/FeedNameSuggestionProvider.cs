@@ -15,10 +15,7 @@ using Inedo.Otter.Extensions.Credentials;
 using Inedo.Otter.Web.Controls;
 #elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 using Inedo.Web;
 #endif
 
@@ -32,7 +29,20 @@ namespace Inedo.Extensions.SuggestionProviders
             if (string.IsNullOrEmpty(credentialName))
                 return Enumerable.Empty<string>();
 
+#if Hedgehog
+            var productCredentials = ResourceCredentials.TryCreate<InedoProductCredentials>(credentialName);
+            if (productCredentials != null)
+            {
+                var url = new Uri(productCredentials.Host, UriKind.Absolute).GetLeftPart(UriPartial.Authority);
+                var c = new ProGetClient(url, null, "api", AH.Unprotect(productCredentials.ApiKey));
+
+                return await c.GetFeedNamesAsync().ConfigureAwait(false);
+            }
+#endif
+
+#pragma warning disable CS0618 // Type or member is obsolete
             var credentials = ResourceCredentials.Create<ProGetCredentials>(credentialName);
+#pragma warning restore CS0618 // Type or member is obsolete
             string baseUrl = new Uri(credentials.Url, UriKind.Absolute).GetLeftPart(UriPartial.Authority);
             var client = new ProGetClient(baseUrl, null, credentials.UserName, AH.Unprotect(credentials.Password));
 
