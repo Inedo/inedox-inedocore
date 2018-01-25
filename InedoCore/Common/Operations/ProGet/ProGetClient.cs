@@ -278,7 +278,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
             if (match.Success)
             {
-                log.LogWarning("Specific ProGet feed URLs should no longer be used in ProGet resource credentials. Instead, use the server or hostname only (i.e. 'http://proget-server:81' instead of 'http://proget-server:81/upack/feedName') and update the Get/Ensure-Package operation to include the name of the feed via the Feed property.");
                 string credentialUrl = match.Groups[1].Value;
                 string credentialFeedName = match.Groups[2].Value;
                 string resolvedFeedName = AH.CoalesceString(Uri.EscapeUriString(feedName ?? ""), credentialFeedName);
@@ -468,7 +467,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var server = SDK.GetServers(true).FirstOrDefault(s => s.Name.Equals(context.ServerName, StringComparison.OrdinalIgnoreCase));
             string serverName = server?.Name ?? Environment.MachineName;
 
-            string relativeUrl = $"/package-sets?packageSetId=" + ((IStandardContext)context).PackageSetId;
+            string relativeUrl = "/deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
 
             return new PackageDeploymentData("Hedgehog", baseUrl, relativeUrl, serverName, description);
         }
