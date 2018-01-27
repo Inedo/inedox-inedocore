@@ -44,10 +44,16 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 if (string.Equals(template.PackageVersion, "latest-stable", StringComparison.OrdinalIgnoreCase))
                 {
-                    version = packageInfo.versions
+                    var stableVersions = packageInfo.versions
                         .Select(v => UniversalPackageVersion.TryParse(v))
-                        .Where(v => string.IsNullOrEmpty(v?.Prerelease))
-                        .Max().ToString();
+                        .Where(v => string.IsNullOrEmpty(v?.Prerelease));
+                    if (!stableVersions.Any())
+                    {
+                        log.LogError($"Package {template.PackageName} does not have any stable versions.");
+                        return;
+                    }
+
+                    version = stableVersions.Max().ToString();
                     log.LogInformation($"Latest stable version of {template.PackageName} is {version}.");
                 }
                 else if (!string.IsNullOrEmpty(template.PackageVersion) && !string.Equals(template.PackageVersion, "latest", StringComparison.OrdinalIgnoreCase))
