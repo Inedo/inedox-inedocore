@@ -13,7 +13,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.ReplaceText))]
     [DisplayName("Search/Replace File Contents")]
     [Description("Searches a text file for a specified string and replaces it.")]
-    [CustomEditor(typeof(ReplaceFileActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(ReplaceFileActionEditor))]
     [Tag(Tags.Files)]
     public sealed class ReplaceFileAction : RemoteActionBase
     {

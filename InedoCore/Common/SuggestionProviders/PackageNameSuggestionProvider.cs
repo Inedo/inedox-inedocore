@@ -1,22 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Inedo.Extensions.Operations.ProGet;
-
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Web.Controls;
-#elif Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensions.Credentials;
-using Inedo.Otter.Web.Controls;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
+using Inedo.Extensions.Operations.ProGet;
 using Inedo.Web;
-#endif
 
 namespace Inedo.Extensions.SuggestionProviders
 {
@@ -31,11 +19,9 @@ namespace Inedo.Extensions.SuggestionProviders
 
             ProGetClient client = null;
 
-#if Hedgehog
             var productCredentials = ResourceCredentials.TryCreate<InedoProductCredentials>(credentialName);
             if (productCredentials != null)
                 client = new ProGetClient(productCredentials.Host, feedName, "api", AH.Unprotect(productCredentials.ApiKey));
-#endif
 
             if (client == null)
             {

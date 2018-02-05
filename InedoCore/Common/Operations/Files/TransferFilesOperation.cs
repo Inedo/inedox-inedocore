@@ -6,24 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
+using Inedo.BuildMaster.Extensibility.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.IO;
-#if BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Agents;
-using Inedo.BuildMaster.Extensibility.Operations;
-#elif Otter
-using Inedo.Otter.Documentation;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-#elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-#endif
+using Inedo.IO;
 
 namespace Inedo.Extensions.Operations.Files
 {
@@ -39,18 +27,10 @@ namespace Inedo.Extensions.Operations.Files
 
         [ScriptAlias("Include")]
         [PlaceholderText("* (top-level items)")]
-#if Hedgehog
         [MaskingDescription]
-#else
-        [Description(CommonDescriptions.MaskingHelp)]
-#endif
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
-#if Hedgehog
         [MaskingDescription]
-#else
-        [Description(CommonDescriptions.MaskingHelp)]
-#endif
         public IEnumerable<string> Excludes { get; set; }
         [ScriptAlias("FromDirectory")]
         [DisplayName("Source directory")]
@@ -141,7 +121,7 @@ namespace Inedo.Extensions.Operations.Files
             var sourceDirectory = this.SourceDirectory ?? context.WorkingDirectory;
 #if BuildMaster
             if (sourceDirectory.StartsWith("~\\") || sourceDirectory.StartsWith("~/"))
-                sourceDirectory = sourceFileOps.CombinePath(sourceFileOps.GetExecutionBaseDirectory(context), sourceDirectory.Substring(2));
+                sourceDirectory = sourceFileOps.CombinePath(sourceFileOps.GetExecutionBaseDirectory((BuildMaster.Extensibility.IGenericBuildMasterContext)context), sourceDirectory.Substring(2));
 #endif
 
             this.LogDebug("Source directory: " + sourceDirectory);
@@ -151,7 +131,7 @@ namespace Inedo.Extensions.Operations.Files
             var targetDirectory = this.TargetDirectory ?? context.WorkingDirectory;
 #if BuildMaster
             if (targetDirectory.StartsWith("~\\") || targetDirectory.StartsWith("~/"))
-                targetDirectory = targetFileOps.CombinePath(targetFileOps.GetExecutionBaseDirectory(context), targetDirectory.Substring(2));
+                targetDirectory = targetFileOps.CombinePath(targetFileOps.GetExecutionBaseDirectory((BuildMaster.Extensibility.IGenericBuildMasterContext)context), targetDirectory.Substring(2));
 #endif
 
             this.LogDebug("Target directory: " + targetDirectory);

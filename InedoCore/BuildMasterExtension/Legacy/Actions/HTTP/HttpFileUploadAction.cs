@@ -16,7 +16,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.HTTP.Upload))]
     [DisplayName("Upload File to URL")]
     [Description("Uploads a file to a specified URL using an HTTP POST.")]
-    [CustomEditor(typeof(HttpFileUploadActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(HttpFileUploadActionEditor))]
     [Tag(Tags.Http)]
     [Tag(Tags.Files)]
     public sealed class HttpFileUploadAction : HttpActionBase

@@ -1,5 +1,4 @@
-﻿#if Hedgehog
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
@@ -68,4 +67,3 @@ namespace Inedo.Extensions.Operations.ProGet
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config) => new ExtendedRichDescription(new RichDescription("Collect installed universal packages"));
     }
 }
-#endif

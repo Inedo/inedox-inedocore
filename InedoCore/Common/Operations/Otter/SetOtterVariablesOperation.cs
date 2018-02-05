@@ -3,20 +3,11 @@ using System.Security;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.Extensions.SuggestionProviders;
-
-#if BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Web.Controls;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
-#endif
+using Inedo.Extensions.SuggestionProviders;
+using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.Otter
 {
@@ -40,9 +31,7 @@ Otter::Set-Variable
 #pragma warning disable CS0618 // Type or member is obsolete
     public sealed class SetOtterVariablesOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
 #pragma warning restore CS0618 // Type or member is obsolete
-#if Hedgehog
         , IHasCredentials<InedoProductCredentials>
-#endif
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
@@ -60,17 +49,17 @@ Otter::Set-Variable
 
         [ScriptAlias("Server")]
         [DisplayName("Server name")]
-        [SuggestibleValue(typeof(OtterServerNameSuggestionProvider))]
+        [SuggestableValue(typeof(OtterServerNameSuggestionProvider))]
         public string Server { get; set; }
 
         [ScriptAlias("Role")]
         [DisplayName("Role name")]
-        [SuggestibleValue(typeof(OtterRoleNameSuggestionProvider))]
+        [SuggestableValue(typeof(OtterRoleNameSuggestionProvider))]
         public string Role { get; set; }
 
         [ScriptAlias("Environment")]
         [DisplayName("Environment name")]
-        [SuggestibleValue(typeof(OtterEnvironmentNameSuggestionProvider))]
+        [SuggestableValue(typeof(OtterEnvironmentNameSuggestionProvider))]
         public string Environment { get; set; }
 
         [ScriptAlias("Sensitive")]

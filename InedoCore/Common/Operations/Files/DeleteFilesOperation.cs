@@ -5,21 +5,9 @@ using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.IO;
-#if BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-#elif Otter
-using Inedo.Otter.Documentation;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-#elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-#endif
+using Inedo.IO;
 
 namespace Inedo.Extensions.Operations.Files
 {
@@ -41,19 +29,11 @@ Delete-Files(
     {
         [Required]
         [ScriptAlias("Include")]
-#if Hedgehog
         [MaskingDescription]
-#else
-        [Description(CommonDescriptions.MaskingHelp)]
-#endif
         [PlaceholderText("* (top-level items)")]
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
-#if Hedgehog
         [MaskingDescription]
-#else
-        [Description(CommonDescriptions.MaskingHelp)]
-#endif
         public IEnumerable<string> Excludes { get; set; }
         [ScriptAlias("Directory")]
         public string SourceDirectory { get; set; }

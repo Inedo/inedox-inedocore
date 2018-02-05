@@ -8,21 +8,9 @@ using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.IO;
-#if BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-#elif Otter
-using Inedo.Otter.Documentation;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-#elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-#endif
+using Inedo.IO;
 
 namespace Inedo.Extensions.Operations.Files
 {
@@ -54,18 +42,10 @@ GO
         public string SourceDirectory { get; set; }
         [ScriptAlias("Include")]
         [PlaceholderText("* (top-level items)")]
-#if Hedgehog
         [MaskingDescription]
-#else
-        [Description(CommonDescriptions.MaskingHelp)]
-#endif
         public IEnumerable<string> Includes { get; set; }
         [ScriptAlias("Exclude")]
-#if Hedgehog
         [MaskingDescription]
-#else
-        [Description(CommonDescriptions.MaskingHelp)]
-#endif
         public IEnumerable<string> Excludes { get; set; }
         [ScriptAlias("Encoding")]
         [DisplayName("Encoding")]

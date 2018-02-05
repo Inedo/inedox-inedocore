@@ -13,7 +13,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.CreateFile))]
     [DisplayName("Create File")]
     [Description("Creates a text file.")]
-    [CustomEditor(typeof(CreateFileActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(CreateFileActionEditor))]
     [RequiresInterface(typeof(IFileOperationsExecuter))]
     [Tag(Tags.Files)]
     public sealed class CreateFileAction : AgentBasedActionBase

@@ -9,7 +9,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.General.Sleep))]
     [DisplayName("Sleep")]
     [Description("Halts the execution for a specified number of seconds.")]
-    [CustomEditor(typeof(SleepActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(SleepActionEditor))]
     [Tag(Tags.General)]
     public sealed class SleepAction : ActionBase
     {

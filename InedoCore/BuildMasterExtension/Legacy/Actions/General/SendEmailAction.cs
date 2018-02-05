@@ -16,7 +16,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.General.SendEmail))]
     [DisplayName("Send Email")]
     [Description("Sends an email message.")]
-    [CustomEditor(typeof(SendEmailActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(SendEmailActionEditor))]
     [Tag(Tags.Email)]
     [Tag(Tags.General)]
     public sealed class SendEmailAction : ActionBase

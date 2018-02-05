@@ -10,7 +10,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.CreateZip))]
     [DisplayName("Create Zip File")]
     [Description("Creates a .zip archive of a folder.")]
-    [CustomEditor(typeof(CreateZipFileActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(CreateZipFileActionEditor))]
     [RequiresInterface(typeof(IFileOperationsExecuter))]
     [Tag(Tags.Files)]
     public sealed class CreateZipFileAction : AgentBasedActionBase

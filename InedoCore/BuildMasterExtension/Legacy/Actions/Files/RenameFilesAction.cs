@@ -12,7 +12,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.RenameFiles))]
     [DisplayName("Rename Files")]
     [Description("Renames one or more files.")]
-    [CustomEditor(typeof(RenameFilesActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(RenameFilesActionEditor))]
     [Tag(Tags.Files)]
     public sealed class RenameFilesAction : RemoteActionBase
     {

@@ -4,17 +4,10 @@ using Inedo.Documentation;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.Serialization;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Configurations;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Web.Controls;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
-using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
-#endif
+using Inedo.Web;
 
 namespace Inedo.Extensions.Configurations.ProGet
 {
@@ -24,9 +17,7 @@ namespace Inedo.Extensions.Configurations.ProGet
 #pragma warning disable CS0618 // Type or member is obsolete
     public sealed class ProGetPackageConfiguration : PersistedConfiguration, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
 #pragma warning restore CS0618 // Type or member is obsolete
-#if Hedgehog
         , IHasCredentials<InedoProductCredentials>
-#endif
     {
         [Persistent]
         [ScriptAlias("Credentials")]
@@ -37,21 +28,21 @@ namespace Inedo.Extensions.Configurations.ProGet
         [Persistent]
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
-        [SuggestibleValue(typeof(FeedNameSuggestionProvider))]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
         [Required]
         [Persistent]
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
-        [SuggestibleValue(typeof(PackageNameSuggestionProvider))]
+        [SuggestableValue(typeof(PackageNameSuggestionProvider))]
         public string PackageName { get; set; }
 
         [Persistent]
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
         [PlaceholderText("latest")]
-        [SuggestibleValue(typeof(PackageVersionSuggestionProvider))]
+        [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
         [Persistent]

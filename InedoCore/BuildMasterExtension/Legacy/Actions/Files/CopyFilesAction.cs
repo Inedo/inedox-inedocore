@@ -17,7 +17,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [DisplayName("Copy Files")]
     [Description("Copies files from one directory to another on the same server.")]
     [Tag(Tags.Files)]
-    [CustomEditor(typeof(CopyFilesActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(CopyFilesActionEditor))]
     public sealed class CopyFilesAction : RemoteActionBase
     {
         private int filesCopied;

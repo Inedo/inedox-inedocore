@@ -11,7 +11,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.HTTP.Get))]
     [DisplayName("HTTP GET/DELETE/HEAD Request")]
     [Description("Executes an HTTP GET/DELETE/HEAD request against a URL, typically used for RESTful operations.")]
-    [CustomEditor(typeof(HttpGetActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(HttpGetActionEditor))]
     [Tag(Tags.Http)]
     public sealed class HttpGetAction : HttpActionBase
     {

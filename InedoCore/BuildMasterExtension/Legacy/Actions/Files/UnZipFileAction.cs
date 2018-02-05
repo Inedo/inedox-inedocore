@@ -10,7 +10,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.ExtractZip))]
     [DisplayName("Unzip File")]
     [Description("Extracts a .zip archive to a directory.")]
-    [CustomEditor(typeof(UnZipFileActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(UnZipFileActionEditor))]
     [RequiresInterface(typeof(IFileOperationsExecuter))]
     [Tag(Tags.Files)]
     public sealed class UnZipFileAction : AgentBasedActionBase

@@ -17,7 +17,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.TransferFiles))]
     [DisplayName("Transfer/Synchronize Files")]
     [Description("Synchronizes the contents of a source directory with a target directory on the same or different server, similar to rsync or robocopy.")]
-    [CustomEditor(typeof(TransferFilesActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(TransferFilesActionEditor))]
     [Tag(Tags.Files)]
     public sealed class TransferFilesAction : DualAgentBasedActionBase
     {

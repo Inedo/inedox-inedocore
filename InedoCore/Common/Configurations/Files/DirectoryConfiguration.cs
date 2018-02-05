@@ -1,15 +1,7 @@
 ﻿using System.ComponentModel;
 using Inedo.Documentation;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Configurations;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Configurations;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Configurations;
-#endif
 using Inedo.Serialization;
 
 namespace Inedo.Extensions.Configurations.Files

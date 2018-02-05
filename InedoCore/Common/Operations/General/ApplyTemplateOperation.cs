@@ -8,34 +8,13 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using Inedo.ExecutionEngine.Executer;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.RaftRepositories;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 using Inedo.Web;
-#if Otter
-using Inedo.Otter.Documentation;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.RaftRepositories;
-using Inedo.Otter.Extensions;
-using Inedo.Otter.Web.Controls;
-using Inedo.Otter.Web.Controls.Plans;
-#elif BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.RaftRepositories;
-using Inedo.BuildMaster.Web;
-using Inedo.BuildMaster.Web.Controls;
-using Inedo.BuildMaster.Web.Controls.Plans;
-#elif Hedgehog
-using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
 using Inedo.Web.Plans.ArgumentEditors;
-using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
-#endif
 
 namespace Inedo.Extensions.Operations.General
 {
@@ -68,7 +47,7 @@ Apply-Template hdars
     public sealed partial class ApplyTemplateOperation : ExecuteOperation
     {
         [ScriptAlias("Asset")]
-        [SuggestibleValue(typeof(TextTemplateRaftSuggestionProvider))]
+        [SuggestableValue(typeof(TextTemplateRaftSuggestionProvider))]
         [PlaceholderText("not using an asset")]
         public string Asset { get; set; }
 
@@ -169,24 +148,16 @@ Apply-Template hdars
                     }
                     else
                     {
-#if BuildMaster
-                        raftName = (await context.TryEvaluateFunctionAsync(RuntimeVariableName.Parse("$ApplicationName"), new List<RuntimeValue>()).ConfigureAwait(false))?.AsString()
-                            ?? RaftRepository.DefaultName;
-#elif Otter
                         raftName = RaftRepository.DefaultName;
-#endif
                         templateName = templateNameParts[0];
                     }
-#if Hedgehog
-#warning FIX
-                    throw new NotImplementedException("Hedgehog needs basic raft support");
-#else
+
                     using (var raft = RaftRepository.OpenRaft(raftName))
                     {
                         if (raft == null)
                             throw new ExecutionFailureException("Raft not found.");
 
-                        using (var stream = raft.OpenRaftItem(RaftItemType.TextTemplate, templateName, FileMode.Open, FileAccess.Read))
+                        using (var stream = await raft.OpenRaftItemAsync(RaftItemType.TextTemplate, templateName, FileMode.Open, FileAccess.Read))
                         {
                             if (stream == null)
                                 throw new ExecutionFailureException($"Template \"{templateName}\" not found in raft.");
@@ -198,7 +169,6 @@ Apply-Template hdars
                             }
                         }
                     }
-#endif
                 }
 
                 this.LogWarning("No template specified. Setting output to empty string.");

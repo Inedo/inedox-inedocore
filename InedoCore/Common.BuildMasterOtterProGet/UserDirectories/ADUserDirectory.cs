@@ -5,10 +5,7 @@ using System.DirectoryServices;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Extensibility.UserDirectories;
-#elif Hedgehog
+#if BuildMaster || Hedgehog
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.UserDirectories;
 #elif Otter

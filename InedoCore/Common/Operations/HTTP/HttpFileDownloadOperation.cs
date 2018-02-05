@@ -2,23 +2,14 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.IO;
-using System.Threading;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
-#endif
+using Inedo.IO;
 
 namespace Inedo.Extensions.Operations.HTTP
 {

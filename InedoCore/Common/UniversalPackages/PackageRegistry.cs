@@ -6,15 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
+using Inedo.Extensibility.Agents;
 using Inedo.IO;
 using Newtonsoft.Json;
-#if Otter
-using Agent = Inedo.Otter.Extensibility.Agents.OtterAgent;
-#elif BuildMaster
-using Agent = Inedo.BuildMaster.Extensibility.Agents.BuildMasterAgent;
-#elif Hedgehog
-using Agent = Inedo.Extensibility.Agents.Agent;
-#endif
 
 namespace Inedo.Extensions.UniversalPackages
 {

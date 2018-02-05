@@ -1,22 +1,13 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Threading.Tasks;
 using Inedo.Documentation;
-using Inedo.Extensions.SuggestionProviders;
-using Inedo.Extensions.UniversalPackages;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Web.Controls;
-using Inedo.BuildMaster.Web.Controls.Plans;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
+using Inedo.Web;
 using Inedo.Web.Plans.ArgumentEditors;
-using SuggestibleValueAttribute = Inedo.Web.SuggestableValueAttribute;
-#endif
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -28,9 +19,7 @@ namespace Inedo.Extensions.Operations.ProGet
 #pragma warning disable CS0618 // Type or member is obsolete
     public sealed class GetPackageOperation : ExecuteOperation, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
 #pragma warning restore CS0618 // Type or member is obsolete
-#if Hedgehog
         , IHasCredentials<InedoProductCredentials>
-#endif
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
@@ -39,19 +28,19 @@ namespace Inedo.Extensions.Operations.ProGet
         [Required]
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
-        [SuggestibleValue(typeof(FeedNameSuggestionProvider))]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
-        [SuggestibleValue(typeof(PackageNameSuggestionProvider))]
+        [SuggestableValue(typeof(PackageNameSuggestionProvider))]
         public string PackageName { get; set; }
         
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
         [PlaceholderText("latest")]
-        [SuggestibleValue(typeof(PackageVersionSuggestionProvider))]
+        [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
         [Required]

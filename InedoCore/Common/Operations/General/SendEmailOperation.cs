@@ -8,26 +8,10 @@ using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.IO;
-#if BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Web;
-#elif Otter
-using Inedo.Otter;
-using Inedo.Otter.Documentation;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensions;
-#elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.RaftRepositories;
+using Inedo.IO;
 using Inedo.Web;
-#endif
 
 namespace Inedo.Extensions.Operations.General
 {
@@ -131,16 +115,14 @@ This email was sent from BuildMaster on $Date.>>
                 this.LogInformation($"Preparing to send email to {string.Join("; ", addresses)}...");
 
 #if BuildMaster
-                using (var smtp = new BuildMasterSmtpClient())
-                using (var message = BuildMasterSmtpClient.CreateMailMessage(addresses))
+                using (var smtp = new BuildMaster.Web.BuildMasterSmtpClient())
+                using (var message = BuildMaster.Web.BuildMasterSmtpClient.CreateMailMessage(addresses))
+                {
 #elif Otter
                 using (var smtp = OtterConfig.Smtp.CreateClient())
                 using (var message = OtterConfig.Smtp.CreateMessage())
-#elif Hedgehog
-                using (var smtp = new HedgehogSmtpClient())
-                using (var message = HedgehogSmtpClient.CreateMailMessage(addresses))
-#endif
                 {
+#endif
 #if Otter
                     foreach (var address in addresses)
                         message.To.Add(address);
@@ -190,7 +172,7 @@ This email was sent from BuildMaster on $Date.>>
                 }
             }
 #endif
-        }
+                }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {

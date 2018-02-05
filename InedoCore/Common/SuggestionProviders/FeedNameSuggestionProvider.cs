@@ -3,21 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Inedo.Extensions.Operations.ProGet;
-
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Web.Controls;
-#elif Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensions.Credentials;
-using Inedo.Otter.Web.Controls;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Web;
-#endif
 
 namespace Inedo.Extensions.SuggestionProviders
 {
@@ -29,7 +17,6 @@ namespace Inedo.Extensions.SuggestionProviders
             if (string.IsNullOrEmpty(credentialName))
                 return Enumerable.Empty<string>();
 
-#if Hedgehog
             var productCredentials = ResourceCredentials.TryCreate<InedoProductCredentials>(credentialName);
             if (productCredentials != null)
             {
@@ -38,7 +25,6 @@ namespace Inedo.Extensions.SuggestionProviders
 
                 return await c.GetFeedNamesAsync().ConfigureAwait(false);
             }
-#endif
 
 #pragma warning disable CS0618 // Type or member is obsolete
             var credentials = ResourceCredentials.Create<ProGetCredentials>(credentialName);

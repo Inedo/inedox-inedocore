@@ -10,21 +10,13 @@ using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using System.Threading;
 using Inedo.Serialization;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility.Operations;
-#elif Hedgehog
 using Inedo.Extensibility.Operations;
-#endif
 
 namespace Inedo.Extensions.Operations.ProGet
 {
     internal static partial class PackageDeployer
     {
-#if Hedgehog
-        public static Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
-            => DeployAsync(context, template, new ShimLogger(log), installationReason, recordDeployment, setProgress);
-#endif
-        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogger log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
+        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
         {
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
             var client = new ProGetClient(template.FeedUrl, template.FeedName, template.UserName, template.Password, log, context.CancellationToken);

@@ -16,7 +16,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.ConcatenateFiles))]
     [DisplayName("Concatenate Files")]
     [Description("Concatenates a collection of text files on disk using an optional separator.")]
-    [CustomEditor(typeof(ConcatenateFilesActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(ConcatenateFilesActionEditor))]
     [Tag(Tags.Files)]
     public sealed class ConcatenateFilesAction : RemoteActionBase
     {

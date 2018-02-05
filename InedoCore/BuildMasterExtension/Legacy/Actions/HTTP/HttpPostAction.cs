@@ -14,7 +14,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.HTTP.Post))]
     [DisplayName("HTTP POST/PUT/PATCH to URL")]
     [Description("Executes an HTTP POST/PUT/PATCH request to a URL, typically used for RESTful operations.")]
-    [CustomEditor(typeof(HttpPostActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(HttpPostActionEditor))]
     [Tag(Tags.Http)]
     public sealed class HttpPostAction : HttpActionBase
     {

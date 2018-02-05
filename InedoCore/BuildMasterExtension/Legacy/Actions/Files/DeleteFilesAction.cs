@@ -13,7 +13,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.DeleteFiles))]
     [DisplayName("Delete Files/Folders")]
     [Description("Deletes files and folders in a directory based on one or more specified file masks.")]
-    [CustomEditor(typeof(DeleteFilesActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(DeleteFilesActionEditor))]
     [RequiresInterface(typeof(IFileOperationsExecuter))]
     [Tag(Tags.Files)]
     public sealed class DeleteFilesAction : AgentBasedActionBase

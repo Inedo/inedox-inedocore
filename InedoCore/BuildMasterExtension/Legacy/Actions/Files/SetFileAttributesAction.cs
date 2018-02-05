@@ -15,7 +15,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     [ConvertibleToOperation(typeof(Inedo.Extensions.Legacy.ActionImporters.Files.SetAttributes))]
     [DisplayName("Change File Attributes")]
     [Description("Sets or clears the read-only, system, or hidden attributes on one or more files.")]
-    [CustomEditor(typeof(SetFileAttributesActionEditor))]
+    [Inedo.Web.CustomEditor(typeof(SetFileAttributesActionEditor))]
     [Tag(Tags.Files)]
     public sealed class SetFileAttributesAction : RemoteActionBase, IMissingPersistentPropertyHandler
     {

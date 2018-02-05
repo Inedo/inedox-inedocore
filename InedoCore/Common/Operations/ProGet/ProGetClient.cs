@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -11,17 +10,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Inedo.Diagnostics;
-using Inedo.IO;
-#if BuildMaster
-using Inedo.BuildMaster;
-using Inedo.BuildMaster.Data;
-using Inedo.BuildMaster.Extensibility.Operations;
-#elif Hedgehog
-using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
-#endif
+using Inedo.IO;
+using Newtonsoft.Json;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -29,19 +21,14 @@ namespace Inedo.Extensions.Operations.ProGet
     {
         private static readonly LazyRegex FeedNameRegex = new LazyRegex(@"(?<1>(https?://)?[^/]+)/upack(/?(?<2>.+))", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
-#if Hedgehog
-        public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogSink log, CancellationToken cancellationToken = default(CancellationToken))
-            : this(serverUrl, feedName, userName, password, new ShimLogger(log), cancellationToken) { }
-#endif
-
-        public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogger log = null, CancellationToken cancellationToken = default(CancellationToken))
+        public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogSink log = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(serverUrl))
                 throw new ProGetException(400, "A ProGet server URL must be specified for this operation either in the operation itself or in the credential.");
 
             this.UserName = AH.NullIf(userName, string.Empty);
             this.Password = AH.NullIf(password, string.Empty);
-            this.Log = log ?? Logger.Null;
+            this.Log = log ?? (ILogSink)Logger.Null;
             var result = ResolveFeedNameAndUrl(serverUrl, feedName, this.Log);
             this.FeedUrl = result.feedUrl;
             this.FeedName = result.feedName;
@@ -54,7 +41,7 @@ namespace Inedo.Extensions.Operations.ProGet
         public string ServerUrl { get; }
         public string UserName { get; }
         public string Password { get; }
-        public ILogger Log { get; }
+        public ILogSink Log { get; }
         private CancellationToken CancellationToken { get; }
 
         public string GetViewPackageUrl(PackageName id, string version)
@@ -272,7 +259,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             throw new ProGetException((int)response.StatusCode, message);
         }
-        private static (string feedUrl, string feedName) ResolveFeedNameAndUrl(string baseUrl, string feedName, ILogger log)
+        private static (string feedUrl, string feedName) ResolveFeedNameAndUrl(string baseUrl, string feedName, ILogSink log)
         {
             var match = FeedNameRegex.Match(baseUrl);
 
@@ -437,41 +424,28 @@ namespace Inedo.Extensions.Operations.ProGet
 
     internal sealed class PackageDeploymentData
     {
+
+        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
+        {
+            string baseUrl = SDK.BaseUrl;
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
+                return null;
+            }
+
+            string serverName = AH.CoalesceString(context?.ServerName, Environment.MachineName);
+
 #if BuildMaster
-        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
-        {
-            string baseUrl = BuildMasterConfig.System.BaseUrl;
-            if (string.IsNullOrEmpty(baseUrl))
-            {
-                log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
-                return null;
-            }
-
-            var server = DB.Servers_GetServer(context.ServerId).Servers.FirstOrDefault();
-            string serverName = server?.Server_Name ?? Environment.MachineName;
-
-            string relativeUrl = $"applications/{context.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(context.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(context.BuildNumber)}";
-
-            return new PackageDeploymentData("BuildMaster", baseUrl, relativeUrl, serverName, description);
-        }
+            var bmContext = (BuildMaster.Extensibility.IGenericBuildMasterContext)context;
+            string relativeUrl = $"applications/{bmContext.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(bmContext.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(bmContext.BuildNumber)}";
 #elif Hedgehog
-        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
-        {
-            var baseUrl = SDK.BaseUrl;
-            if (string.IsNullOrEmpty(baseUrl))
-            {
-                log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
-                return null;
-            }
-
-            var server = SDK.GetServers(true).FirstOrDefault(s => s.Name.Equals(context.ServerName, StringComparison.OrdinalIgnoreCase));
-            string serverName = server?.Name ?? Environment.MachineName;
-
             string relativeUrl = "/deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
-
-            return new PackageDeploymentData("Hedgehog", baseUrl, relativeUrl, serverName, description);
-        }
 #endif
+
+            return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
+        }
+
 
         public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
         {
