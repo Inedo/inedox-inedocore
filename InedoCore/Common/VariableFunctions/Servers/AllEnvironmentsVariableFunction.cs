@@ -2,16 +2,7 @@
 using System.ComponentModel;
 using System.Linq;
 using Inedo.Documentation;
-#if Otter
-using Inedo.Otter.Data;
-using Inedo.Otter.Extensibility;
-#elif Hedgehog
 using Inedo.Extensibility;
-using Inedo.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Data;
-using Inedo.BuildMaster.Extensibility;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
@@ -25,18 +16,12 @@ foreach $Env in @AllEnvironments
     Log-Information $Env;
 }
 ")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class AllEnvironmentsVariableFunction : CommonVectorVariableFunction
     {
         protected override IEnumerable EvaluateVector(object context)
         {
-#if Hedgehog
             return SDK.GetEnvironments().Select(e => e.Name);
-#else
-            return DB.Environments_GetEnvironments().Select(e => e.Environment_Name);
-#endif
         }
     }
 }

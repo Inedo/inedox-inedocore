@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using Inedo.BuildMaster.Extensibility.Actions.General;
 using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.PromotionRequirements;
 using Inedo.Diagnostics;
 using Inedo.Extensions.Operations.General;
 

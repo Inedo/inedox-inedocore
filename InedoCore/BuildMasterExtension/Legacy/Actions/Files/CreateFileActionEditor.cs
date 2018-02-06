@@ -1,5 +1,4 @@
 ﻿using System.Web.UI.WebControls;
-using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Extensions;
 using Inedo.IO;
 using Inedo.Web.Controls;
@@ -8,14 +7,14 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     internal sealed class CreateFileActionEditor : ActionEditorBase
     {
-        private FileBrowserTextBox txtFileName;
+        private Inedo.Web.FileBrowserTextBox txtFileName;
         private TextBox txtFileContents;
 
         public override string ServerLabel => "On server:";
 
         protected override void CreateChildControls()
         {
-            this.txtFileName = new FileBrowserTextBox
+            this.txtFileName = new Inedo.Web.FileBrowserTextBox
             {
                 IncludeFiles = true,
                 Required = true

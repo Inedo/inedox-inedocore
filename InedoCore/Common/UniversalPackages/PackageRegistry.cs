@@ -99,7 +99,7 @@ namespace Inedo.Extensions.UniversalPackages
         {
             var fileName = fileOps.CombinePath(this.RegistryRoot, ".lock");
 
-            var lockDescription = "Locked by " + Extension.Product;
+            var lockDescription = "Locked by " + SDK.ProductName;
             var lockToken = Guid.NewGuid().ToString();
 
             TryAgain:

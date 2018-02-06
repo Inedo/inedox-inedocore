@@ -1,19 +1,9 @@
 ﻿using System.ComponentModel;
 using Inedo.Agents;
 using Inedo.Documentation;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
@@ -25,9 +15,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
 set $Path = $EnvironmentVariable(PATH);
 Log-Information $Path;
 ")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class EnvironmentVariableVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

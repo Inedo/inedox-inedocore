@@ -2,10 +2,9 @@
 using System.Linq;
 using System.Text;
 using System.Web.UI.WebControls;
-using Inedo.BuildMaster.Web.Controls;
 using Inedo.BuildMaster.Web.Controls.Extensions;
-using Inedo.BuildMaster.Web.WebApplication.Controls;
 using Inedo.IO;
+using Inedo.Web;
 using Inedo.Web.Controls;
 using Inedo.Web.Controls.SimpleHtml;
 
@@ -16,7 +15,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
         private ValidatingTextBox txtMasks, txtContentSeparationText;
         private CheckBox chkRecursive, chkForceLinuxNewlines;
         private EncodingPicker ddlEncoding;
-        private FileBrowserTextBox txtOutputFile;
+        private Inedo.Web.FileBrowserTextBox txtOutputFile;
 
         public override bool DisplaySourceDirectory => true;
         public override string ServerLabel => "On server:";
@@ -31,7 +30,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
                 Text = "*"
             };
 
-            this.txtOutputFile = new FileBrowserTextBox
+            this.txtOutputFile = new Inedo.Web.FileBrowserTextBox
             {
                 IncludeFiles = true,
                 Required = true

@@ -1,16 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using Inedo.Documentation;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions.Strings
 {

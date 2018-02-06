@@ -1,16 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
 using Inedo.Documentation;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions
 {
@@ -18,7 +10,7 @@ namespace Inedo.Extensions.VariableFunctions
     [Description("Returns the current date and time of the local timezone in the specified .NET datetime format string, or ISO 8601 format (yyyy-MM-ddThh:mm:ss) if no format is specified.")]
     [SeeAlso(typeof(DateUtcVariableFunction))]
 #if BuildMaster
-    [LegacyAlias("DATE")]
+    [BuildMaster.Extensibility.VariableFunctions.LegacyAlias("DATE")]
 #endif
     [Example(@"
 # format strings taken from https://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx

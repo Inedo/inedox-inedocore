@@ -6,31 +6,17 @@ using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
-using Inedo.IO;
-
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Otter
-using Inedo.Otter;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#endif
+using Inedo.IO;
 
 namespace Inedo.Extensions.VariableFunctions.Files
 {
     [ScriptAlias("FileMask")]
     [Description("Returns a list of files matching the mask on the current server.")]
     [Tag("files")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class FileMaskVariableFunction : CommonVectorVariableFunction, IAsyncVariableFunction
     {
         [VariableFunctionParameter(0)]
@@ -52,13 +38,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
             return fileInfos.Select(fi => fi.FullName);
         }
 
-#if BuildMaster
-        public async Task<RuntimeValue> EvaluateAsync(IGenericBuildMasterContext context)
-#elif Otter
-        public async Task<RuntimeValue> EvaluateAsync(IOtterContext context)
-#elif Hedgehog
         public async Task<RuntimeValue> EvaluateAsync(IVariableFunctionContext context)
-#endif
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

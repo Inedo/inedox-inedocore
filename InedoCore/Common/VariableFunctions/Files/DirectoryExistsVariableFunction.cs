@@ -1,18 +1,8 @@
 ﻿using System.ComponentModel;
 using Inedo.Agents;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#elif Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#endif
 using Inedo.Documentation;
 
 namespace Inedo.Extensions.VariableFunctions.Files
@@ -20,9 +10,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("DirectoryExists")]
     [Description("Returns \"true\" if the specified directory exists on the current server.")]
     [Tag("files")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class DirectoryExistsVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

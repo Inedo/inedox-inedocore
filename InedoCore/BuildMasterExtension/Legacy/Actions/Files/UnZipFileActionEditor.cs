@@ -7,7 +7,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     internal sealed class UnZipFileActionEditor : ActionEditorBase
     {
-        private FileBrowserTextBox txtFileName;
+        private Inedo.Web.FileBrowserTextBox txtFileName;
 
         public override bool DisplayTargetDirectory => true;
         public override string ServerLabel => "On server:";
@@ -30,7 +30,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 
         protected override void CreateChildControls()
         {
-            this.txtFileName = new FileBrowserTextBox { IncludeFiles = true, Required = true };
+            this.txtFileName = new Inedo.Web.FileBrowserTextBox { IncludeFiles = true, Required = true };
             
             this.Controls.Add(
                 new SlimFormField("Zip file path:", this.txtFileName)

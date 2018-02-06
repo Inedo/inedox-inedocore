@@ -2,20 +2,9 @@
 using System.ComponentModel;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
-#if Otter
-using Inedo.Otter;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions.Executions
 {
@@ -33,13 +22,8 @@ namespace Inedo.Extensions.VariableFunctions.Executions
         [DisplayName("type")]
         [Description("Must be one of: any, scalar, vector, or map; when none is specified, \"any\" is used.")]
         public string VariableType { get; set; }
-#if BuildMaster
-        public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
-#elif Hedgehog
+
         public override RuntimeValue Evaluate(IVariableFunctionContext context)
-#elif Otter
-        public override RuntimeValue Evaluate(IOtterContext context)
-#endif
         {
             if (string.IsNullOrEmpty(this.VariableName))
                 return false;
@@ -64,15 +48,10 @@ namespace Inedo.Extensions.VariableFunctions.Executions
                 var value = execContext.TryGetVariableValue(variableName);
                 if (value != null)
                     return value.Value;
-#if Otter
+
                 var functionValue = execContext.TryGetFunctionValue(variableName.ToString());
                 if (functionValue != null)
                     return functionValue.Value;
-#elif BuildMaster
-                var functionValue = execContext.TryEvaluateFunction(variableName, new RuntimeValue[0]);
-                if (functionValue != null)
-                    return functionValue.Value;
-#endif
             }
 
             return null;

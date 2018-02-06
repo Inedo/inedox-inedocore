@@ -1,20 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Otter
-using Inedo.Otter;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
-using Inedo.Extensibility;
-using Inedo.Extensibility.VariableFunctions;
-#endif
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
+using Newtonsoft.Json.Linq;
 
 namespace Inedo.Extensions.VariableFunctions.Json
 {
@@ -32,13 +23,7 @@ namespace Inedo.Extensions.VariableFunctions.Json
         [Description("The JSON data to parse.")]
         public string Json { get; set; }
 
-#if BuildMaster
-        public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
-#elif Hedgehog
         public override RuntimeValue Evaluate(IVariableFunctionContext context)
-#elif Otter
-        public override RuntimeValue Evaluate(IOtterContext context)
-#endif
         {
             return ToRuntimeValue(JToken.Parse(this.Json));
         }

@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Inedo.BuildMaster.Data;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Web.Controls;
+using Inedo.Extensibility;
+using Inedo.Extensibility.Credentials;
+using Inedo.Web;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
@@ -12,7 +12,7 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-            string name = typeof(OtterCredentials).GetCustomAttribute<ScriptAliasAttribute>()?.Alias;
+            string name = typeof(InedoProductCredentials).GetCustomAttribute<ScriptAliasAttribute>()?.Alias;
             var credentials = from c in (await new DB.Context(false).Credentials_GetCredentialsAsync().ConfigureAwait(false))
                               where name == null || c.CredentialType_Name == name
                               select c.Credential_Name;

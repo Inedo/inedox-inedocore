@@ -5,7 +5,6 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Inedo.Documentation;
 using Inedo.BuildMaster.Extensibility.Agents;
-using Inedo.BuildMaster.Extensibility.PromotionRequirements;
 using Inedo.BuildMaster.Web;
 using Inedo.IO;
 using Inedo.Serialization;

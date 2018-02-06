@@ -213,7 +213,7 @@ namespace Inedo.Extensions.Operations.ProGet
                         FeedUrl = template.FeedUrl,
                         InstallationDate = DateTimeOffset.Now.ToString("o"),
                         InstallationReason = installationReason,
-                        InstalledUsing = $"{Extension.Product}/{Extension.ProductVersion} (InedoCore/{Extension.Version})"
+                        InstalledUsing = $"{SDK.ProductName}/{SDK.ProductVersion} (InedoCore/{Extension.Version})"
                     };
 
                     try

@@ -10,8 +10,8 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
     {
         private ActionServerPicker ddlSourceServer;
         private ActionServerPicker ddlTargetServer;
-        private FileBrowserTextBox ctlSourcePath;
-        private FileBrowserTextBox ctlTargetPath;
+        private Inedo.Web.FileBrowserTextBox ctlSourcePath;
+        private Inedo.Web.FileBrowserTextBox ctlTargetPath;
         private CheckBox chkDelete;
         private ValidatingTextBox txtIncludeFileMasks;
 
@@ -106,14 +106,14 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
                 EnvironmentId = this.EnvironmentId
             };
 
-            this.ctlSourcePath = new FileBrowserTextBox
+            this.ctlSourcePath = new Inedo.Web.FileBrowserTextBox
             {
                 IncludeFiles = false,
                 BindToControlId = this.ddlSourceServer.ID,
                 DefaultText = "$CurrentDirectory"
             };
 
-            this.ctlTargetPath = new FileBrowserTextBox
+            this.ctlTargetPath = new Inedo.Web.FileBrowserTextBox
             {
                 IncludeFiles = false,
                 BindToControlId = this.ddlTargetServer.ID,

@@ -9,8 +9,8 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
 {
     internal sealed class CommandLineActionEditor : ActionEditorBase
     {
-        private FileBrowserTextBox txtWorkingDirectory;
-        private FileBrowserTextBox txtExePath;
+        private Inedo.Web.FileBrowserTextBox txtWorkingDirectory;
+        private Inedo.Web.FileBrowserTextBox txtExePath;
         private ValidatingTextBox txtArguments;
         private CheckBox chkFailOnStandardError;
         private CheckBox chkUseExitCode;
@@ -21,8 +21,8 @@ namespace Inedo.BuildMaster.Extensibility.Actions.General
 
         protected override void CreateChildControls()
         {
-            this.txtWorkingDirectory = new FileBrowserTextBox { IncludeFiles = false, DefaultText = "$CurrentDirectory" };
-            this.txtExePath = new FileBrowserTextBox { IncludeFiles = true, Required = true, };
+            this.txtWorkingDirectory = new Inedo.Web.FileBrowserTextBox { IncludeFiles = false, DefaultText = "$CurrentDirectory" };
+            this.txtExePath = new Inedo.Web.FileBrowserTextBox { IncludeFiles = true, Required = true, };
             this.txtArguments = new ValidatingTextBox();
             this.chkFailOnStandardError = new CheckBox { Text = "Fail if any text is written to standard error" };
             this.chkUseExitCode = new CheckBox { Text = "Succeed only when exit code is..." };

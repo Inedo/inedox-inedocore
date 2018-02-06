@@ -1,20 +1,9 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
 using Inedo.Agents;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#elif Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#endif
 using Inedo.Documentation;
 
 namespace Inedo.Extensions.VariableFunctions.Files
@@ -22,9 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("FileContents")]
     [Description("Returns the contents of a file on the current server.")]
     [Tag("files")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class FileContentsVariableFunction : CommonScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

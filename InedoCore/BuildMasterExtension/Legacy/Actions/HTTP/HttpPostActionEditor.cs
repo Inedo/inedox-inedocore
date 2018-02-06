@@ -7,6 +7,7 @@ using Inedo.BuildMaster.Web.Controls.Extensions;
 using Inedo.Web.ClientResources;
 using Inedo.Web.Controls;
 using Inedo.Web.Controls.SimpleHtml;
+using Newtonsoft.Json;
 
 namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
 {
@@ -213,7 +214,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.HTTP
                         w.Write("$('#{0}').change(function() {{ handleChange(); }});", chkRawInput.ClientID);
 
                         w.Write("FormDataInputControl.Init(");
-                        InedoLib.Util.JavaScript.WriteJson(
+                        JsonSerializer.CreateDefault().Serialize(
                             w,
                             new
                             {

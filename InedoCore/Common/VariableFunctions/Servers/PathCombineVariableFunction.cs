@@ -3,20 +3,10 @@ using System.ComponentModel;
 using System.Linq;
 using Inedo.Agents;
 using Inedo.Documentation;
-using Inedo.IO;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#endif
+using Inedo.IO;
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
@@ -24,9 +14,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [Description("Returns a string containing all of the arguments combined into a complete path.")]
     [VariadicVariableFunction(nameof(AdditionalPaths))]
     [Tag("files")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class PathCombineVariableFunction : CommonScalarVariableFunction
     {
         [DisplayName("path1")]

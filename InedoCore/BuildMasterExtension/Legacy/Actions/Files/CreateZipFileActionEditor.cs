@@ -7,7 +7,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 {
     internal sealed class CreateZipFileActionEditor : ActionEditorBase
     {
-        private FileBrowserTextBox txtFileName;
+        private Inedo.Web.FileBrowserTextBox txtFileName;
 
         public override bool DisplaySourceDirectory => true;
         public override string SourceDirectoryLabel => "From directory:";
@@ -15,7 +15,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
 
         protected override void CreateChildControls()
         {
-            this.txtFileName = new FileBrowserTextBox
+            this.txtFileName = new Inedo.Web.FileBrowserTextBox
             {
                 IncludeFiles = true,
                 DefaultText = "$CurrentDirectory\\archive.zip"

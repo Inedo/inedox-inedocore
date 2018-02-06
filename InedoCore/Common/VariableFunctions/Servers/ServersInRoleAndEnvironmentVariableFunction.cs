@@ -3,30 +3,15 @@ using System.Collections;
 using System.ComponentModel;
 using System.Linq;
 using Inedo.Documentation;
-#if Otter
-using Inedo.Otter.Data;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.VariableFunctions;
-using ContextType = Inedo.Otter.IOtterContext;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
-using ContextType = Inedo.Extensibility.VariableFunctions.IVariableFunctionContext;
-#elif BuildMaster
-using Inedo.BuildMaster.Data;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-using ContextType = Inedo.BuildMaster.Extensibility.IGenericBuildMasterContext;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
     [ScriptAlias("ServersInRoleAndEnvironment")]
     [Description("Returns a list of all the servers in the specified role and environment name.")]
     [Tag("servers")]
-#if Hedgehog
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-#endif
     public sealed class ServersInRoleAndEnvironmentVariableFunction : VectorVariableFunction
     {
         [DisplayName("roleName")]
@@ -44,7 +29,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
         [Description("If true, include servers marked as inactive.")]
         public bool IncludeInactive { get; set; }
 
-        protected override IEnumerable EvaluateVector(ContextType context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             int? roleId = FindRole(this.RoleName, context);
             if (roleId == null)
@@ -54,72 +39,27 @@ namespace Inedo.Extensions.VariableFunctions.Server
             if (environmentId == null)
                 return null;
 
-#if Hedgehog
             var serversInRole = SDK.GetServersInRole(roleId.Value).Select(s => s.Name);
             var serversInEnvironment = SDK.GetServersInEnvironment(environmentId.Value).Select(s => s.Name);
             return serversInRole.Intersect(serversInEnvironment);
-#else
-            return DB.Servers_SearchServers(Has_ServerRole_Id: roleId, In_Environment_Id: environmentId)
-#if Otter || Hedgehog
-                .Servers_Extended
-#elif BuildMaster
-                .Servers
-#endif
-                .Where(s => s.Active_Indicator || this.IncludeInactive)
-                .Select(s => s.Server_Name);
-#endif
         }
 
-        private int? FindRole(string roleName, ContextType context)
+        private int? FindRole(string roleName, IVariableFunctionContext context)
         {
-#if Hedgehog
             var allRoles = SDK.GetServerRoles();
             if (!string.IsNullOrEmpty(roleName))
                 return allRoles.FirstOrDefault(r => r.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase))?.Id;
             else
                 return (context as IStandardContext)?.ServerRoleId;
-#else
-            var allRoles = DB.ServerRoles_GetServerRoles();
-
-            if (!string.IsNullOrEmpty(roleName))
-            {
-                return allRoles
-                    .FirstOrDefault(r => r.ServerRole_Name.Equals(roleName, StringComparison.OrdinalIgnoreCase))
-                    ?.ServerRole_Id;
-            }
-            else
-            {
-                return allRoles
-                    .FirstOrDefault(r => r.ServerRole_Id == context.ServerRoleId)
-                    ?.ServerRole_Id;
-            }
-#endif
         }
 
-        private int? FindEnvironment(string environmentName, ContextType context)
+        private int? FindEnvironment(string environmentName, IVariableFunctionContext context)
         {
-#if Hedgehog
             var allEnvironments = SDK.GetServerRoles();
             if (!string.IsNullOrEmpty(environmentName))
                 return allEnvironments.FirstOrDefault(e => e.Name.Equals(environmentName, StringComparison.OrdinalIgnoreCase))?.Id;
             else
                 return context.EnvironmentId;
-#else
-            var allEnvironments = DB.Environments_GetEnvironments();
-
-            if (!string.IsNullOrEmpty(environmentName))
-            {
-                return allEnvironments
-                    .FirstOrDefault(e => e.Environment_Name.Equals(environmentName, StringComparison.OrdinalIgnoreCase))
-                    ?.Environment_Id;
-            }
-            else
-            {
-                return allEnvironments
-                    .FirstOrDefault(e => e.Environment_Id == context.EnvironmentId)
-                    ?.Environment_Id;
-            }
-#endif
         }
     }
 }

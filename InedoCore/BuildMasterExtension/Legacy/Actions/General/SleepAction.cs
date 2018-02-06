@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using Inedo.Documentation;
-using Inedo.BuildMaster.Web;
+using Inedo.Extensibility;
 using Inedo.Serialization;
 
 namespace Inedo.BuildMaster.Extensibility.Actions.General

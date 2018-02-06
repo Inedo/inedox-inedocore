@@ -20,11 +20,9 @@ namespace Inedo.Extensions.SuggestionProviders
 
             ProGetClient client = null;
 
-#if Hedgehog
             var productCredentials = ResourceCredentials.TryCreate<InedoProductCredentials>(credentialName);
             if (productCredentials != null)
                 client = new ProGetClient(productCredentials.Host, feedName, "api", AH.Unprotect(productCredentials.ApiKey));
-#endif
 
 
 #pragma warning disable CS0618 // Type or member is obsolete

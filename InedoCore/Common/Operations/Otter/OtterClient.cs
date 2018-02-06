@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -10,9 +9,9 @@ using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
+using Inedo.Extensibility.Operations;
 using Inedo.IO;
 using Newtonsoft.Json;
-using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Otter
 {
@@ -33,22 +32,22 @@ namespace Inedo.Extensions.Operations.Otter
     {
         private string baseUrl;
         private SecureString apiKey;
-        private ILogger log;
+        private ILogSink log;
         private CancellationToken cancellationToken;
 
-        public static IOtterClient Create(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
+        public static IOtterClient Create(string server, SecureString apiKey, ILogSink log = null, CancellationToken? cancellationToken = null)
         {
             return new OtterClient(server, apiKey, log, cancellationToken);
         }
 
-        private OtterClient(string server, SecureString apiKey, ILogger log = null, CancellationToken? cancellationToken = null)
+        private OtterClient(string server, SecureString apiKey, ILogSink log = null, CancellationToken? cancellationToken = null)
         {
             if (string.IsNullOrEmpty(server))
                 throw new ArgumentNullException(nameof(server));
 
             this.baseUrl = server.TrimEnd('/');
             this.apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
-            this.log = log ?? Logger.Null;
+            this.log = log ?? (ILogSink)Logger.Null;
             this.cancellationToken = cancellationToken ?? CancellationToken.None;
         }
 

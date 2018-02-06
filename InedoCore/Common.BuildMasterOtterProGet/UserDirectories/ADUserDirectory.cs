@@ -5,17 +5,13 @@ using System.DirectoryServices;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
-#if BuildMaster || Hedgehog
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.UserDirectories;
-#elif Otter
-using Inedo.Otter.Extensibility.Credentials;
-using Inedo.Otter.Extensibility.UserDirectories;
-using Inedo.Otter.Extensions.Credentials;
-#elif ProGet
+#if ProGet
 using Inedo.ProGet.Extensibility.Credentials;
 using Inedo.ProGet.Extensibility.UserDirectories;
 using UserDirectory = Inedo.ProGet.Extensibility.UserDirectories.UserDirectoryBase;
+#else
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.UserDirectories;
 #endif
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -64,7 +60,7 @@ namespace Inedo.Extensions.UserDirectories
         [Category("Advanced")]
         public string[] NetBiosNameMaps { get; set; }
 
-#if Otter || ProGet
+#if ProGet
         public override string GetDescription() => "Active Directory with the ability to query specific domains and/or trusted domains.";
 #endif
 

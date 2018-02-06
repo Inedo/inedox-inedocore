@@ -1,18 +1,11 @@
-﻿using Inedo.Documentation;
-using Inedo.ExecutionEngine;
-#if BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Hedgehog
-using Inedo.Extensibility;
-using Inedo.Extensibility.VariableFunctions;
-#elif Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#endif
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Collections;
+using Inedo.Documentation;
+using Inedo.ExecutionEngine;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
+
 
 namespace Inedo.Extensions.VariableFunctions.Maps
 {

@@ -2,20 +2,9 @@
 using System.ComponentModel;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
-#if Otter
-using Inedo.Otter;
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions
 {
@@ -44,13 +33,7 @@ Log-Information $Result;
         [Description("The text to process.")]
         public string Text { get; set; }
 
-#if Otter
-        public override RuntimeValue Evaluate(IOtterContext context)
-#elif BuildMaster
-        public override RuntimeValue Evaluate(IGenericBuildMasterContext context)
-#elif Hedgehog
         public override RuntimeValue Evaluate(IVariableFunctionContext context)
-#endif
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

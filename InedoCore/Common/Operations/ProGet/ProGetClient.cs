@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
+using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.IO;
 using Newtonsoft.Json;
@@ -425,7 +426,7 @@ namespace Inedo.Extensions.Operations.ProGet
     internal sealed class PackageDeploymentData
     {
 
-        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogger log, string description)
+        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogSink log, string description)
         {
             string baseUrl = SDK.BaseUrl;
             if (string.IsNullOrEmpty(baseUrl))

@@ -1,20 +1,10 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
-using System;
-#if Otter
-using Inedo.Otter.Extensibility;
-using Inedo.Otter.Extensibility.Operations;
-using Inedo.Otter.Extensibility.VariableFunctions;
-#elif Hedgehog
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-#elif BuildMaster
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.Operations;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
-#endif
 
 namespace Inedo.Extensions.VariableFunctions.Executions
 {
@@ -56,13 +46,8 @@ namespace Inedo.Extensions.VariableFunctions.Executions
                 if (execContext.TryGetVariableValue(variableName) != null)
                     return true;
 
-#if Otter
                 if (execContext.TryGetFunctionValue(variableName.ToString()) != null)
                     return true;
-#elif BuildMaster
-                if (execContext.TryEvaluateFunction(variableName, new RuntimeValue[0]) != null)
-                    return true;
-#endif
             }
 
             return false;

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
-using Inedo.BuildMaster.Extensibility;
-using Inedo.BuildMaster.Extensibility.VariableFunctions;
 using Inedo.Documentation;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Executions
 {
@@ -10,6 +10,6 @@ namespace Inedo.Extensions.VariableFunctions.Executions
     [Tag("executions")]
     public sealed class ExecutionIdVariableFunction : ScalarVariableFunction
     {
-        protected override object EvaluateScalar(IGenericBuildMasterContext context) => context.ExecutionId;
+        protected override object EvaluateScalar(IVariableFunctionContext context) => context.ExecutionId;
     }
 }

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Inedo.BuildMaster.Extensibility.Credentials;
-using Inedo.BuildMaster.Extensibility.PromotionRequirements;
-using Inedo.BuildMaster.Web.Controls;
 using Inedo.Documentation;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.PromotionRequirements;
 using Inedo.Extensions.Operations.Otter;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Serialization;
+using Inedo.Web;
 
 namespace Inedo.Extensions.PromotionRequirements
 {
@@ -20,15 +20,15 @@ namespace Inedo.Extensions.PromotionRequirements
         [Persistent]
         [DisplayName("Credentials:")]
         [Required]
-        [SuggestibleValue(typeof(OtterCredentialSuggestionProvider))]
+        [SuggestableValue(typeof(OtterCredentialSuggestionProvider))]
         public string CredentialName { get; set; }
         [Persistent]
         [DisplayName("Server name:")]
-        [SuggestibleValue(typeof(OtterServerNameSuggestionProvider))]
+        [SuggestableValue(typeof(OtterServerNameSuggestionProvider))]
         public string Server { get; set; }
         [Persistent]
         [DisplayName("Role name:")]
-        [SuggestibleValue(typeof(OtterRoleNameSuggestionProvider))]
+        [SuggestableValue(typeof(OtterRoleNameSuggestionProvider))]
         public string Role { get; set; }
         [Persistent]
         public DriftStatus Status { get; set; }
@@ -39,7 +39,7 @@ namespace Inedo.Extensions.PromotionRequirements
             if (entity == null)
                 return new PromotionRequirementStatus(PromotionRequirementState.NotApplicable, "A server or role must be specified to determine drift status.");
             
-            var credentials = ResourceCredentials.Create<OtterCredentials>(this.CredentialName);
+            var credentials = ResourceCredentials.Create<InedoProductCredentials>(this.CredentialName);
 
             var client = OtterClient.Create(credentials.Host, credentials.ApiKey);
             try

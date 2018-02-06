@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
-using Inedo.BuildMaster.Extensibility.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Extensibility;
@@ -121,7 +120,10 @@ namespace Inedo.Extensions.Operations.Files
             var sourceDirectory = this.SourceDirectory ?? context.WorkingDirectory;
 #if BuildMaster
             if (sourceDirectory.StartsWith("~\\") || sourceDirectory.StartsWith("~/"))
-                sourceDirectory = sourceFileOps.CombinePath(sourceFileOps.GetExecutionBaseDirectory((BuildMaster.Extensibility.IGenericBuildMasterContext)context), sourceDirectory.Substring(2));
+                sourceDirectory = sourceFileOps.CombinePath(
+                    Inedo.BuildMaster.Extensibility.Agents.AgentExtensions.GetExecutionBaseDirectory(sourceFileOps, (BuildMaster.Extensibility.IGenericBuildMasterContext)context),
+                    sourceDirectory.Substring(2)
+                );
 #endif
 
             this.LogDebug("Source directory: " + sourceDirectory);
@@ -131,7 +133,10 @@ namespace Inedo.Extensions.Operations.Files
             var targetDirectory = this.TargetDirectory ?? context.WorkingDirectory;
 #if BuildMaster
             if (targetDirectory.StartsWith("~\\") || targetDirectory.StartsWith("~/"))
-                targetDirectory = targetFileOps.CombinePath(targetFileOps.GetExecutionBaseDirectory((BuildMaster.Extensibility.IGenericBuildMasterContext)context), targetDirectory.Substring(2));
+                targetDirectory = targetFileOps.CombinePath(
+                    Inedo.BuildMaster.Extensibility.Agents.AgentExtensions.GetExecutionBaseDirectory(targetFileOps, (BuildMaster.Extensibility.IGenericBuildMasterContext)context), 
+                    targetDirectory.Substring(2)
+                );
 #endif
 
             this.LogDebug("Target directory: " + targetDirectory);
