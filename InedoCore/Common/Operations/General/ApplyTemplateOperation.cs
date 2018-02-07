@@ -148,7 +148,11 @@ Apply-Template hdars
                     }
                     else
                     {
+#if BuildMaster
+                        raftName = context.TryGetFunctionValue("$ApplicationName")?.AsString() ?? "";
+#else
                         raftName = RaftRepository.DefaultName;
+#endif
                         templateName = templateNameParts[0];
                     }
 
