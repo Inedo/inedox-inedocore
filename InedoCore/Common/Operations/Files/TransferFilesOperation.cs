@@ -9,6 +9,7 @@ using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Extensibility;
+using Inedo.Extensibility.Agents;
 using Inedo.Extensibility.Operations;
 using Inedo.IO;
 
@@ -118,26 +119,30 @@ namespace Inedo.Extensions.Operations.Files
             var targetFileOps = await targetAgent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
 
             var sourceDirectory = this.SourceDirectory ?? context.WorkingDirectory;
-#if BuildMaster
-            if (sourceDirectory.StartsWith("~\\") || sourceDirectory.StartsWith("~/"))
-                sourceDirectory = sourceFileOps.CombinePath(
-                    Inedo.BuildMaster.Extensibility.Agents.AgentExtensions.GetExecutionBaseDirectory(sourceFileOps, (BuildMaster.Extensibility.IGenericBuildMasterContext)context),
-                    sourceDirectory.Substring(2)
-                );
-#endif
+
+            if (SDK.ProductName == "BuildMaster")
+            {
+                if (sourceDirectory.StartsWith("~\\") || sourceDirectory.StartsWith("~/"))
+                    sourceDirectory = sourceFileOps.CombinePath(
+                        GetBuildMasterExecutionBaseWorkingDirectory(sourceFileOps, context),
+                        sourceDirectory.Substring(2)
+                    );
+            }
 
             this.LogDebug("Source directory: " + sourceDirectory);
             this.LogDebug("Getting source file list...");
             var sourceItems = await sourceFileOps.GetFileSystemInfosAsync(sourceDirectory, new MaskingContext(this.Includes, this.Excludes)).ConfigureAwait(false);
 
             var targetDirectory = this.TargetDirectory ?? context.WorkingDirectory;
-#if BuildMaster
-            if (targetDirectory.StartsWith("~\\") || targetDirectory.StartsWith("~/"))
-                targetDirectory = targetFileOps.CombinePath(
-                    Inedo.BuildMaster.Extensibility.Agents.AgentExtensions.GetExecutionBaseDirectory(targetFileOps, (BuildMaster.Extensibility.IGenericBuildMasterContext)context), 
-                    targetDirectory.Substring(2)
-                );
-#endif
+
+            if (SDK.ProductName == "BuildMaster")
+            {
+                if (targetDirectory.StartsWith("~\\") || targetDirectory.StartsWith("~/"))
+                    targetDirectory = targetFileOps.CombinePath(
+                        GetBuildMasterExecutionBaseWorkingDirectory(targetFileOps, context),
+                        targetDirectory.Substring(2)
+                    );
+            }
 
             this.LogDebug("Target directory: " + targetDirectory);
             if (!PathEx.IsPathRooted(targetDirectory))
@@ -282,6 +287,17 @@ namespace Inedo.Extensions.Operations.Files
                     new DirectoryHilite(config[nameof(this.TargetDirectory)])
                 )
             );
+        }
+
+        private static string GetBuildMasterExecutionBaseWorkingDirectory(IFileOperationsExecuter agent, IOperationExecutionContext context)
+        {
+            if (agent == null)
+                throw new ArgumentNullException(nameof(agent));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            var relativePath = "_E" + context.ExecutionId;
+            return agent.CombinePath(agent.GetBaseWorkingDirectory(), relativePath);
         }
 
         private static bool ParseBool(string s)

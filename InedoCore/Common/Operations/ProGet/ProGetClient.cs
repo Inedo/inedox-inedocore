@@ -436,13 +436,16 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             string serverName = AH.CoalesceString(context?.ServerName, Environment.MachineName);
-
-#if BuildMaster
-            var bmContext = (BuildMaster.Extensibility.IGenericBuildMasterContext)context;
-            string relativeUrl = $"applications/{bmContext.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(bmContext.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(bmContext.BuildNumber)}";
-#elif Hedgehog
-            string relativeUrl = "/deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
-#endif
+            string relativeUrl;
+            if (SDK.ProductName == "BuildMaster")
+            {
+                dynamic bmContext = context;
+                relativeUrl = $"applications/{bmContext.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(bmContext.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(bmContext.BuildNumber)}";
+            }
+            else
+            {
+                relativeUrl = "/deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
+            }
 
             return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using Inedo.Agents;
@@ -67,11 +68,6 @@ This email was sent from BuildMaster on $Date.>>
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
-#if Hedgehog
-#warning REIMPLEMENT or fix for hedgehog
-            await InedoLib.NullTask;
-            throw new NotImplementedException();
-#else
             var addresses = this.To?.ToList() ?? new List<string>();
             if (addresses.Count == 0)
             {
@@ -114,48 +110,54 @@ This email was sent from BuildMaster on $Date.>>
 
                 this.LogInformation($"Preparing to send email to {string.Join("; ", addresses)}...");
 
-#if BuildMaster
-                using (var smtp = new BuildMaster.Web.BuildMasterSmtpClient())
-                using (var message = BuildMaster.Web.BuildMasterSmtpClient.CreateMailMessage(addresses))
+                using (var smtp = CreateSmtpClient())
                 {
-#elif Otter
-                using (var smtp = OtterConfig.Smtp.CreateClient())
-                using (var message = OtterConfig.Smtp.CreateMessage())
-                {
-#endif
-#if Otter
-                    foreach (var address in addresses)
-                        message.To.Add(address);
-#endif
-                    foreach (var address in ccAddresses)
-                        message.CC.Add(address);
-                    foreach (var address in bccAddresses)
-                        message.Bcc.Add(address);
+                    if (smtp == null)
+                    {
+                        this.LogError("SMTP client configuration is invalid.");
+                        return;
+                    }
 
-                    message.IsBodyHtml = !string.IsNullOrWhiteSpace(this.BodyHtml);
-                    message.Body = AH.CoalesceString(this.BodyHtml, this.BodyText) ?? string.Empty;
-                    message.Subject = this.Subject ?? string.Empty;
-
-                    foreach (var attachment in attachments)
-                        message.Attachments.Add(attachment);
-
-                    context.CancellationToken.ThrowIfCancellationRequested();
-                    context.CancellationToken.Register(
-                        () =>
+                    using (var message = CreateMailMessage())
+                    {
+                        if (message == null)
                         {
-                            try
-                            {
-                                smtp.SendAsyncCancel();
-                            }
-                            catch
-                            {
-                            }
+                            this.LogError("SMTP client FromAddress configuration is invalid.");
+                            return;
                         }
-                    );
 
-                    this.LogInformation("Sending email...");
-                    await smtp.SendMailAsync(message).ConfigureAwait(false);
-                    this.LogInformation("Email sent.");
+                        foreach (var address in addresses)
+                            message.To.Add(address);
+                        foreach (var address in ccAddresses)
+                            message.CC.Add(address);
+                        foreach (var address in bccAddresses)
+                            message.Bcc.Add(address);
+
+                        message.IsBodyHtml = !string.IsNullOrWhiteSpace(this.BodyHtml);
+                        message.Body = AH.CoalesceString(this.BodyHtml, this.BodyText) ?? string.Empty;
+                        message.Subject = this.Subject ?? string.Empty;
+
+                        foreach (var attachment in attachments)
+                            message.Attachments.Add(attachment);
+
+                        context.CancellationToken.ThrowIfCancellationRequested();
+                        context.CancellationToken.Register(
+                            () =>
+                            {
+                                try
+                                {
+                                    smtp.SendAsyncCancel();
+                                }
+                                catch
+                                {
+                                }
+                            }
+                        );
+
+                        this.LogInformation("Sending email...");
+                        await smtp.SendMailAsync(message).ConfigureAwait(false);
+                        this.LogInformation("Email sent.");
+                    }
                 }
             }
             finally
@@ -171,8 +173,58 @@ This email was sent from BuildMaster on $Date.>>
                     }
                 }
             }
-#endif
-                }
+        }
+
+        private static SmtpClient CreateSmtpClient()
+        {
+            string host = SDK.GetConfigValue("Host");
+            int? port = AH.ParseInt(SDK.GetConfigValue("Port"));
+            bool? ssl = bool.TryParse(SDK.GetConfigValue("SslEnabled"), out bool s) ? s : (bool?)null;
+            string username = SDK.GetConfigValue("UserName");
+            string password = SDK.GetConfigValue("Password");
+
+            if (string.IsNullOrEmpty(host) || port == null || ssl == null)
+                return null;
+
+            SmtpClient client = null;
+            try
+            {
+                client = new SmtpClient(host, port.Value);
+                client.EnableSsl = ssl.Value;
+                client.UseDefaultCredentials = false; // login to mail server anonymously if no username/password specified
+
+                if (!string.IsNullOrEmpty(username))
+                    client.Credentials = new NetworkCredential(username, password);
+
+                return client;
+            }
+            catch
+            {
+                client?.Dispose();
+                return null;
+            }
+        }
+
+        private static MailMessage CreateMailMessage()
+        {
+            string fromAddress = SDK.GetConfigValue("FromAddress");
+            string fromName = SDK.GetConfigValue("FromName");
+
+            if (fromAddress == null)
+                return null;
+             
+            if (fromName == null)
+                return new MailMessage
+                {
+                    From = new MailAddress(fromAddress)
+                };
+            else
+                return new MailMessage
+                {
+                    From = new MailAddress(fromAddress, fromName)
+                };
+
+        }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {

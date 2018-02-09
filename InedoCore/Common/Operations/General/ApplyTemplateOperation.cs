@@ -133,8 +133,7 @@ Apply-Template hdars
 
                     return await fileOps.ReadAllTextAsync(path).ConfigureAwait(false);
                 }
-
-
+                
                 if (!string.IsNullOrEmpty(this.Asset))
                 {
                     string templateName;
@@ -148,11 +147,11 @@ Apply-Template hdars
                     }
                     else
                     {
-#if BuildMaster
-                        raftName = context.TryGetFunctionValue("$ApplicationName")?.AsString() ?? "";
-#else
-                        raftName = RaftRepository.DefaultName;
-#endif
+                        if (SDK.ProductName == "BuildMaster")
+                            raftName = context.TryGetFunctionValue("$ApplicationName")?.AsString() ?? "";
+                        else
+                            raftName = RaftRepository.DefaultName;
+
                         templateName = templateNameParts[0];
                     }
 
