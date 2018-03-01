@@ -44,9 +44,11 @@ namespace Inedo.Extensions.Operations.ProGet
                     };
                 }
 
+                var mask = new MaskingContext(this.Template.Includes, this.Template.Excludes);
+
                 this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
 
-                var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, MaskingContext.IncludeAll).ConfigureAwait(false);
+                var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, mask).ConfigureAwait(false);
 
                 var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
 
@@ -76,6 +78,11 @@ namespace Inedo.Extensions.Operations.ProGet
                 foreach (var entry in versionInfo.fileList)
                 {
                     var relativeName = entry.name;
+                    if (!mask.IsMatch(relativeName))
+                    {
+                        continue;
+                    }
+
                     var file = remoteFiles.GetValueOrDefault(relativeName);
                     if (file == null)
                     {
