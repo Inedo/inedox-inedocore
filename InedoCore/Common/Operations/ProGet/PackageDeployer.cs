@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
+using Inedo.Extensibility.Operations;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
-using System.Threading;
 using Inedo.Serialization;
-using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -80,7 +80,11 @@ namespace Inedo.Extensions.Operations.ProGet
                             await content.CopyToAsync(remote, 81920, context.CancellationToken, position => setProgress?.Invoke(new OperationProgress((int)(100 * position / content.Length), "copying package to agent"))).ConfigureAwait(false);
                         }
                         setProgress?.Invoke(new OperationProgress("extracting package to temporary directory"));
+#if BuildMaster
                         await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, true).ConfigureAwait(false);
+#else
+                        await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, IO.FileCreationOptions.Overwrite).ConfigureAwait(false);
+#endif
 
                         var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                         var expectedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
