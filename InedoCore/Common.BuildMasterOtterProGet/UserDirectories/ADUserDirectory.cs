@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.DirectoryServices;
+using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
@@ -294,44 +295,11 @@ namespace Inedo.Extensions.UserDirectories
             if (principalId is UserId)
                 return new ActiveDirectoryUser((UserId)principalId,
                     result.GetPropertyValue("displayName"),
-                    result.GetPropertyValue("mail"),
-                    this);
+                    result.GetPropertyValue("mail"));
             else
                 return new ActiveDirectoryGroup((GroupId)principalId);
         }
-        private void GetParentGroups(PrincipalId principalId, HashSet<GroupId> groupList, bool recurse)
-        {
-            var escapedUserPrincipalName = LDAP.Escape(principalId.ToString());
 
-            var filter = string.Format(
-                "(&(|(objectCategory=user)(objectCategory=group))(|(userPrincipalName={0})(sAMAccountName={1})(name={1})))",
-                LDAP.Escape(principalId.ToString()),
-                LDAP.Escape(principalId.Principal)
-            );
-
-            try
-            {
-                using (var entry = new DirectoryEntry($"LDAP://" + principalId.GetDomainSearchPath()))
-                using (var searcher = new DirectorySearcher(entry))
-                {
-                    searcher.Filter = filter;
-                    var result = searcher.FindOne();
-                    if (result == null)
-                        return;
-
-                    foreach (var group in result.ExtractGroups())
-                    {
-                        if (groupList.Add(group) && recurse)
-                            this.GetParentGroups(group, groupList, true);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                this.LogWarning("Failed to get active directory groups: " + ex.Message);
-            }
-        }
-        
         [Flags]
         private enum PrincipalSearchType
         {
@@ -342,25 +310,15 @@ namespace Inedo.Extensions.UserDirectories
         }
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
-            private HashSet<GroupId> groups = new HashSet<GroupId>();
-            private ADUserDirectory directory;
             private string principalName;
-            private Lazy<HashSet<GroupId>> groupsLazy;
 
-            public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress,  ADUserDirectory directory)
+            public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress)
             {
                 this.UserName = userId.Principal;
                 this.Domain = userId.DomainAlias;
                 this.DisplayName =  AH.CoalesceString(displayName, this.UserName);
                 this.EmailAddress = emailAddress;
                 this.principalName = $"{userId.Principal}@{userId.DomainAlias}";
-
-                this.groupsLazy = new Lazy<HashSet<GroupId>>(() => {
-                    var groups = new HashSet<GroupId>();
-                    directory.GetParentGroups(userId, groups, true);
-                    return groups;
-                });
-                this.directory = directory;
             }
 
             public string UserName { get; }
@@ -369,8 +327,14 @@ namespace Inedo.Extensions.UserDirectories
             public string EmailAddress { get; }
             public string DisplayName { get; }
 
-            public bool IsMemberOfGroup(GroupId group) => this.groupsLazy.Value.Contains(group);
-            public bool IsMemberOfGroup(string groupName) => this.IsMemberOfGroup(GroupId.Parse(groupName) ?? new GroupId(groupName, this.Domain));
+            public bool IsMemberOfGroup(string groupName)
+            {
+                var ctx = new PrincipalContext(ContextType.Domain, Domain);
+                var user = UserPrincipal.FindByIdentity(ctx, UserName);
+                var group = GroupPrincipal.FindByIdentity(ctx, groupName);
+
+                return user != null && group != null && user.IsMemberOf(group);
+            }
             
             public bool Equals(ActiveDirectoryUser other)
             {
