@@ -73,11 +73,7 @@ Extract-ZipFile(
             }
 
             this.LogDebug($"Unzipping {zipFilePath} to {targetDirectory}...");
-#if BuildMaster
-            await fileOps.ExtractZipFileAsync(zipFilePath, targetDirectory, this.Overwrite).ConfigureAwait(false);
-#else
             await fileOps.ExtractZipFileAsync(zipFilePath, targetDirectory, this.Overwrite ? IO.FileCreationOptions.Overwrite : IO.FileCreationOptions.Default).ConfigureAwait(false);
-#endif
 
             this.LogInformation(zipFilePath + " extracted.");
         }

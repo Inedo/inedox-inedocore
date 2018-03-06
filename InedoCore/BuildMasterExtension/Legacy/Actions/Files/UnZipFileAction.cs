@@ -43,7 +43,7 @@ namespace Inedo.BuildMaster.Extensibility.Actions.Files
                 return;
             }
 
-            fileOps.ExtractZipFile(filePath, this.Context.TargetDirectory, true);
+            fileOps.ExtractZipFile(filePath, this.Context.TargetDirectory, IO.FileCreationOptions.Overwrite);
             this.LogInformation("Zip file extracted.");
         }
     }

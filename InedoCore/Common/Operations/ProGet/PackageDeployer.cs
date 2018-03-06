@@ -80,11 +80,7 @@ namespace Inedo.Extensions.Operations.ProGet
                             await content.CopyToAsync(remote, 81920, context.CancellationToken, position => setProgress?.Invoke(new OperationProgress((int)(100 * position / content.Length), "copying package to agent"))).ConfigureAwait(false);
                         }
                         setProgress?.Invoke(new OperationProgress("extracting package to temporary directory"));
-#if BuildMaster
-                        await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, true).ConfigureAwait(false);
-#else
                         await fileOps.ExtractZipFileAsync(tempZipFileName, tempDirectoryName, IO.FileCreationOptions.Overwrite).ConfigureAwait(false);
-#endif
 
                         var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                         var expectedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
