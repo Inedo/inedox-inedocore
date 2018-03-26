@@ -7,6 +7,7 @@ using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.IO;
+using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.Files
 {
@@ -31,6 +32,7 @@ Create-File(
         [Description("The path of the file to create.")]
         public string FileName { get; set; }
         [ScriptAlias("Text")]
+        [FieldEditMode(FieldEditMode.Multiline)]
         public string Text { get; set; }
         [ScriptAlias("Overwrite")]
         public bool Overwrite { get; set; }
