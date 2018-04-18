@@ -177,11 +177,11 @@ This email was sent from BuildMaster on $Date.>>
 
         private static SmtpClient CreateSmtpClient()
         {
-            string host = SDK.GetConfigValue("Host");
-            int? port = AH.ParseInt(SDK.GetConfigValue("Port"));
-            bool? ssl = bool.TryParse(SDK.GetConfigValue("SslEnabled"), out bool s) ? s : (bool?)null;
-            string username = SDK.GetConfigValue("UserName");
-            string password = SDK.GetConfigValue("Password");
+            string host = SDK.GetConfigValue("Smtp.Host");
+            int? port = AH.ParseInt(SDK.GetConfigValue("Smtp.Port"));
+            bool? ssl = bool.TryParse(SDK.GetConfigValue("Smtp.SslEnabled"), out bool s) ? s : (bool?)null;
+            string username = SDK.GetConfigValue("Smtp.UserName");
+            string password = SDK.GetConfigValue("Smtp.Password");
 
             if (string.IsNullOrEmpty(host) || port == null || ssl == null)
                 return null;
@@ -207,8 +207,8 @@ This email was sent from BuildMaster on $Date.>>
 
         private static MailMessage CreateMailMessage()
         {
-            string fromAddress = SDK.GetConfigValue("FromAddress");
-            string fromName = SDK.GetConfigValue("FromName");
+            string fromAddress = SDK.GetConfigValue("Smtp.FromAddress");
+            string fromName = SDK.GetConfigValue("Smtp.FromName");
 
             if (fromAddress == null)
                 return null;
