@@ -43,7 +43,7 @@ namespace Inedo.Extensions.VariableFunctions.Json
                 case JTokenType.Array:
                     var arr = (JArray)json;
                     var list = new List<RuntimeValue>(arr.Count);
-                    foreach (var v in arr.Values())
+                    foreach (var v in arr)
                     {
                         list.Add(ToRuntimeValue(v));
                     }
