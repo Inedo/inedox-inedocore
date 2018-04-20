@@ -55,7 +55,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
 
         private int? FindEnvironment(string environmentName, IVariableFunctionContext context)
         {
-            var allEnvironments = SDK.GetServerRoles();
+            var allEnvironments = SDK.GetEnvironments();
             if (!string.IsNullOrEmpty(environmentName))
                 return allEnvironments.FirstOrDefault(e => e.Name.Equals(environmentName, StringComparison.OrdinalIgnoreCase))?.Id;
             else
