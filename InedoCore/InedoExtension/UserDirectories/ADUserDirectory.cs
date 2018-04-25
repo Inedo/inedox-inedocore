@@ -5,16 +5,10 @@ using System.DirectoryServices;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
-#if ProGet
-using Inedo.ProGet.Extensibility.Credentials;
-using Inedo.ProGet.Extensibility.UserDirectories;
-using UserDirectory = Inedo.ProGet.Extensibility.UserDirectories.UserDirectoryBase;
-#else
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.UserDirectories;
-#endif
 using Inedo.Diagnostics;
 using Inedo.Documentation;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
 
 namespace Inedo.Extensions.UserDirectories
@@ -59,10 +53,6 @@ namespace Inedo.Extensions.UserDirectories
         [Description("A list of key/value pairs that map NETBIOS names to domain names (one per line); e.g. KRAMUS=us.kramerica.local")]
         [Category("Advanced")]
         public string[] NetBiosNameMaps { get; set; }
-
-#if ProGet
-        public override string GetDescription() => "Active Directory with the ability to query specific domains and/or trusted domains.";
-#endif
 
         public ADUserDirectory()
         {
@@ -140,12 +130,10 @@ namespace Inedo.Extensions.UserDirectories
             return maps;
         }
 
-#if !ProGet
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
         {
             throw new NotImplementedException();
         }
-#endif
 
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {

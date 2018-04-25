@@ -7,9 +7,6 @@ namespace Inedo.Extensions.VariableFunctions.Server
 {
     [ScriptAlias("ServerName")]
     [Description("name of the current server in context")]
-#if BuildMaster
-    [BuildMaster.Extensibility.VariableFunctions.LegacyAlias("SVRNAME")]
-#endif 
     [Tag("servers")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
     public sealed class ServerNameVariableFunction : CommonScalarVariableFunction
