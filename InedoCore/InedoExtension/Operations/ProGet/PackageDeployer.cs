@@ -14,7 +14,7 @@ using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-    internal static partial class PackageDeployer
+    internal static class PackageDeployer
     {
         public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
         {
@@ -198,9 +198,6 @@ namespace Inedo.Extensions.Operations.ProGet
                     }
                 }
 
-                setProgress?.Invoke(new OperationProgress("recording server package information"));
-                await RecordServerPackageInfoAsync(context, packageId.ToString(), version, client.GetViewPackageUrl(packageId, version), log).ConfigureAwait(false);
-
                 setProgress?.Invoke(new OperationProgress("recording package installation in machine registry"));
                 using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
                 {
@@ -218,7 +215,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
                     try
                     {
-                        using (var cancellationTokenSource = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10)))
+                        using (var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
                         using (context.CancellationToken.Register(() => cancellationTokenSource.Cancel()))
                         {
                             await registry.LockAsync(cancellationTokenSource.Token).ConfigureAwait(false);
