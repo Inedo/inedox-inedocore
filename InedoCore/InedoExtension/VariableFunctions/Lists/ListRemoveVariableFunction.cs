@@ -12,7 +12,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
     [ScriptAlias("ListRemove")]
     [Description("Removes an item from a list.")]
     [Tag("lists")]
-    public sealed class ListRemoveVariableFunction : CommonVectorVariableFunction
+    public sealed class ListRemoveVariableFunction : VectorVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("list")]
@@ -24,6 +24,6 @@ namespace Inedo.Extensions.VariableFunctions.Lists
         [Description("The index of the item to remove.")]
         public int Index { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context) => this.List.Take(this.Index).Concat(this.List.Skip(this.Index + 1));
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context) => this.List.Take(this.Index).Concat(this.List.Skip(this.Index + 1));
     }
 }

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using Inedo.Documentation;
 using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
@@ -17,9 +18,9 @@ foreach $Role in @AllRoles
 }
 ")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class AllRolesVariableFunction : CommonVectorVariableFunction
+    public sealed class AllRolesVariableFunction : VectorVariableFunction
     {
-        protected override IEnumerable EvaluateVector(object context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             return SDK.GetServerRoles().Select(r => r.Name);
         }

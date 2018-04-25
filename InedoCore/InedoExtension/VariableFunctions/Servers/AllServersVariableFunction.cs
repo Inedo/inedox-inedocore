@@ -18,14 +18,14 @@ foreach $Server in @AllServers
 }
 ")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class AllServersVariableFunction : CommonVectorVariableFunction
+    public sealed class AllServersVariableFunction : VectorVariableFunction
     {
         [DisplayName("includeInactive")]
         [VariableFunctionParameter(0, Optional = true)]
         [Description("If true, include servers marked as inactive.")]
         public bool IncludeInactive { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             return SDK.GetServers(this.IncludeInactive).Select(s => s.Name);
         }

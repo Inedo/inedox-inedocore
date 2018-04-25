@@ -12,7 +12,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
     [ScriptAlias("ListInsert")]
     [Description("Inserts an item into a list.")]
     [Tag("lists")]
-    public sealed class ListInsertVariableFunction : CommonVectorVariableFunction
+    public sealed class ListInsertVariableFunction : VectorVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("list")]
@@ -29,7 +29,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
         [Description("The index.")]
         public int? Index { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             var list = this.List.ToList();
             if (this.Index.HasValue)

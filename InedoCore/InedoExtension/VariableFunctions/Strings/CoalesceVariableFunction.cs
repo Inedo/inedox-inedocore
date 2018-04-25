@@ -11,12 +11,12 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [VariadicVariableFunction(nameof(Arguments))]
     [Description("Returns the first argument which does not contain only whitespace.")]
     [Tag("strings")]
-    public sealed class CoalesceVariableFunction : CommonScalarVariableFunction
+    public sealed class CoalesceVariableFunction : ScalarVariableFunction
     {
         [Description("Arguments to coalesce.")]
         public IEnumerable<string> Arguments { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             foreach (var arg in this.Arguments ?? Enumerable.Empty<string>())
             {

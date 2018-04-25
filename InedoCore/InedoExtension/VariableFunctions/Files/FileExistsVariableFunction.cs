@@ -11,14 +11,14 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [Description("Returns \"true\" if the specified file exists on the current server.")]
     [Tag("files")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class FileExistsVariableFunction : CommonScalarVariableFunction
+    public sealed class FileExistsVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("name")]
         [Description("The path of the file.")]
         public string FileName { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

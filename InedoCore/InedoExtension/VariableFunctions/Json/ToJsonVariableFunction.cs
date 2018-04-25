@@ -16,14 +16,14 @@ namespace Inedo.Extensions.VariableFunctions.Json
 123>>)")]
     [Note("Maps are converted to objects, vectors are converted to arrays, and all other values are converted to strings.")]
     [Tag("json")]
-    public sealed class ToJsonVariableFunction : CommonScalarVariableFunction
+    public sealed class ToJsonVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("data")]
         [Description("The data to encode as JSON.")]
         public RuntimeValue Data { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             using (var writer = new StringWriter())
             {

@@ -10,7 +10,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [Description("Concatenates all elements of a list into a string using a specified separator.")]
     [SeeAlso(typeof(SplitVariableFunction))]
     [Tag("strings")]
-    public sealed class JoinVariableFunction : CommonScalarVariableFunction
+    public sealed class JoinVariableFunction : ScalarVariableFunction
     {
         [DisplayName("separator")]
         [VariableFunctionParameter(0)]
@@ -22,6 +22,6 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("The elements to concatenate.")]
         public IEnumerable<string> Values { get; set; }
 
-        protected override object EvaluateScalar(object context) => string.Join(this.Separator, this.Values);
+        protected override object EvaluateScalar(IVariableFunctionContext context) => string.Join(this.Separator, this.Values);
     }
 }

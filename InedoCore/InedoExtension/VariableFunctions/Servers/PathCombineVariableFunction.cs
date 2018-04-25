@@ -15,7 +15,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [VariadicVariableFunction(nameof(AdditionalPaths))]
     [Tag("files")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class PathCombineVariableFunction : CommonScalarVariableFunction
+    public sealed class PathCombineVariableFunction : ScalarVariableFunction
     {
         [DisplayName("path1")]
         [VariableFunctionParameter(0)]
@@ -30,7 +30,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
         [Description("Additional path elements.")]
         public IEnumerable<string> AdditionalPaths { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext != null)

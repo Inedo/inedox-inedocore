@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Maps
     [ScriptAlias("MapRemove")]
     [Description("Removes a key from a map.")]
     [Tag("maps")]
-    public sealed class MapRemoveVariableFunction : CommonMapVariableFunction
+    public sealed class MapRemoveVariableFunction : VariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("map")]
@@ -23,7 +23,13 @@ namespace Inedo.Extensions.VariableFunctions.Maps
         [Description("The key to remove.")]
         public string Key { get; set; }
 
-        protected override IDictionary<string, RuntimeValue> EvaluateMap(object context) => this.Map
-            .Where(kv => kv.Key != this.Key).ToDictionary(kv => kv.Key, kv => kv.Value);
+        public override RuntimeValue Evaluate(IVariableFunctionContext context)
+        {
+            var value = this.Map
+                .Where(kv => kv.Key != this.Key)
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+            return new RuntimeValue(value);
+        }
     }
 }

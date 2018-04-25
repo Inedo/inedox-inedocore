@@ -9,7 +9,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("Replace")]
     [Description("Searches for and replaces text in a string.")]
     [Tag("strings")]
-    public sealed class ReplaceVariableFunction : CommonScalarVariableFunction
+    public sealed class ReplaceVariableFunction : ScalarVariableFunction
     {
         [DisplayName("text")]
         [VariableFunctionParameter(0)]
@@ -31,7 +31,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("When \"true\", string comparison will be performed with case insensitivity; the default is \"false\".")]
         public bool IgnoreCase { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             if (this.IgnoreCase)
                 return Regex.Replace(this.Text, Regex.Escape(this.Value), this.ReplaceWith, RegexOptions.IgnoreCase);

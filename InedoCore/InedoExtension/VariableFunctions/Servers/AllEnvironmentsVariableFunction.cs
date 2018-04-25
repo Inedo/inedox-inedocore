@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using Inedo.Documentation;
 using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
@@ -17,9 +18,9 @@ foreach $Env in @AllEnvironments
 }
 ")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class AllEnvironmentsVariableFunction : CommonVectorVariableFunction
+    public sealed class AllEnvironmentsVariableFunction : VectorVariableFunction
     {
-        protected override IEnumerable EvaluateVector(object context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             return SDK.GetEnvironments().Select(e => e.Name);
         }

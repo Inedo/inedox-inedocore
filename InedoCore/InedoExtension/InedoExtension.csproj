@@ -134,9 +134,6 @@
     <Compile Include="UserDirectories\ADUserDirectory.cs" />
     <Compile Include="UserDirectories\LDAP.cs" />
     <Compile Include="UserDirectories\PrincipalId.cs" />
-    <Compile Include="VariableFunctions\CommonMapVariableFunction.cs" />
-    <Compile Include="VariableFunctions\CommonScalarVariableFunction.cs" />
-    <Compile Include="VariableFunctions\CommonVectorVariableFunction.cs" />
     <Compile Include="VariableFunctions\DateUtcVariableFunction.cs" />
     <Compile Include="VariableFunctions\DateVariableFunction.cs" />
     <Compile Include="VariableFunctions\EvalVariableFunction.cs" />

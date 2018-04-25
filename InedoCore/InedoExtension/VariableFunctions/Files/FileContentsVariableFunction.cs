@@ -12,7 +12,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [Description("Returns the contents of a file on the current server.")]
     [Tag("files")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class FileContentsVariableFunction : CommonScalarVariableFunction
+    public sealed class FileContentsVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("name")]
@@ -24,7 +24,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
         [Description("The maximum length (in characters) of the file to read.")]
         public int? MaxLength { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

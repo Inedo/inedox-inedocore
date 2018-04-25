@@ -17,7 +17,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [Description("Returns a list of files matching the mask on the current server.")]
     [Tag("files")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class FileMaskVariableFunction : CommonVectorVariableFunction, IAsyncVariableFunction
+    public sealed class FileMaskVariableFunction : VectorVariableFunction, IAsyncVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("includes")]
@@ -27,7 +27,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
         [ScriptAlias("excludes")]
         public IEnumerable<string> Excludes { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

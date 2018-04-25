@@ -10,7 +10,7 @@ namespace Inedo.Extensions.VariableFunctions.Maps
     [ScriptAlias("MapAdd")]
     [Description("Adds a key-value pair to a map.")]
     [Tag("maps")]
-    public sealed class MapAddVariableFunction : CommonMapVariableFunction
+    public sealed class MapAddVariableFunction : VariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("map")]
@@ -27,11 +27,11 @@ namespace Inedo.Extensions.VariableFunctions.Maps
         [Description("The value to add.")]
         public RuntimeValue Value { get; set; }
 
-        protected override IDictionary<string, RuntimeValue> EvaluateMap(object context)
+        public override RuntimeValue Evaluate(IVariableFunctionContext context)
         {
             var map = new Dictionary<string, RuntimeValue>(this.Map);
             map.Add(this.Key, this.Value);
-            return map;
+            return new RuntimeValue(map);
         }
     }
 }

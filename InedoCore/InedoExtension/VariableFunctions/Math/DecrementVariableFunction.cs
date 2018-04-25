@@ -9,7 +9,7 @@ namespace Inedo.Extensions.VariableFunctions
     [Description("Returns a string that contains the result of decrementing a value.")]
     [SeeAlso(typeof(IncrementVariableFunction))]
     [Tag("math")]
-    public sealed class DecrementVariableFunction : CommonScalarVariableFunction
+    public sealed class DecrementVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("value")]
@@ -20,6 +20,6 @@ namespace Inedo.Extensions.VariableFunctions
         [Description("The amount that will be subtracted from the value. If not specified, 1 is used.")]
         public decimal Amount { get; set; } = 1;
 
-        protected override object EvaluateScalar(object context) => this.Value - this.Amount;
+        protected override object EvaluateScalar(IVariableFunctionContext context) => this.Value - this.Amount;
     }
 }

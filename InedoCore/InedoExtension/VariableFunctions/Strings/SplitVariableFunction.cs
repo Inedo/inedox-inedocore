@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [Description("Splits a string into substrings based on a specified separator.")]
     [SeeAlso(typeof(JoinVariableFunction))]
     [Tag("strings")]
-    public sealed class SplitVariableFunction : CommonVectorVariableFunction
+    public sealed class SplitVariableFunction : VectorVariableFunction
     {
         [DisplayName("text")]
         [VariableFunctionParameter(0)]
@@ -28,7 +28,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("The maximum number of substrings to return. If not specified, all substrings are returned.")]
         public int? Count { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context)
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             if (this.Count < 0)
                 throw new VariableFunctionArgumentException("Count cannot be negative.");

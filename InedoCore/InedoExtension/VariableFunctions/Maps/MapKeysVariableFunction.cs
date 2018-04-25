@@ -12,13 +12,13 @@ namespace Inedo.Extensions.VariableFunctions.Maps
     [ScriptAlias("MapKeys")]
     [Description("Lists the keys of a map.")]
     [Tag("maps")]
-    public sealed class MapKeysVariableFunction : CommonVectorVariableFunction
+    public sealed class MapKeysVariableFunction : VectorVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("map")]
         [Description("The map.")]
         public IDictionary<string, RuntimeValue> Map { get; set; }
 
-        protected override IEnumerable EvaluateVector(object context) => this.Map.Keys;
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context) => this.Map.Keys;
     }
 }

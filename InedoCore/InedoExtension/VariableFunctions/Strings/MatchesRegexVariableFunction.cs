@@ -9,7 +9,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("MatchesRegex")]
     [Description("Returns true when the specified text matches the specified pattern; otherwise returns false.")]
     [Tag("strings")]
-    public sealed class MatchesRegexVariableFunction : CommonScalarVariableFunction
+    public sealed class MatchesRegexVariableFunction : ScalarVariableFunction
     {
         [DisplayName("text")]
         [Description("The text which will be evaluated by the regular expression.")]
@@ -20,6 +20,6 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [VariableFunctionParameter(1)]
         public string RegexPattern { get; set; }
 
-        protected override object EvaluateScalar(object context) => Regex.IsMatch(this.Text, this.RegexPattern);
+        protected override object EvaluateScalar(IVariableFunctionContext context) => Regex.IsMatch(this.Text, this.RegexPattern);
     }
 }

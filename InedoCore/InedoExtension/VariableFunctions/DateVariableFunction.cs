@@ -25,14 +25,14 @@ set $Result = $Eval($OtterScript);
 
 Log-Information $Result;
 ")]
-    public sealed class DateVariableFunction : CommonScalarVariableFunction
+    public sealed class DateVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0, Optional = true)]
         [DisplayName("format")]
         [Description("An optional .NET datetime format string.")]
         public string Format { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             if (string.IsNullOrEmpty(this.Format))
                 return DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss");

@@ -9,13 +9,13 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("HtmlEncode")]
     [Description("Encodes a string for use in HTML.")]
     [Tag("strings")]
-    public sealed class HtmlEncodeVariableFunction : CommonScalarVariableFunction
+    public sealed class HtmlEncodeVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("text")]
         [Description("The text to encode.")]
         public string Text { get; set; }
 
-        protected override object EvaluateScalar(object context) => WebUtility.HtmlEncode(this.Text);
+        protected override object EvaluateScalar(IVariableFunctionContext context) => WebUtility.HtmlEncode(this.Text);
     }
 }

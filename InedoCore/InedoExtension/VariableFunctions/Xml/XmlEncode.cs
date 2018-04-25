@@ -9,13 +9,13 @@ namespace Inedo.Extensions.VariableFunctions.Xml
     [ScriptAlias("XmlEncode")]
     [Description("Encodes a string for use in an XML element.")]
     [Tag("xml")]
-    public sealed class XmlEncode : CommonScalarVariableFunction
+    public sealed class XmlEncode : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("text")]
         [Description("The text to encode.")]
         public string Text { get; set; }
 
-        protected override object EvaluateScalar(object context) => new XText(this.Text ?? string.Empty).ToString(SaveOptions.DisableFormatting);
+        protected override object EvaluateScalar(IVariableFunctionContext context) => new XText(this.Text ?? string.Empty).ToString(SaveOptions.DisableFormatting);
     }
 }

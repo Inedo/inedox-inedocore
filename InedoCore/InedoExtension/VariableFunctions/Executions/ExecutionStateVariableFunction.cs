@@ -10,9 +10,9 @@ namespace Inedo.Extensions.VariableFunctions.Executions
     [ScriptAlias("ExecutionState")]
     [Description("Returns the current state of the execution (normal, warning, or error).")]
     [Tag("executions")]
-    public sealed class ExecutionStateVariableFunction : CommonScalarVariableFunction
+    public sealed class ExecutionStateVariableFunction : ScalarVariableFunction
     {
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

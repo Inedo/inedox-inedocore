@@ -11,13 +11,13 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("NewLine")]
     [Description("newline string for either the operating system of the current server in context or specifically Windows or Linux")]
     [Tag("strings")]
-    public sealed class NewLineVariableFunction : CommonScalarVariableFunction
+    public sealed class NewLineVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0, Optional = true)]
         [Description("Must be either \"windows\", \"linux\", or \"current\". The default value is \"current\" for the current server.")]
         public string WindowsOrLinux { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             if (string.Equals(this.WindowsOrLinux, "linux", StringComparison.OrdinalIgnoreCase))
                 return "\n";

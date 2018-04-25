@@ -16,13 +16,13 @@ set $Path = $EnvironmentVariable(PATH);
 Log-Information $Path;
 ")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class EnvironmentVariableVariableFunction : CommonScalarVariableFunction
+    public sealed class EnvironmentVariableVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [Description("The name of the environment variable.")]
         public string EnvironmentVariableName { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
             if (execContext == null)

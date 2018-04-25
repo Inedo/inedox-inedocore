@@ -8,7 +8,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("Substring")]
     [Description("Returns a segment of another string.")]
     [Tag("strings")]
-    public sealed class SubstringVariableFunction : CommonScalarVariableFunction
+    public sealed class SubstringVariableFunction : ScalarVariableFunction
     {
         [DisplayName("text")]
         [VariableFunctionParameter(0)]
@@ -25,7 +25,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("The number of characters in the segment. If not specified, the remainder of the string is used.")]
         public int? Length { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             if (this.Offset < 0)
                 throw new VariableFunctionArgumentException("Offset cannot be negative.");

@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
     [ScriptAlias("ListIndexOf")]
     [Description("Finds the index of an item in a list.")]
     [Tag("lists")]
-    public sealed class ListIndexOfVariableFunction : CommonScalarVariableFunction
+    public sealed class ListIndexOfVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("list")]
@@ -23,6 +23,6 @@ namespace Inedo.Extensions.VariableFunctions.Lists
         [Description("The item.")]
         public RuntimeValue Item { get; set; }
 
-        protected override object EvaluateScalar(object context) => this.List.ToList().FindIndex(value => RuntimeValue.Equals(value, this.Item));
+        protected override object EvaluateScalar(IVariableFunctionContext context) => this.List.ToList().FindIndex(value => RuntimeValue.Equals(value, this.Item));
     }
 }

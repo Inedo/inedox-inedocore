@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [Description("Returns a string with all leading whitespace characters removed, or optionally a set of specified characters.")]
     [VariadicVariableFunction(nameof(CharactersToTrim))]
     [Tag("strings")]
-    public sealed class TrimStartVariableFunction : CommonScalarVariableFunction
+    public sealed class TrimStartVariableFunction : ScalarVariableFunction
     {
         [DisplayName("text")]
         [VariableFunctionParameter(0)]
@@ -21,7 +21,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("Characters to trim.")]
         public IEnumerable<string> CharactersToTrim { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             var chars = (from s in this.CharactersToTrim ?? new string[0]
                          where s.Length == 1

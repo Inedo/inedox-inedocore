@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Executions
     [ScriptAlias("IsVariableDefined")]
     [Description("Returns true if the specified variable name is available in the current context; otherwise returns false.")]
     [Tag("executions")]
-    public sealed class IsVariableDefinedVariableFunction : CommonScalarVariableFunction
+    public sealed class IsVariableDefinedVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [DisplayName("name")]
@@ -23,7 +23,7 @@ namespace Inedo.Extensions.VariableFunctions.Executions
         [Description("Must be one of: any, scalar, vector, or map; when none is specified, \"any\" is used.")]
         public string VariableType { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             if (string.IsNullOrEmpty(this.VariableName))
                 return false;

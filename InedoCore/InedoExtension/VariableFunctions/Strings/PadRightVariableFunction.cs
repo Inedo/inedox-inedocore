@@ -8,7 +8,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("PadRight")]
     [Description("Returns a new string that left-aligns the characters in this instance by padding them on the left with a specified character, for a specified total length.")]
     [Tag("strings")]
-    public sealed class PadRightVariableFunction : CommonScalarVariableFunction
+    public sealed class PadRightVariableFunction : ScalarVariableFunction
     {
         [DisplayName("text")]
         [VariableFunctionParameter(0)]
@@ -23,7 +23,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [Description("The character to be inserted as padding. The default is a space.")]
         public string PadCharacter { get; set; }
 
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             char padCharacter = string.IsNullOrEmpty(this.PadCharacter) ? ' ' : this.PadCharacter[0];
             return (this.Text ?? string.Empty).PadRight(this.Length, padCharacter);

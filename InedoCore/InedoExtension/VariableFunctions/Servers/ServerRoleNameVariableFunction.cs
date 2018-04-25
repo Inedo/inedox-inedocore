@@ -2,6 +2,7 @@
 using System.Linq;
 using Inedo.Documentation;
 using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Server
 {
@@ -9,9 +10,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [Description("name of the current server role in context")]
     [Tag("servers")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
-    public sealed class ServerRoleNameVariableFunction : CommonScalarVariableFunction
+    public sealed class ServerRoleNameVariableFunction : ScalarVariableFunction
     {
-        protected override object EvaluateScalar(object context)
+        protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             int? roleId = (context as IStandardContext)?.ServerRoleId;
             if (roleId != null)

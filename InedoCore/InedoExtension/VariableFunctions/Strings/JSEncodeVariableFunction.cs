@@ -9,11 +9,11 @@ namespace Inedo.Extensions.VariableFunctions.Strings
     [ScriptAlias("JSEncode")]
     [Description("Encodes a string for use as a JavaScript literal.")]
     [Tag("strings")]
-    public sealed class JSEncodeVariableFunction : CommonScalarVariableFunction
+    public sealed class JSEncodeVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         public string Text { get; set; }
 
-        protected override object EvaluateScalar(object context) => HttpUtility.JavaScriptStringEncode(this.Text ?? string.Empty);
+        protected override object EvaluateScalar(IVariableFunctionContext context) => HttpUtility.JavaScriptStringEncode(this.Text ?? string.Empty);
     }
 }

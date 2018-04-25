@@ -9,7 +9,7 @@ namespace Inedo.Extensions.VariableFunctions
     [Description("Returns a string that contains the result of incrementing a value.")]
     [SeeAlso(typeof(DecrementVariableFunction))]
     [Tag("math")]
-    public sealed class IncrementVariableFunction : CommonScalarVariableFunction
+    public sealed class IncrementVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("value")]
@@ -20,6 +20,6 @@ namespace Inedo.Extensions.VariableFunctions
         [Description("The amount that will be added to the value. If not specified, 1 is used.")]
         public decimal Amount { get; set; } = 1;
 
-        protected override object EvaluateScalar(object context) => this.Value + this.Amount;
+        protected override object EvaluateScalar(IVariableFunctionContext context) => this.Value + this.Amount;
     }
 }
