@@ -46,6 +46,9 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Inedo.UPack, Version=0.8.1.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.UPack.0.8.1-pre0001\lib\net45\Inedo.UPack.dll</HintPath>
+    </Reference>
     <Reference Include="InedoLib, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
       <HintPath>..\packages\Inedo.SDK.1.0.4\lib\net452\InedoLib.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
@@ -79,6 +82,8 @@
     <Compile Include="Configurations\Network\HostsEntryConfiguration.cs" />
     <Compile Include="Configurations\ProGet\ProGetPackageConfiguration.cs" />
     <Compile Include="Extension.cs" />
+    <Compile Include="ListVariableSources\UniversalPackageListVariableSource.cs" />
+    <Compile Include="ListVariableSources\UniversalPackageVersionVariableSource.cs" />
     <Compile Include="Namespaces.cs" />
     <Compile Include="Operations\Files\ConcatenateFilesOperation.cs" />
     <Compile Include="Operations\Files\CopyFilesOperation.cs" />
