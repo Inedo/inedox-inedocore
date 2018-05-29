@@ -439,12 +439,15 @@ namespace Inedo.Extensions.Operations.ProGet
             string relativeUrl;
             if (SDK.ProductName == "BuildMaster")
             {
-                dynamic bmContext = context;
-                relativeUrl = $"applications/{bmContext.ApplicationId}/builds/build?releaseNumber={Uri.EscapeDataString(bmContext.ReleaseNumber)}&buildNumber={Uri.EscapeDataString(bmContext.BuildNumber)}";
+                relativeUrl = context.ExpandVariables($"applications/{((IStandardContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
+            }
+            else if (SDK.ProductName == "Hedgehog")
+            {
+                relativeUrl = "deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
             }
             else
             {
-                relativeUrl = "/deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
+                relativeUrl = "executions/execution-in-progress?executionId=" + context.ExecutionId;
             }
 
             return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
