@@ -20,8 +20,10 @@ namespace Inedo.Extensions.UserDirectories
     {
         protected PrincipalId(string principal, string domainAlias)
         {
-            if (string.IsNullOrEmpty(principal)) throw new ArgumentNullException(nameof(principal));
-            if (string.IsNullOrEmpty(domainAlias)) throw new ArgumentNullException(nameof(domainAlias));
+            if (string.IsNullOrEmpty(principal))
+                throw new ArgumentNullException(nameof(principal));
+            if (string.IsNullOrEmpty(domainAlias))
+                throw new ArgumentNullException(nameof(domainAlias));
 
             this.DomainAlias = domainAlias;
             this.Principal = principal;
@@ -78,6 +80,8 @@ namespace Inedo.Extensions.UserDirectories
             return StringComparer.OrdinalIgnoreCase.GetHashCode(this.DomainAlias)
                 ^ StringComparer.OrdinalIgnoreCase.GetHashCode(this.Principal);
         }
+
+        public override string ToString() => this.ToFullyQualifiedName();
     }
     internal sealed class GroupId : PrincipalId
     {

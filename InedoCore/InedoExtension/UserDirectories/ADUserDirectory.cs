@@ -303,8 +303,8 @@ namespace Inedo.Extensions.UserDirectories
 
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
-            private UserId userId;
-            private CredentialedDomain credentialedDomain;
+            private readonly UserId userId;
+            private readonly CredentialedDomain credentialedDomain;
 
             public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress, CredentialedDomain credentialedDomain)
             {
@@ -330,12 +330,9 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupId == null)
                     throw new ArgumentNullException(nameof(groupId));
 
-                string groupSearchString = $"name={groupId.Principal},{groupId.GetDomainSearchPath()}";
-                string userSearchString = $"name={this.userId.Principal},{this.userId.GetDomainSearchPath()}";
-
                 using (var context = new PrincipalContext(ContextType.Domain, this.credentialedDomain.Name, this.credentialedDomain.UserName, this.credentialedDomain.Password))
-                using (var userPrincipal = UserPrincipal.FindByIdentity(context, IdentityType.DistinguishedName, userSearchString))
-                using (var groupPrincipal = GroupPrincipal.FindByIdentity(context, IdentityType.DistinguishedName, groupSearchString))
+                using (var userPrincipal = UserPrincipal.FindByIdentity(context, this.userId.ToFullyQualifiedName()))
+                using (var groupPrincipal = GroupPrincipal.FindByIdentity(context, groupId.Principal))
                 {
                     if (userPrincipal == null || groupPrincipal == null)
                         return false;
@@ -353,7 +350,7 @@ namespace Inedo.Extensions.UserDirectories
 
         private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
         {
-            private GroupId groupId;
+            private readonly GroupId groupId;
 
             public ActiveDirectoryGroup(GroupId groupId)
             {
