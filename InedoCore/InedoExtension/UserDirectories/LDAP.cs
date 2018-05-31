@@ -77,31 +77,6 @@ namespace Inedo.Extensions.UserDirectories
                 select p.Substring("DC=".Length)
             );
         }
-        public static HashSet<GroupId> ExtractGroups(this SearchResult result)
-        {
-            var groups = new HashSet<GroupId>();
-
-            if (result == null || !result.Properties.Contains("memberof"))
-                return groups;
-
-            foreach (object memberOfProperty in result.Properties["memberof"])
-            {
-                var memberOf = memberOfProperty.ToString();
-
-                //memberof is CN=groupName,OU=something,OH=else
-                foreach (string cat in LdapSplitRegex.Split(memberOf))
-                {
-                    var cats = cat.Split('=');
-                    if (string.Equals(cats[0], "CN", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var groupName = Unescape(cats[1]);
-                        groups.Add(new GroupId(groupName, LDAP.GetDomainPath(memberOf)));
-                    }
-                }
-            }
-
-            return groups;
-        }
         public static string GetPropertyValue(this SearchResult sr, string propertyName)
         {
             if (sr == null)

@@ -84,7 +84,7 @@ namespace Inedo.Extensions.UserDirectories
 
                 if (this.SearchMode == ADSearchMode.TrustedDomains)
                 {
-                    Action<TrustRelationshipInformationCollection> addTrusts = trusts =>
+                    void addTrusts(TrustRelationshipInformationCollection trusts)
                     {
                         foreach (TrustRelationshipInformation trust in trusts)
                         {
@@ -271,8 +271,6 @@ namespace Inedo.Extensions.UserDirectories
                     }
                 }
             }
-
-            
         }
         private IUserDirectoryPrincipal CreatePrincipal(SearchResult result)
         {
@@ -280,12 +278,19 @@ namespace Inedo.Extensions.UserDirectories
             if (principalId == null)
                 return null;
 
-            if (principalId is UserId)
-                return new ActiveDirectoryUser((UserId)principalId,
+            if (principalId is UserId userId)
+            {
+                return new ActiveDirectoryUser(
+                    userId,
                     result.GetPropertyValue("displayName"),
-                    result.GetPropertyValue("mail"));
+                    result.GetPropertyValue("mail"),
+                    this.domainsToSearch.Value.FirstOrDefault(d => string.Equals(d.Name, userId.DomainAlias, StringComparison.OrdinalIgnoreCase))
+                );
+            }
             else
+            {
                 return new ActiveDirectoryGroup((GroupId)principalId);
+            }
         }
 
         [Flags]
@@ -298,92 +303,77 @@ namespace Inedo.Extensions.UserDirectories
         }
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
-            private string principalName;
+            private UserId userId;
+            private CredentialedDomain credentialedDomain;
 
-            public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress)
+            public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress, CredentialedDomain credentialedDomain)
             {
-                this.UserName = userId.Principal;
-                this.Domain = userId.DomainAlias;
-                this.DisplayName =  AH.CoalesceString(displayName, this.UserName);
+                this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
+                this.DisplayName =  AH.CoalesceString(displayName, userId.Principal);
                 this.EmailAddress = emailAddress;
-                this.principalName = $"{userId.Principal}@{userId.DomainAlias}";
+                this.credentialedDomain = credentialedDomain;
             }
 
-            public string UserName { get; }
-            public string Domain { get;  }
-            string IUserDirectoryPrincipal.Name => this.principalName;
+            string IUserDirectoryPrincipal.Name => this.userId.ToFullyQualifiedName();
             public string EmailAddress { get; }
             public string DisplayName { get; }
 
-            public bool IsMemberOfGroup(string groupName)
-            {
-                var ctx = new PrincipalContext(ContextType.Domain, Domain);
-                var user = UserPrincipal.FindByIdentity(ctx, UserName);
-                var group = GroupPrincipal.FindByIdentity(ctx, groupName);
+            /// <summary>
+            /// <paramref name="groupName"/> is actually a serialized PrincipalId (name@domainName), it needs to be converted
+            /// to a domain search string (i.e. DC=domainName), otherwise this method will return false even if the user is a member 
+            /// when the group name does not have a matching userPrincipalName
+            /// </summary>
+            bool IUserDirectoryPrincipal.IsMemberOfGroup(string groupName) => this.IsMemberOfGroup(GroupId.Parse(groupName));
 
-                return user != null && group != null && user.IsMemberOf(group);
-            }
-            
-            public bool Equals(ActiveDirectoryUser other)
+            public bool IsMemberOfGroup(GroupId groupId)
             {
-                if (ReferenceEquals(this, other))
-                    return true;
-                if (ReferenceEquals(other, null))
-                    return false;
+                if (groupId == null)
+                    throw new ArgumentNullException(nameof(groupId));
 
-                return string.Equals(this.Domain, other.Domain, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(this.UserName, other.UserName, StringComparison.OrdinalIgnoreCase);
+                string groupSearchString = $"name={groupId.Principal},{groupId.GetDomainSearchPath()}";
+                string userSearchString = $"name={this.userId.Principal},{this.userId.GetDomainSearchPath()}";
+
+                using (var context = new PrincipalContext(ContextType.Domain, this.credentialedDomain.Name, this.credentialedDomain?.UserName, this.credentialedDomain?.Password))
+                using (var userPrincipal = UserPrincipal.FindByIdentity(context, IdentityType.DistinguishedName, userSearchString))
+                using (var groupPrincipal = GroupPrincipal.FindByIdentity(context, IdentityType.DistinguishedName, groupSearchString))
+                {
+                    if (userPrincipal == null || groupPrincipal == null)
+                        return false;
+                    else
+                        return userPrincipal.IsMemberOf(groupPrincipal);
+                }
             }
+
+            public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other.userId);
             public bool Equals(IUserDirectoryUser other) => this.Equals(other as ActiveDirectoryUser);
             public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
             public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
-            public override int GetHashCode()
-            {
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(this.Domain)
-                    ^ StringComparer.OrdinalIgnoreCase.GetHashCode(this.UserName);
-            }
+            public override int GetHashCode() => this.userId.GetHashCode();
         }
 
         private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
         {
-            private string principalName;
+            private GroupId groupId;
 
             public ActiveDirectoryGroup(GroupId groupId)
             {
-                this.GroupName = groupId.Principal;
-                this.Domain = groupId.DomainAlias;
-                this.principalName = $"{groupId.Principal}@{groupId.DomainAlias}";
+                this.groupId = groupId ?? throw new ArgumentNullException(nameof(groupId));
             }
 
-            public string GroupName { get; }
-            public string Domain { get; }            
-            string IUserDirectoryPrincipal.Name => this.principalName;
-            string IUserDirectoryPrincipal.DisplayName => this.GroupName;
+            string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
+            string IUserDirectoryPrincipal.DisplayName => this.groupId.Principal;
             
             public bool IsMemberOfGroup(string groupName)
             {
                 throw new NotSupportedException();
             }
 
-            public bool Equals(ActiveDirectoryGroup other)
-            {
-                if (ReferenceEquals(this, other))
-                    return true;
-                if (ReferenceEquals(other, null))
-                    return false;
-
-                return string.Equals(this.Domain, other.Domain, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(this.GroupName, other.GroupName, StringComparison.OrdinalIgnoreCase);
-            }
+            public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other);
             public bool Equals(IUserDirectoryGroup other) => this.Equals(other as ActiveDirectoryGroup);
             public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryGroup);
             public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryGroup);
-            public override int GetHashCode()
-            {
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(this.Domain)
-                    ^ StringComparer.OrdinalIgnoreCase.GetHashCode(this.GroupName);
-            }
-            public override string ToString() => this.GroupName;
+            public override int GetHashCode() => this.groupId.GetHashCode();
+            public override string ToString() => this.groupId.Principal;
             
         }
 
