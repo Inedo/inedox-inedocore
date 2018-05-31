@@ -158,7 +158,6 @@ namespace Inedo.Extensions.UserDirectories
                     return null;
                 }
             }
-
         }
 
         public override IUserDirectoryUser TryGetUser(string userName)
@@ -301,6 +300,7 @@ namespace Inedo.Extensions.UserDirectories
             Groups = 2,
             UsersAndGroups = Users | Groups
         }
+
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
             private UserId userId;
@@ -311,7 +311,7 @@ namespace Inedo.Extensions.UserDirectories
                 this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
                 this.DisplayName =  AH.CoalesceString(displayName, userId.Principal);
                 this.EmailAddress = emailAddress;
-                this.credentialedDomain = credentialedDomain;
+                this.credentialedDomain = credentialedDomain ?? throw new ArgumentNullException(nameof(credentialedDomain));
             }
 
             string IUserDirectoryPrincipal.Name => this.userId.ToFullyQualifiedName();
@@ -333,7 +333,7 @@ namespace Inedo.Extensions.UserDirectories
                 string groupSearchString = $"name={groupId.Principal},{groupId.GetDomainSearchPath()}";
                 string userSearchString = $"name={this.userId.Principal},{this.userId.GetDomainSearchPath()}";
 
-                using (var context = new PrincipalContext(ContextType.Domain, this.credentialedDomain.Name, this.credentialedDomain?.UserName, this.credentialedDomain?.Password))
+                using (var context = new PrincipalContext(ContextType.Domain, this.credentialedDomain.Name, this.credentialedDomain.UserName, this.credentialedDomain.Password))
                 using (var userPrincipal = UserPrincipal.FindByIdentity(context, IdentityType.DistinguishedName, userSearchString))
                 using (var groupPrincipal = GroupPrincipal.FindByIdentity(context, IdentityType.DistinguishedName, groupSearchString))
                 {
@@ -344,7 +344,7 @@ namespace Inedo.Extensions.UserDirectories
                 }
             }
 
-            public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other.userId);
+            public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
             public bool Equals(IUserDirectoryUser other) => this.Equals(other as ActiveDirectoryUser);
             public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
             public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
@@ -368,13 +368,12 @@ namespace Inedo.Extensions.UserDirectories
                 throw new NotSupportedException();
             }
 
-            public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other);
+            public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other?.groupId);
             public bool Equals(IUserDirectoryGroup other) => this.Equals(other as ActiveDirectoryGroup);
             public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryGroup);
             public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryGroup);
             public override int GetHashCode() => this.groupId.GetHashCode();
-            public override string ToString() => this.groupId.Principal;
-            
+            public override string ToString() => this.groupId.Principal;            
         }
 
         private sealed class CredentialedDomain : IEquatable<CredentialedDomain>
