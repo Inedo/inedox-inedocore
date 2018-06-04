@@ -215,6 +215,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 throw new ArgumentOutOfRangeException(nameof(searchType));
             }
+            this.LogDebug($"Search string is \"{searchString}\"...");
 
             HashSet<CredentialedDomain> domains;
             if (principalId == null)
@@ -226,7 +227,8 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogDebug($"Domain alias \"{principalId.DomainAlias}\" will be used.");
                 domains = new HashSet<CredentialedDomain>();
-                domains.Add(new CredentialedDomain(principalId.DomainAlias));
+                domains.Add(this.domainsToSearch.Value.FirstOrDefault(x=>x.Name.Equals(principalId.DomainAlias)) 
+                    ?? new CredentialedDomain(principalId.DomainAlias));
             }
             foreach (var domain in domains)
             {
