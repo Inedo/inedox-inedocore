@@ -81,12 +81,14 @@ namespace Inedo.Extensions.UserDirectories
         {
             if (sr == null)
                 throw new ArgumentNullException(nameof(sr));
-
-            var propertyCollection = sr.Properties[propertyName];
-            if (propertyCollection.Count == 0)
+            if (sr.Properties == null)
+            {
                 return string.Empty;
-
-            return propertyCollection[0].ToString();
+            }
+            var propertyCollection = sr.Properties[propertyName];
+            if (propertyCollection == null || propertyCollection.Count == 0)
+                return string.Empty;
+            return propertyCollection[0]?.ToString() ?? string.Empty;
         }
     }
 }

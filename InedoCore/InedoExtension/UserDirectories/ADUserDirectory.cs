@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.DirectoryServices;
-using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
@@ -289,6 +288,7 @@ namespace Inedo.Extensions.UserDirectories
             if (principalId is UserId userId)
             {
                 return new ActiveDirectoryUser(
+                    this,
                     userId,
                     result.GetPropertyValue("displayName"),
                     result.GetPropertyValue("mail"),
@@ -314,11 +314,13 @@ namespace Inedo.Extensions.UserDirectories
 
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
+            private readonly ADUserDirectory directory;
             private readonly UserId userId;
             private readonly CredentialedDomain credentialedDomain;
 
-            public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress, CredentialedDomain credentialedDomain)
+            public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress, CredentialedDomain credentialedDomain)
             {
+                this.directory = directory;
                 this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
                 this.DisplayName =  AH.CoalesceString(displayName, userId.Principal);
                 this.EmailAddress = emailAddress;
@@ -341,15 +343,23 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupId == null)
                     throw new ArgumentNullException(nameof(groupId));
 
-                using (var context = new PrincipalContext(ContextType.Domain, this.credentialedDomain.Name, this.credentialedDomain.UserName, this.credentialedDomain.Password))
-                using (var userPrincipal = UserPrincipal.FindByIdentity(context, this.userId.ToFullyQualifiedName()))
-                using (var groupPrincipal = GroupPrincipal.FindByIdentity(context, groupId.Principal))
+                return IsMemberOfGroup(groupId.Principal, this.userId.Principal);
+            }
+            private bool IsMemberOfGroup(string group, string user)
+            {
+                var userObj = directory.TryGetPrincipal(PrincipalSearchType.Users, user);
+                if (userObj == null) return false;
+
+                foreach (string prop in userObj.Properties["memberof"])
                 {
-                    if (userPrincipal == null || groupPrincipal == null)
-                        return false;
-                    else
-                        return userPrincipal.IsMemberOf(groupPrincipal);
+                    var grp = prop.Split(',').FirstOrDefault(x => x.StartsWith("CN="))?.Substring(3);
+                    Console.WriteLine(grp);
+                    if (grp != null && string.Equals(grp, group, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
                 }
+                return false;
             }
 
             public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
