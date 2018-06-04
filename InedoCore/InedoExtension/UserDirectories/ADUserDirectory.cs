@@ -353,7 +353,6 @@ namespace Inedo.Extensions.UserDirectories
                 foreach (string prop in userObj.Properties["memberof"])
                 {
                     var grp = prop.Split(',').FirstOrDefault(x => x.StartsWith("CN="))?.Substring(3);
-                    Console.WriteLine(grp);
                     if (grp != null && string.Equals(grp, group, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
