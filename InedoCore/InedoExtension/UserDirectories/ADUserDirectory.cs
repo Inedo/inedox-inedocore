@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.DirectoryServices;
-using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
@@ -47,6 +46,13 @@ namespace Inedo.Extensions.UserDirectories
             + "e.g. us.kramerica.local,KramericaCredentials")]
         [Category("Advanced")]
         public string[] DomainsToSearch { get; set; }
+
+        [Persistent]
+        [DisplayName("Domain controller host")]
+        [PlaceholderText("Server is on the domain")]
+        [Description("If the product server is not on the domain, specify the host name or IP address of the domain controller here, e.g. 192.168.1.1")]
+        [Category("Advanced")]
+        public string DomainControllerAddress { get; set; }
 
         [Persistent]
         [DisplayName("NETBIOS name mapping")]
@@ -208,6 +214,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 throw new ArgumentOutOfRangeException(nameof(searchType));
             }
+            this.LogDebug($"Search string is \"{searchString}\"...");
 
             HashSet<CredentialedDomain> domains;
             if (principalId == null)
@@ -219,12 +226,13 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogDebug($"Domain alias \"{principalId.DomainAlias}\" will be used.");
                 domains = new HashSet<CredentialedDomain>();
-                domains.Add(new CredentialedDomain(principalId.DomainAlias));
+                domains.Add(this.domainsToSearch.Value.FirstOrDefault(x=>x.Name.Equals(principalId.DomainAlias)) 
+                    ?? new CredentialedDomain(principalId.DomainAlias));
             }
             foreach (var domain in domains)
             {
                 this.LogDebug($"Searching domain {domain}...");
-                using (var entry = new DirectoryEntry("LDAP://DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
+                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
                 using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = searchString.ToString();
@@ -250,9 +258,14 @@ namespace Inedo.Extensions.UserDirectories
             var st = LDAP.Escape(searchTerm);
             var filter = $"(&{categoryFilter}(|(userPrincipalName={st}*)(sAMAccountName={st}*)(name={st}*)(displayName={st}*)))";
 
+            this.LogDebug("Search term: " + searchTerm);
+            this.LogDebug("Filter string: " + filter);
+
             foreach (var domain in this.domainsToSearch.Value)
             {
-                using (var entry = new DirectoryEntry("LDAP://DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
+                this.LogDebug("Searching domain: " + domain);
+
+                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
                 using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = filter;
@@ -280,10 +293,10 @@ namespace Inedo.Extensions.UserDirectories
             if (principalId is UserId userId)
             {
                 return new ActiveDirectoryUser(
+                    this,
                     userId,
                     result.GetPropertyValue("displayName"),
-                    result.GetPropertyValue("mail"),
-                    this.domainsToSearch.Value.FirstOrDefault(d => string.Equals(d.Name, userId.DomainAlias, StringComparison.OrdinalIgnoreCase))
+                    result.GetPropertyValue("mail")
                 );
             }
             else
@@ -301,44 +314,37 @@ namespace Inedo.Extensions.UserDirectories
             UsersAndGroups = Users | Groups
         }
 
+        private string GetLdapRoot() => string.IsNullOrEmpty(DomainControllerAddress) ? "LDAP://" : $"LDAP://{this.DomainControllerAddress}/";
+
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
+            private readonly ADUserDirectory directory;
             private readonly UserId userId;
-            private readonly CredentialedDomain credentialedDomain;
 
-            public ActiveDirectoryUser(UserId userId, string displayName, string emailAddress, CredentialedDomain credentialedDomain)
+            public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress)
             {
+                this.directory = directory;
                 this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
                 this.DisplayName =  AH.CoalesceString(displayName, userId.Principal);
                 this.EmailAddress = emailAddress;
-                this.credentialedDomain = credentialedDomain ?? throw new ArgumentNullException(nameof(credentialedDomain));
             }
 
             string IUserDirectoryPrincipal.Name => this.userId.ToFullyQualifiedName();
             public string EmailAddress { get; }
             public string DisplayName { get; }
 
-            /// <summary>
-            /// <paramref name="groupName"/> is actually a serialized PrincipalId (name@domainName), it needs to be converted
-            /// to a domain search string (i.e. DC=domainName), otherwise this method will return false even if the user is a member 
-            /// when the group name does not have a matching userPrincipalName
-            /// </summary>
-            bool IUserDirectoryPrincipal.IsMemberOfGroup(string groupName) => this.IsMemberOfGroup(GroupId.Parse(groupName));
-
-            public bool IsMemberOfGroup(GroupId groupId)
+            public bool IsMemberOfGroup(string groupName)
             {
-                if (groupId == null)
-                    throw new ArgumentNullException(nameof(groupId));
+                if (groupName == null)
+                    throw new ArgumentNullException(nameof(groupName));
 
-                using (var context = new PrincipalContext(ContextType.Domain, this.credentialedDomain.Name, this.credentialedDomain.UserName, this.credentialedDomain.Password))
-                using (var userPrincipal = UserPrincipal.FindByIdentity(context, this.userId.ToFullyQualifiedName()))
-                using (var groupPrincipal = GroupPrincipal.FindByIdentity(context, groupId.Principal))
-                {
-                    if (userPrincipal == null || groupPrincipal == null)
-                        return false;
-                    else
-                        return userPrincipal.IsMemberOf(groupPrincipal);
-                }
+                var userSearchResult = directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
+                if (userSearchResult == null)
+                    return false;
+
+                var groupSet = LDAP.ExtractGroupNames(userSearchResult);
+
+                return groupSet.Contains(GroupId.Parse(groupName)?.Principal ?? groupName);
             }
 
             public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
