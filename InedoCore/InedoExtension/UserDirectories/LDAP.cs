@@ -62,13 +62,11 @@ namespace Inedo.Extensions.UserDirectories
         /// Returns a period-separated concatenation of all of the domain components (fully-qualified) of the path
         /// </summary>
         /// <param name="result">The result.</param>
-        /// <returns></returns>
         public static string GetDomainPath(this SearchResult result) => GetDomainPath(result.Path);
         /// <summary>
         /// Returns a period-separated concatenation of all of the domain components (fully-qualified) of the path
         /// </summary>
         /// <param name="path">The result.</param>
-        /// <returns></returns>
         public static string GetDomainPath(string path)
         {
             return string.Join(".",
@@ -81,14 +79,32 @@ namespace Inedo.Extensions.UserDirectories
         {
             if (sr == null)
                 throw new ArgumentNullException(nameof(sr));
-            if (sr.Properties == null)
-            {
-                return string.Empty;
-            }
-            var propertyCollection = sr.Properties[propertyName];
+
+            var propertyCollection = sr.Properties?[propertyName];
             if (propertyCollection == null || propertyCollection.Count == 0)
                 return string.Empty;
+
             return propertyCollection[0]?.ToString() ?? string.Empty;
+        }
+
+        public static ISet<string> ExtractGroupNames(SearchResult user)
+        {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string memberOf in user.Properties["memberof"])
+            {
+                var groupNames = from part in memberOf.Split(',')
+                                 where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
+                                 let name = part.Substring("CN=".Length)
+                                 where !string.IsNullOrWhiteSpace(name)
+                                 select name;
+
+                groups.UnionWith(groupNames);
+            }
+
+            return groups;
         }
     }
 }
