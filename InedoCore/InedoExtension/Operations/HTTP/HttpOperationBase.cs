@@ -22,7 +22,7 @@ using Inedo.Web;
 namespace Inedo.Extensions.Operations.HTTP
 {
     [Serializable]
-    public abstract class HttpOperationBase : ExecuteOperation
+    public abstract class HttpOperationBase : ExecuteOperation, IHasCredentials<UsernamePasswordCredentials>
     {
         protected HttpOperationBase()
         {
@@ -67,6 +67,10 @@ namespace Inedo.Extensions.Operations.HTTP
         [DefaultValue(true)]
         public bool ProxyRequest { get; set; } = true;
 
+        [Category("Authentication")]
+        [DisplayName("Credentials")]
+        [ScriptAlias("Credentials")]
+        public string CredentialName { get; set; }
         [Category("Authentication")]
         [ScriptAlias("UserName")]
         [DisplayName("User name")]

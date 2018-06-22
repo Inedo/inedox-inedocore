@@ -36,7 +36,8 @@ Post-Http http://httpbin.org/post
     {
         [ScriptAlias("Method")]
         [DefaultValue(PostHttpMethod.POST)]
-        public PostHttpMethod Method { get; set; }
+        public PostHttpMethod Method { get; set; } = PostHttpMethod.POST;
+        private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
         [Category("Data")]
         [ScriptAlias("ContentType")]
         [DisplayName("Content type")]
@@ -86,26 +87,13 @@ Post-Http http://httpbin.org/post
 
         protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
-            if (this.Method == PostHttpMethod.PUT)
+            using (var client = this.CreateClient())
+            using (var content = this.GetContent())
             {
-                using (var client = this.CreateClient())
-                using (var content = this.GetContent())
+                using (var request = new HttpRequestMessage(this.HttpMethod, this.Url) { Content = content })
+                using (var response = await client.SendAsync(request, cancellationToken))
                 {
-                    using (var response = await client.PutAsync(this.Url, content, cancellationToken).ConfigureAwait(false))
-                    {
-                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                    }
-                }
-            }
-            else
-            {
-                using (var client = this.CreateClient())
-                using (var content = this.GetContent())
-                {
-                    using (var response = await client.PostAsync(this.Url, content, cancellationToken).ConfigureAwait(false))
-                    {
-                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                    }
+                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
                 }
             }
         }
@@ -138,6 +126,7 @@ Post-Http http://httpbin.org/post
     public enum PostHttpMethod
     {
         POST,
-        PUT
+        PUT,
+        PATCH
     }
 }

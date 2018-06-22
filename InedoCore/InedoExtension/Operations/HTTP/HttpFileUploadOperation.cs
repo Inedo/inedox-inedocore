@@ -31,6 +31,7 @@ Upload-Http ReleaseNotes.xml (
         [ScriptAlias("Method")]
         [DefaultValue(PostHttpMethod.POST)]
         public PostHttpMethod Method { get; set; }
+        private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
         [Required]
         [DisplayName("File name")]
         [ScriptAlias("FileName")]
@@ -93,19 +94,10 @@ Upload-Http ReleaseNotes.xml (
                 streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
                 formData.Add(streamContent, "file", PathEx.GetFileName(this.ResolvedFilePath));
 
-                if (this.Method == PostHttpMethod.PUT)
+                using (var request = new HttpRequestMessage(this.HttpMethod, this.Url) { Content = formData })
+                using (var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false))
                 {
-                    using (var response = await client.PutAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
-                    {
-                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                    }
-                }
-                else
-                {
-                    using (var response = await client.PostAsync(this.Url, formData, cancellationToken).ConfigureAwait(false))
-                    {
-                        await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                    }
+                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
                 }
             }
         }
