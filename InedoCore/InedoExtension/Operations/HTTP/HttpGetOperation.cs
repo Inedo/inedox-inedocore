@@ -30,7 +30,8 @@ Get-Http http://httpbin.org/get
     {
         [ScriptAlias("Method")]
         [DefaultValue(GetHttpMethod.GET)]
-        public GetHttpMethod Method { get; set; }
+        public GetHttpMethod Method { get; set; } = GetHttpMethod.GET;
+        private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
@@ -51,21 +52,11 @@ Get-Http http://httpbin.org/get
 
         protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
-            if (this.Method == GetHttpMethod.DELETE)
+            using (var client = this.CreateClient())
+            using (var request = new HttpRequestMessage(this.HttpMethod, this.Url))
+            using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
             {
-                using (var client = this.CreateClient())
-                using (var response = await client.DeleteAsync(this.Url, cancellationToken).ConfigureAwait(false))
-                {
-                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                }
-            }
-            else
-            {
-                using (var client = this.CreateClient())
-                using (var response = await client.GetAsync(this.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                {
-                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                }
+                await this.ProcessResponseAsync(response).ConfigureAwait(false);
             }
         }
 
@@ -88,6 +79,7 @@ Get-Http http://httpbin.org/get
     public enum GetHttpMethod
     {
         GET,
-        DELETE
+        DELETE,
+        HEAD
     }
 }
