@@ -39,9 +39,10 @@ namespace Inedo.Extensions.VariableFunctions.Server
             if (environmentId == null)
                 return null;
 
-            var serversInRole = SDK.GetServersInRole(roleId.Value).Select(s => s.Name);
-            var serversInEnvironment = SDK.GetServersInEnvironment(environmentId.Value).Select(s => s.Name);
-            return serversInRole.Intersect(serversInEnvironment);
+            return from s in SDK.GetServersInRole(roleId.Value)
+                   where this.IncludeInactive || s.Active
+                   join e in SDK.GetServersInEnvironment(environmentId.Value) on s.Id equals e.Id
+                   select s.Name;
         }
 
         private int? FindRole(string roleName, IVariableFunctionContext context)

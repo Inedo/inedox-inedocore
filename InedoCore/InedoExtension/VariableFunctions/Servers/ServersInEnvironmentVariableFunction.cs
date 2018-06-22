@@ -32,7 +32,8 @@ namespace Inedo.Extensions.VariableFunctions.Server
 
             return SDK.GetServersInEnvironment(environmentId.Value)
                 .Where(s => this.IncludeInactive || s.Active)
-                .Select(s => s.Name);        }
+                .Select(s => s.Name);
+        }
 
         private int? FindEnvironment(string environmentName, IVariableFunctionContext context)
         {
