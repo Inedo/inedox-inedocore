@@ -9,7 +9,7 @@ using Inedo.Extensibility.VariableFunctions;
 namespace Inedo.Extensions.VariableFunctions.Lists
 {
     [ScriptAlias("ListIndexOf")]
-    [Description("Finds the index of an item in a list.")]
+    [Description("Finds the index of an item in a list. Finding the first item in a list returns 0, and finding an item not present in the list returns -1.")]
     [Tag("lists")]
     public sealed class ListIndexOfVariableFunction : ScalarVariableFunction
     {

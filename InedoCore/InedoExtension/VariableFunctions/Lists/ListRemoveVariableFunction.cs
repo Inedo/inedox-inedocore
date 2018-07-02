@@ -21,7 +21,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
 
         [VariableFunctionParameter(1)]
         [DisplayName("index")]
-        [Description("The index of the item to remove.")]
+        [Description("The index of the item to remove. The first item in a list is at index 0.")]
         public int Index { get; set; }
 
         protected override IEnumerable EvaluateVector(IVariableFunctionContext context) => this.List.Take(this.Index).Concat(this.List.Skip(this.Index + 1));

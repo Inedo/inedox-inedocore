@@ -20,7 +20,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
 
         [VariableFunctionParameter(1)]
         [DisplayName("index")]
-        [Description("The index of the item.")]
+        [Description("The index of the item. The first item in a list is at index 0.")]
         public int Index { get; set; }
 
         public override RuntimeValue Evaluate(IVariableFunctionContext context)

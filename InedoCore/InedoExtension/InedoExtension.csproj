@@ -154,6 +154,7 @@
     <Compile Include="VariableFunctions\Json\FromJsonVariableFunction.cs" />
     <Compile Include="VariableFunctions\Json\JSEncodeVariableFunction.cs" />
     <Compile Include="VariableFunctions\Json\ToJsonVariableFunction.cs" />
+    <Compile Include="VariableFunctions\Lists\ListConcatVariableFunction.cs" />
     <Compile Include="VariableFunctions\Lists\ListCountVariableFunction.cs" />
     <Compile Include="VariableFunctions\Lists\ListIndexOfVariableFunction.cs" />
     <Compile Include="VariableFunctions\Lists\ListInsertVariableFunction.cs" />
