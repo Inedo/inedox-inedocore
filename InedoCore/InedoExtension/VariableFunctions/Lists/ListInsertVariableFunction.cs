@@ -26,7 +26,7 @@ namespace Inedo.Extensions.VariableFunctions.Lists
 
         [VariableFunctionParameter(2, Optional = true)]
         [DisplayName("index")]
-        [Description("The index.")]
+        [Description("The index. 0 inserts the item at the start of the list. If this parameter is not present, the item is added to the end of the list.")]
         public int? Index { get; set; }
 
         protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
