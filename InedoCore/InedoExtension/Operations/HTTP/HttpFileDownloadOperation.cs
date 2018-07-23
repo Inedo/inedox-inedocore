@@ -52,6 +52,7 @@ Download-Http http://example.org/upload-service/v3/hdars (
             if (!this.ProxyRequest)
             {
                 var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
+                await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(this.ResolvedFilePath)).ConfigureAwait(false);
                 using (var fileStream = await fileOps.OpenFileAsync(this.ResolvedFilePath, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
                 {
                     this.LogInformation($"Downloading {this.Url} to {this.FileName}...");

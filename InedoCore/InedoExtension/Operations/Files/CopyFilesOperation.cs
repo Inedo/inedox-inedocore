@@ -84,6 +84,7 @@ Copy-Files(
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 var targetFileName = PathEx.Combine(targetPath, file.FullName.Substring(sourcePath.Length).TrimStart('/', '\\'));
+                var targetDirectoryName = PathEx.GetDirectoryName(targetFileName);
                 if (this.VerboseLogging)
                     this.LogDebug($"Copying {file.FullName} to {targetFileName}...");
 
@@ -95,7 +96,7 @@ Copy-Files(
                         continue;
                     }
 
-                    await fileOps.CreateDirectoryAsync(file.DirectoryName).ConfigureAwait(false);
+                    await fileOps.CreateDirectoryAsync(targetDirectoryName).ConfigureAwait(false);
                     await fileOps.CopyFileAsync(file.FullName, targetFileName, this.Overwrite).ConfigureAwait(false);
                     this.filesCopied++;
                 }

@@ -80,7 +80,7 @@ Create-File(
             var linuxFileOps = fileOps as ILinuxFileOperationsExecuter;
             if (linuxFileOps != null)
             {
-                int? mode = AH.ParseInt(AH.CoalesceString(this.PosixFileMode ?? "644"));
+                int? mode = AH.ParseInt(AH.CoalesceString(this.PosixFileMode, "644"));
                 if (mode == null)
                 {
                     this.LogError("Invalid file mode specified.");
