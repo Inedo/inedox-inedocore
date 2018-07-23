@@ -209,6 +209,7 @@ namespace Inedo.Extensions.Operations.HTTP
             job.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
             context.CancellationToken.Register(() => job.Cancel());
             await executer.ExecuteJobAsync(job).ConfigureAwait(false);
+            this.ResponseBodyVariable = job.Operation.ResponseBodyVariable;
         }
 
         protected abstract Task PerformRequestAsync(CancellationToken cancellationToken);
