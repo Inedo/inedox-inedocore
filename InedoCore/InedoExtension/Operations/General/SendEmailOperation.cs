@@ -175,7 +175,7 @@ This email was sent from BuildMaster on $Date.>>
             }
         }
 
-        private static SmtpClient CreateSmtpClient()
+        private SmtpClient CreateSmtpClient()
         {
             string host = SDK.GetConfigValue("Smtp.Host");
             int? port = AH.ParseInt(SDK.GetConfigValue("Smtp.Port"));
@@ -183,14 +183,14 @@ This email was sent from BuildMaster on $Date.>>
             string username = SDK.GetConfigValue("Smtp.UserName");
             string password = SDK.GetConfigValue("Smtp.Password");
 
-            if (string.IsNullOrEmpty(host) || port == null || ssl == null)
+            if (string.IsNullOrEmpty(host))
                 return null;
 
             SmtpClient client = null;
             try
             {
-                client = new SmtpClient(host, port.Value);
-                client.EnableSsl = ssl.Value;
+                client = new SmtpClient(host, port ?? 25);
+                client.EnableSsl = ssl ?? false;
                 client.UseDefaultCredentials = false; // login to mail server anonymously if no username/password specified
 
                 if (!string.IsNullOrEmpty(username))
@@ -198,8 +198,9 @@ This email was sent from BuildMaster on $Date.>>
 
                 return client;
             }
-            catch
+            catch (Exception ex)
             {
+                this.LogWarning(ex.Message, ex.ToString());
                 client?.Dispose();
                 return null;
             }
