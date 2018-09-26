@@ -110,7 +110,7 @@ This email was sent from BuildMaster on $Date.>>
 
                 this.LogInformation($"Preparing to send email to {string.Join("; ", addresses)}...");
 
-                using (var smtp = CreateSmtpClient())
+                using (var smtp = this.CreateSmtpClient())
                 {
                     if (smtp == null)
                     {
@@ -118,7 +118,7 @@ This email was sent from BuildMaster on $Date.>>
                         return;
                     }
 
-                    using (var message = CreateMailMessage())
+                    using (var message = this.CreateMailMessage())
                     {
                         if (message == null)
                         {
@@ -175,23 +175,28 @@ This email was sent from BuildMaster on $Date.>>
             }
         }
 
-        private static SmtpClient CreateSmtpClient()
+        private SmtpClient CreateSmtpClient()
         {
             string host = SDK.GetConfigValue("Smtp.Host");
-            int? port = AH.ParseInt(SDK.GetConfigValue("Smtp.Port"));
-            bool? ssl = bool.TryParse(SDK.GetConfigValue("Smtp.SslEnabled"), out bool s) ? s : (bool?)null;
+            int port = AH.ParseInt(SDK.GetConfigValue("Smtp.Port")) ?? 25;
+            bool ssl = bool.TryParse(AH.CoalesceString(SDK.GetConfigValue("Smtp.SslEnabled"), SDK.GetConfigValue("Smtp.EnableSSL")), out bool s) ? s : false;
             string username = SDK.GetConfigValue("Smtp.UserName");
             string password = SDK.GetConfigValue("Smtp.Password");
 
-            if (string.IsNullOrEmpty(host) || port == null || ssl == null)
+            if (string.IsNullOrEmpty(host))
+            {
+                this.LogError("SMTP host not specified. Please set the \"Smtp.Host\" value in Advanced Settings.");
                 return null;
+            }
 
             SmtpClient client = null;
             try
             {
-                client = new SmtpClient(host, port.Value);
-                client.EnableSsl = ssl.Value;
-                client.UseDefaultCredentials = false; // login to mail server anonymously if no username/password specified
+                client = new SmtpClient(host, port)
+                {
+                    EnableSsl = ssl,
+                    UseDefaultCredentials = false // login to mail server anonymously if no username/password specified
+                };
 
                 if (!string.IsNullOrEmpty(username))
                     client.Credentials = new NetworkCredential(username, password);
@@ -201,29 +206,35 @@ This email was sent from BuildMaster on $Date.>>
             catch
             {
                 client?.Dispose();
-                return null;
+                throw;
             }
         }
 
-        private static MailMessage CreateMailMessage()
+        private MailMessage CreateMailMessage()
         {
             string fromAddress = SDK.GetConfigValue("Smtp.FromAddress");
             string fromName = SDK.GetConfigValue("Smtp.FromName");
 
-            if (fromAddress == null)
+            if (string.IsNullOrEmpty(fromAddress))
+            {
+                this.LogError("From Address not specified. Please set the \"Smtp.FromAddress\" value in Advanced Settings.");
                 return null;
-             
-            if (fromName == null)
+            }
+
+            if (string.IsNullOrEmpty(fromName))
+            {
                 return new MailMessage
                 {
                     From = new MailAddress(fromAddress)
                 };
+            }
             else
+            {
                 return new MailMessage
                 {
                     From = new MailAddress(fromAddress, fromName)
                 };
-
+            }
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
