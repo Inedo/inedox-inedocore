@@ -8,6 +8,7 @@ using Inedo.Extensibility;
 using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Web;
+using System.Collections.Generic;
 
 namespace Inedo.Extensions.Configurations.ProGet
 {
@@ -57,7 +58,16 @@ namespace Inedo.Extensions.Configurations.ProGet
         [DisplayName("Target directory")]
         [Description("The directory path on disk of the package contents.")]
         public string TargetDirectory { get; set; }
-        
+
+        [ScriptAlias("Include")]
+        [PlaceholderText("** (all items)")]
+        [DefaultValue("@(**)")]
+        [MaskingDescription]
+        public IEnumerable<string> Includes { get; set; } = new[] { "**" };
+        [ScriptAlias("Exclude")]
+        [MaskingDescription]
+        public IEnumerable<string> Excludes { get; set; }
+
         [Category("Connection/Identity")]
         [Persistent]
         [ScriptAlias("FeedUrl")]
