@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.DirectoryServices;
-using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Text;
@@ -61,12 +60,6 @@ namespace Inedo.Extensions.UserDirectories
         [Description("A list of key/value pairs that map NETBIOS names to domain names (one per line); e.g. KRAMUS=us.kramerica.local")]
         [Category("Advanced")]
         public string[] NetBiosNameMaps { get; set; }
-
-        [Persistent]
-        [DisplayName("Search recursively")]
-        [Description("Check users' group memberships recursively instead of only checking the groups that a user is directly a member of.")]
-        [Category("Advanced")]
-        public bool SearchGroupsRecursively { get; set; }
 
         public ADUserDirectory()
         {
@@ -146,13 +139,12 @@ namespace Inedo.Extensions.UserDirectories
 
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
         {
-            var group = this.TryGetGroup(groupName);
-            return ((ActiveDirectoryGroup)group)?.GetMembers() ?? Enumerable.Empty<IUserDirectoryUser>();
+            throw new NotImplementedException();
         }
 
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
-            var (result, domain) = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
+            var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
             if (result == null)
                 return null;
 
@@ -164,7 +156,7 @@ namespace Inedo.Extensions.UserDirectories
                     if (searcher.FindOne() == null)
                         return null;
 
-                    return this.CreatePrincipal((result, domain)) as IUserDirectoryUser;
+                    return this.CreatePrincipal(result) as IUserDirectoryUser;
                 }
                 catch (Exception ex)
                 {
@@ -196,10 +188,10 @@ namespace Inedo.Extensions.UserDirectories
             return this.TryGetUser($"{parts[1]}@{domain}");
         }
 
-        private (SearchResult, CredentialedDomain) TryGetPrincipal(PrincipalSearchType searchType, string principalName)
+        private SearchResult TryGetPrincipal(PrincipalSearchType searchType, string principalName)
         {
             if (string.IsNullOrEmpty(principalName))
-                return (null, null);
+                return null;
 
             this.LogDebug($"Trying to a {searchType} search for principal \"{principalName}\"...");
 
@@ -246,11 +238,11 @@ namespace Inedo.Extensions.UserDirectories
                     searcher.Filter = searchString.ToString();
                     var result = searcher.FindOne();
                     if (result != null)
-                        return (result, domain);
+                        return result;
                 }
             }
             this.LogDebug($"Principal not found.");
-            return (null, null);
+            return null;
         }
         private IEnumerable<IUserDirectoryPrincipal> FindPrincipals(PrincipalSearchType searchType, string searchTerm)
         {
@@ -282,7 +274,7 @@ namespace Inedo.Extensions.UserDirectories
                     {
                         foreach (SearchResult result in results)
                         {
-                            var principal = this.CreatePrincipal((result, domain));
+                            var principal = this.CreatePrincipal(result);
                             if (principal == null)
                                 continue;
 
@@ -292,9 +284,9 @@ namespace Inedo.Extensions.UserDirectories
                 }
             }
         }
-        private IUserDirectoryPrincipal CreatePrincipal((SearchResult result, CredentialedDomain domain) data)
+        private IUserDirectoryPrincipal CreatePrincipal(SearchResult result)
         {
-            var principalId = PrincipalId.FromSearchResult(data.result);
+            var principalId = PrincipalId.FromSearchResult(result);
             if (principalId == null)
                 return null;
 
@@ -303,18 +295,13 @@ namespace Inedo.Extensions.UserDirectories
                 return new ActiveDirectoryUser(
                     this,
                     userId,
-                    data.result.GetPropertyValue("displayName"),
-                    data.result.GetPropertyValue("mail"),
-                    data.domain
+                    result.GetPropertyValue("displayName"),
+                    result.GetPropertyValue("mail")
                 );
             }
             else
             {
-                return new ActiveDirectoryGroup(
-                    this,
-                    (GroupId)principalId,
-                    data.domain
-                );
+                return new ActiveDirectoryGroup((GroupId)principalId);
             }
         }
 
@@ -333,15 +320,13 @@ namespace Inedo.Extensions.UserDirectories
         {
             private readonly ADUserDirectory directory;
             private readonly UserId userId;
-            private readonly CredentialedDomain domain;
 
-            public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress, CredentialedDomain domain)
+            public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress)
             {
                 this.directory = directory;
                 this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
                 this.DisplayName =  AH.CoalesceString(displayName, userId.Principal);
                 this.EmailAddress = emailAddress;
-                this.domain = domain;
             }
 
             string IUserDirectoryPrincipal.Name => this.userId.ToFullyQualifiedName();
@@ -353,31 +338,13 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupName == null)
                     throw new ArgumentNullException(nameof(groupName));
 
-                var (result, domain) = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, groupName);
-                if (result == null)
-                    return false;
-                var groupId = (GroupId)PrincipalId.FromSearchResult(result);
-                if (groupId == null)
+                var userSearchResult = directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
+                if (userSearchResult == null)
                     return false;
 
-                using (var group = new GroupPrincipal(domain.Context, groupId.Principal))
-                {
-                    return this.IsMemberOfGroup(group, false)
-                        || (this.directory.SearchGroupsRecursively && this.IsMemberOfGroup(group, true));
-                }
-            }
+                var groupSet = LDAP.ExtractGroupNames(userSearchResult);
 
-            private bool IsMemberOfGroup(GroupPrincipal group, bool recursive)
-            {
-                using (var user = UserPrincipal.FindByIdentity(this.domain.Context, IdentityType.SamAccountName, this.userId.Principal))
-                {
-                    if (recursive)
-                    {
-                        return user.GetAuthorizationGroups().Contains(group);
-                    }
-
-                    return user.IsMemberOf(group);
-                }
+                return groupSet.Contains(GroupId.Parse(groupName)?.Principal ?? groupName);
             }
 
             public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
@@ -389,15 +356,11 @@ namespace Inedo.Extensions.UserDirectories
 
         private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
         {
-            private readonly ADUserDirectory directory;
             private readonly GroupId groupId;
-            private readonly CredentialedDomain domain;
 
-            public ActiveDirectoryGroup(ADUserDirectory directory, GroupId groupId, CredentialedDomain domain)
+            public ActiveDirectoryGroup(GroupId groupId)
             {
-                this.directory = directory;
                 this.groupId = groupId ?? throw new ArgumentNullException(nameof(groupId));
-                this.domain = domain;
             }
 
             string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
@@ -405,36 +368,7 @@ namespace Inedo.Extensions.UserDirectories
             
             public bool IsMemberOfGroup(string groupName)
             {
-                if (string.IsNullOrEmpty(groupName))
-                    throw new ArgumentNullException(nameof(groupName));
-
-                var (result, domain) = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, groupName);
-                if (result == null)
-                    return false;
-
-                var principalId = PrincipalId.FromSearchResult(result);
-
-                using (var group = new GroupPrincipal(this.domain.Context, this.groupId.Principal))
-                using (var parent = new GroupPrincipal(domain.Context, principalId.Principal))
-                {
-                    return group.IsMemberOf(parent);
-                }
-            }
-
-            internal IEnumerable<IUserDirectoryUser> GetMembers()
-            {
-                using (var group = new GroupPrincipal(this.domain.Context, this.groupId.Principal))
-                {
-                    return group.GetMembers(this.directory.SearchGroupsRecursively)
-                        .OfType<UserPrincipal>()
-                        .Select(p => new ActiveDirectoryUser(
-                            this.directory,
-                            new UserId(p.SamAccountName, LDAP.GetDomainPath(p.DistinguishedName)),
-                            p.DisplayName,
-                            p.EmailAddress,
-                            this.domain
-                        )).ToArray();
-                }
+                throw new NotSupportedException();
             }
 
             public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other?.groupId);
@@ -442,7 +376,7 @@ namespace Inedo.Extensions.UserDirectories
             public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryGroup);
             public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryGroup);
             public override int GetHashCode() => this.groupId.GetHashCode();
-            public override string ToString() => this.groupId.Principal;
+            public override string ToString() => this.groupId.Principal;            
         }
 
         private sealed class CredentialedDomain : IEquatable<CredentialedDomain>
@@ -466,10 +400,7 @@ namespace Inedo.Extensions.UserDirectories
                 this.Name = name ?? throw new ArgumentNullException(nameof(name));
                 this.UserName = userName;
                 this.Password = password;
-                this.Context = new PrincipalContext(ContextType.Domain, this.Name, this.UserName, this.Password);
             }
-
-            public PrincipalContext Context { get; }
 
             public string Name { get; }
             public string UserName { get; }
