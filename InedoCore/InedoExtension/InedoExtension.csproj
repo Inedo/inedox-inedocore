@@ -184,6 +184,7 @@
     <Compile Include="VariableFunctions\Strings\NewLineVariableFunction.cs" />
     <Compile Include="VariableFunctions\Strings\PadLeftVariableFunction.cs" />
     <Compile Include="VariableFunctions\Strings\PadRightVariableFunction.cs" />
+    <Compile Include="VariableFunctions\Strings\RegexReplaceVariableFunction.cs" />
     <Compile Include="VariableFunctions\Strings\ReplaceVariableFunction.cs" />
     <Compile Include="VariableFunctions\Strings\SplitVariableFunction.cs" />
     <Compile Include="VariableFunctions\Strings\SubstringVariableFunction.cs" />
