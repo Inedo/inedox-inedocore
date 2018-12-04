@@ -11,6 +11,7 @@ using Inedo.Extensibility.Operations;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using Inedo.Serialization;
+using Inedo.UPack;
 
 namespace Inedo.Extensions.Operations.ProGet
 {

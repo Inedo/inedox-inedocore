@@ -46,8 +46,8 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Inedo.UPack, Version=0.8.1.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.UPack.0.8.1-pre0001\lib\net45\Inedo.UPack.dll</HintPath>
+    <Reference Include="Inedo.UPack, Version=1.0.3.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.UPack.1.0.3\lib\net45\Inedo.UPack.dll</HintPath>
     </Reference>
     <Reference Include="InedoLib, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
       <HintPath>..\packages\Inedo.SDK.1.0.4\lib\net452\InedoLib.dll</HintPath>
@@ -111,6 +111,7 @@
     <Compile Include="Operations\Otter\RemediateDriftOperation.cs" />
     <Compile Include="Operations\Otter\ScopedVariableJsonModel.cs" />
     <Compile Include="Operations\Otter\SetOtterVariablesOperation.cs" />
+    <Compile Include="Operations\ProGet\ChangePackageVersionOperation.cs" />
     <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.Otter.cs" />
@@ -120,7 +121,6 @@
     <Compile Include="Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
     <Compile Include="Operations\ProGet\PromotePackageOperation.cs" />
     <Compile Include="Operations\ProGet\PushPackageOperation.cs" />
-    <Compile Include="Operations\ProGet\UniversalPackageVersion.cs" />
     <Compile Include="PosixFileMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SuggestionProviders\FeedNameSuggestionProvider.cs" />
