@@ -51,13 +51,9 @@ namespace Inedo.Extensions.Operations.ProGet
 
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
-        [PlaceholderText("$ApplicationName")]
-        [DefaultValue("$ApplicationName")]
         public string Name { get; set; }
 
         [ScriptAlias("Version")]
-        [PlaceholderText("$ReleaseNumber")]
-        [DefaultValue("$ReleaseNumber")]
         public string Version { get; set; }
 
         [ScriptAlias("Description")]
