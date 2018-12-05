@@ -255,6 +255,9 @@ namespace Inedo.Extensions.Operations.ProGet
             if (apiKey != null)
                 request.Headers.Add("X-ApiKey", AH.Unprotect(apiKey));
 
+            if (!string.IsNullOrWhiteSpace(this.UserName))
+                request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(InedoLib.UTF8Encoding.GetBytes(this.UserName + ":" + this.Password)));
+
             if (deployInfo != null)
             {
                 request.Headers.Add(PackageDeploymentData.Headers.Application, deployInfo.Application ?? string.Empty);
