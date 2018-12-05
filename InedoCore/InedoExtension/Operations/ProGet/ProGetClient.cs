@@ -248,6 +248,7 @@ namespace Inedo.Extensions.Operations.ProGet
         private HttpWebRequest CreateWebRequest(string url, PackageDeploymentData deployInfo = null, SecureString apiKey = null)
         {
             var request = WebRequest.CreateHttp(url);
+            request.KeepAlive = false;
             request.AllowReadStreamBuffering = false;
             request.AllowWriteStreamBuffering = false;
             request.Timeout = Timeout.Infinite;
