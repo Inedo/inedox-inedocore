@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Security;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -176,14 +175,36 @@ namespace Inedo.Extensions.Operations.ProGet
             if (queryArgs.Count > 0)
                 url += "?" + string.Join("&", queryArgs);
 
-            using (var client = this.CreateClient())
-            using (var streamContent = new StreamContent(content))
-            {
-                streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
+            var request = this.CreateWebRequest(url);
+            request.Method = "PUT";
+            request.ContentType = "application/zip";
 
-                using (var response = await client.PostAsync(url, streamContent, this.CancellationToken).ConfigureAwait(false))
+            if (content.CanSeek)
+                request.ContentLength = content.Length - content.Position;
+
+            try
+            {
+                using (var requestStream = await request.GetRequestStreamAsync())
                 {
-                    await HandleError(response).ConfigureAwait(false);
+                    await content.CopyToAsync(requestStream, 81920, this.CancellationToken);
+                }
+
+                using (var response = await request.GetResponseAsync())
+                using (var responseStream = response.GetResponseStream())
+                {
+                }
+            }
+            catch (WebException ex)
+            {
+                using (var responseStream = ex.Response.GetResponseStream())
+                using (var reader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
+                {
+                    var message = reader.ReadToEnd();
+                    var statusCode = ((HttpWebResponse)ex.Response).StatusCode;
+                    if (statusCode == HttpStatusCode.InternalServerError && message.StartsWith("<!DOCTYPE"))
+                        message = "Invalid feed URL. Ensure the feed URL follows the format: http://{proget-server}/upack/{feed-name}";
+
+                    throw new ProGetException((int)statusCode, message);
                 }
             }
         }
@@ -222,6 +243,27 @@ namespace Inedo.Extensions.Operations.ProGet
                     }
                 }
             }
+        }
+
+        private HttpWebRequest CreateWebRequest(string url, PackageDeploymentData deployInfo = null, SecureString apiKey = null)
+        {
+            var request = WebRequest.CreateHttp(url);
+            request.AllowReadStreamBuffering = false;
+            request.AllowWriteStreamBuffering = false;
+            request.Timeout = Timeout.Infinite;
+            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
+            if (apiKey != null)
+                request.Headers.Add("X-ApiKey", AH.Unprotect(apiKey));
+
+            if (deployInfo != null)
+            {
+                request.Headers.Add(PackageDeploymentData.Headers.Application, deployInfo.Application ?? string.Empty);
+                request.Headers.Add(PackageDeploymentData.Headers.Description, deployInfo.Description ?? string.Empty);
+                request.Headers.Add(PackageDeploymentData.Headers.Url, deployInfo.Url ?? string.Empty);
+                request.Headers.Add(PackageDeploymentData.Headers.Target, deployInfo.Target ?? string.Empty);
+            }
+
+            return request;
         }
 
         private HttpClient CreateClient(PackageDeploymentData deployInfo = null, SecureString apiKey = null)
