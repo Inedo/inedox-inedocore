@@ -181,7 +181,7 @@ namespace Inedo.Extensions.Operations.ProGet
             {
                 streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
 
-                using (var response = await client.PostAsync(this.FeedUrl + url, streamContent, this.CancellationToken).ConfigureAwait(false))
+                using (var response = await client.PostAsync(url, streamContent, this.CancellationToken).ConfigureAwait(false))
                 {
                     await HandleError(response).ConfigureAwait(false);
                 }
