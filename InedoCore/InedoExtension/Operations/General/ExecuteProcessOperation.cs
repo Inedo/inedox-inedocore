@@ -67,6 +67,11 @@ Exec c:\tools\7za.exe (
         [DisplayName("Warning regex")]
         [Description("When set to a valid regular expression string, output messages which are matched will be logged as warnings. To log only part of the message, use a group with name \"m\".")]
         public string WarningTextRegex { get; set; }
+        [Category("Logging")]
+        [ScriptAlias("LogArguments")]
+        [DisplayName("Log Arguments")]
+        [DefaultValue(true)]
+        public bool LogArguments { get; set; }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
@@ -106,7 +111,9 @@ Exec c:\tools\7za.exe (
             startInfo.WorkingDirectory = context.ResolvePath(this.WorkingDirectory);
 
             this.LogDebug("Process: " + startInfo.FileName);
-            this.LogDebug("Arguments: " + startInfo.Arguments);
+            if (LogArguments)
+                this.LogDebug("Arguments: " + startInfo.Arguments);
+                
             this.LogDebug("Working directory: " + startInfo.WorkingDirectory);
 
             this.LogDebug($"Ensuring that {startInfo.WorkingDirectory} exists...");
