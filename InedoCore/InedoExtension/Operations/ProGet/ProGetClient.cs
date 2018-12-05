@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -160,21 +161,27 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             if (packageData == null)
                 throw new ArgumentNullException(nameof(packageData));
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentNullException(nameof(name));
-            if (string.IsNullOrWhiteSpace(version))
-                throw new ArgumentNullException(nameof(version));
 
-            var url = Uri.EscapeDataString(name) + "/" + Uri.EscapeDataString(version);
+            var queryArgs = new List<string>();
             if (!string.IsNullOrEmpty(group))
-                url = group + "/" + url;
+                queryArgs.Add("group=" + Uri.EscapeDataString(group));
+            if (!string.IsNullOrEmpty(name))
+                queryArgs.Add("name=" + Uri.EscapeDataString(name));
+            if (!string.IsNullOrEmpty(version))
+                queryArgs.Add("version=" + Uri.EscapeDataString(version));
+
+            queryArgs.AddRange(packageData.GetQueryArgs());
+
+            var url = this.FeedUrl + "upload";
+            if (queryArgs.Count > 0)
+                url += "?" + string.Join("&", queryArgs);
 
             using (var client = this.CreateClient())
             using (var streamContent = new StreamContent(content))
             {
                 streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
 
-                using (var response = await client.PostAsync(this.FeedUrl + "upload/" + url + packageData.ToQueryString(), streamContent, this.CancellationToken).ConfigureAwait(false))
+                using (var response = await client.PostAsync(this.FeedUrl + url, streamContent, this.CancellationToken).ConfigureAwait(false))
                 {
                     await HandleError(response).ConfigureAwait(false);
                 }
@@ -378,48 +385,19 @@ namespace Inedo.Extensions.Operations.ProGet
         public string Description { get; set; }
         public string[] Dependencies { get; set; }
 
-        public string ToQueryString()
+        public IEnumerable<string> GetQueryArgs()
         {
-            var buffer = new StringBuilder();
-            buffer.Append('?');
-
             if (!string.IsNullOrEmpty(this.Title))
-            {
-                buffer.Append("title=");
-                buffer.Append(Uri.EscapeDataString(this.Title));
-                buffer.Append('&');
-            }
+                yield return "title=" + Uri.EscapeDataString(this.Title);
+
             if (!string.IsNullOrEmpty(this.Icon))
-            {
-                buffer.Append("icon=");
-                buffer.Append(Uri.EscapeDataString(this.Icon));
-                buffer.Append('&');
-            }
+                yield return "icon=" + Uri.EscapeDataString(this.Icon);
+
             if (!string.IsNullOrEmpty(this.Description))
-            {
-                buffer.Append("description=");
-                buffer.Append(Uri.EscapeDataString(this.Description));
-                buffer.Append('&');
-            }
-            if (this.Dependencies != null)
-            {
-                buffer.Append("dependencies=");
-                bool first = true;
-                foreach (string dependency in this.Dependencies)
-                {
-                    if (!first)
-                        buffer.Append(',');
+                yield return "description=" + Uri.EscapeDataString(this.Description);
 
-                    buffer.Append(dependency);
-                    first = false;
-                }
-            }
-
-            char trimChar = buffer[buffer.Length - 1];
-            if (trimChar == '?' || trimChar == '&')
-                buffer.Remove(buffer.Length - 1, 1);
-
-            return buffer.ToString();
+            if (this.Dependencies != null && this.Dependencies.Length > 0)
+                yield return "dependencies=" + Uri.EscapeDataString(string.Join(",", this.Dependencies));
         }
     }
 

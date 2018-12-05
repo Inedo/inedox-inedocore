@@ -11,13 +11,14 @@ using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
+using Inedo.UPack.Packaging;
 using Inedo.Web;
 using Inedo.Web.Plans.ArgumentEditors;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
     [DisplayName("Push Package")]
-    [Description("Uploads a zip file containing the contents of a Universal Package to a ProGet feed.")]
+    [Description("Uploads a universal package to a ProGet feed.")]
     [ScriptAlias("Push-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("ProGet")]
@@ -130,6 +131,26 @@ namespace Inedo.Extensions.Operations.ProGet
                     return null;
                 }
 
+                if (string.IsNullOrWhiteSpace(this.Name) || string.IsNullOrWhiteSpace(this.Version))
+                {
+                    try
+                    {
+                        using (var package = new UniversalPackage(path))
+                        {
+                            if (string.IsNullOrWhiteSpace(package.Name) || package.Version == null)
+                            {
+                                this.LogError("Name and Version properties are required unless pushing a package that already has those properties set.");
+                                return null;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        this.LogError("Name and Version properties are required unless pushing a package that already has those properties set.");
+                        return null;
+                    }
+                }
+
                 using (var file = FileEx.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var data = new ProGetPackagePushData
@@ -140,7 +161,7 @@ namespace Inedo.Extensions.Operations.ProGet
                         Dependencies = this.Dependencies?.ToArray()
                     };
 
-                    await client.PushPackageAsync(this.Group, this.Name, this.Version, data, file).ConfigureAwait(false);
+                    await client.PushPackageAsync(this.Group, this.Name, this.Version, data, file);
                 }
             }
             catch (ProGetException ex)
