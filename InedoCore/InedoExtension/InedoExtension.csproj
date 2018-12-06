@@ -119,7 +119,6 @@
     <Compile Include="Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="Operations\ProGet\ProGetClient.cs" />
     <Compile Include="Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
-    <Compile Include="Operations\ProGet\PromotePackageOperation.cs" />
     <Compile Include="Operations\ProGet\PushPackageOperation.cs" />
     <Compile Include="PosixFileMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
