@@ -17,6 +17,7 @@ using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Serialization;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.HTTP
@@ -84,8 +85,26 @@ namespace Inedo.Extensions.Operations.HTTP
         [MappedCredential(nameof(UsernamePasswordCredentials.Password))]
         public string Password { get; set; }
 
-        protected long TotalSize = 0;
-        protected long CurrentPosition = 0;
+        private long totalSize, currentPosition;
+        protected long TotalSize
+        {
+            get => this.totalSize;
+            set
+            {
+                this.totalSize = value;
+                this.Job?.SendPosition();
+            }
+        }
+        protected long CurrentPosition
+        {
+            get => this.currentPosition;
+            set
+            {
+                this.currentPosition = value;
+                this.Job?.SendPosition();
+            }
+        }
+        private RemoteHttpJob Job = null;
 
         public override OperationProgress GetProgress()
         {
@@ -96,20 +115,23 @@ namespace Inedo.Extensions.Operations.HTTP
             return new OperationProgress((int)(100 * this.CurrentPosition / this.TotalSize), AH.FormatSize(this.TotalSize - this.CurrentPosition) + " remaining");
         }
 
-        protected HttpClient CreateClient()
+        protected virtual HttpMessageHandler CreateHttpHandler()
         {
-            HttpClient client;
             if (!string.IsNullOrWhiteSpace(this.UserName))
             {
                 this.LogDebug($"Making request as {this.UserName}...");
-                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) });
-            }
-            else
-            {
-                client = new HttpClient();
+                return new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) };
             }
 
-            client.Timeout = Timeout.InfiniteTimeSpan;
+            return new HttpClientHandler();
+        }
+
+        protected HttpClient CreateClient()
+        {
+            var client = new HttpClient(this.CreateHttpHandler())
+            {
+                Timeout = Timeout.InfiniteTimeSpan
+            };
 
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
@@ -157,7 +179,7 @@ namespace Inedo.Extensions.Operations.HTTP
                     this.ResponseBodyVariable = text;
                     if (this.LogResponseBody)
                     {
-                        if (text.Length >= this.MaxResponseLength)
+                        if (text.Length >= this.MaxResponseLength && this.MaxResponseLength >= 0)
                             this.LogDebug($"The following response Content Body is truncated to {this.MaxResponseLength} characters.");
 
                         this.LogInformation("Response Content Body: " + text);
@@ -170,6 +192,11 @@ namespace Inedo.Extensions.Operations.HTTP
         {
             using (var reader = new StreamReader(stream, InedoLib.UTF8Encoding))
             {
+                if (this.MaxResponseLength < 0)
+                {
+                    return await reader.ReadToEndAsync().ConfigureAwait(false);
+                }
+
                 var text = new StringBuilder();
                 var buffer = new char[1024];
                 int remaining = this.MaxResponseLength;
@@ -202,14 +229,10 @@ namespace Inedo.Extensions.Operations.HTTP
                 return;
             }
 
-            var job = new RemoteHttpJob
-            {
-                Operation = this
-            };
+            var job = new RemoteHttpJob { Operation = this };
             job.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
             context.CancellationToken.Register(() => job.Cancel());
-            await executer.ExecuteJobAsync(job).ConfigureAwait(false);
-            this.ResponseBodyVariable = job.Operation.ResponseBodyVariable;
+            this.ResponseBodyVariable = (string)await executer.ExecuteJobAsync(job).ConfigureAwait(false);
         }
 
         protected abstract Task PerformRequestAsync(CancellationToken cancellationToken);
@@ -230,19 +253,34 @@ namespace Inedo.Extensions.Operations.HTTP
 
             public override void SerializeResponse(Stream stream, object result)
             {
-                return;
+                SlimBinaryFormatter.Serialize(result, stream);
             }
 
             public override object DeserializeResponse(Stream stream)
             {
-                return null;
+                return (string)SlimBinaryFormatter.Deserialize(stream);
             }
 
             public override async Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {
+                this.Operation.Job = this;
                 this.Operation.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
                 await this.Operation.PerformRequestAsync(cancellationToken).ConfigureAwait(false);
-                return null;
+                return this.Operation.ResponseBodyVariable;
+            }
+
+            protected override void DataReceived(byte[] data)
+            {
+                this.Operation.totalSize = BitConverter.ToInt64(data, 0);
+                this.Operation.currentPosition = BitConverter.ToInt64(data, 8);
+            }
+
+            internal void SendPosition()
+            {
+                var data = new byte[16];
+                BitConverter.GetBytes(this.Operation.totalSize).CopyTo(data, 0);
+                BitConverter.GetBytes(this.Operation.currentPosition).CopyTo(data, 8);
+                this.Post(data);
             }
         }
     }

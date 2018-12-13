@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Handlers;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,8 +86,31 @@ Upload-Http ReleaseNotes.xml (
             }
         }
 
+        protected override HttpMessageHandler CreateHttpHandler()
+        {
+            var handler = new ProgressMessageHandler(base.CreateHttpHandler());
+            handler.HttpSendProgress += (s, e) =>
+            {
+                this.CurrentPosition = e.BytesTransferred;
+                if (e.TotalBytes.HasValue)
+                {
+                    this.TotalSize = e.TotalBytes.Value;
+                }
+            };
+
+            return handler;
+        }
+
         private async Task PerformRequestAsync(Stream fileStream, CancellationToken cancellationToken)
         {
+            try
+            {
+                this.TotalSize = fileStream.Length;
+            }
+            catch
+            {
+            }
+
             using (var client = this.CreateClient())
             using (var streamContent = new StreamContent(fileStream))
             using (var formData = new MultipartFormDataContent())
