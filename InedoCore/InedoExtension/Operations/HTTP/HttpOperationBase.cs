@@ -120,7 +120,11 @@ namespace Inedo.Extensions.Operations.HTTP
             if (!string.IsNullOrWhiteSpace(this.UserName))
             {
                 this.LogDebug($"Making request as {this.UserName}...");
-                return new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) };
+                return new HttpClientHandler
+                {
+                    Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty),
+                    PreAuthenticate = true
+                };
             }
 
             return new HttpClientHandler();
