@@ -6,5 +6,6 @@
         public const string Network = nameof(Network);
         public const string ProGet = nameof(ProGet);
         public const string Otter = nameof(Otter);
+        public const string UPack = nameof(UPack);
     }
 }
