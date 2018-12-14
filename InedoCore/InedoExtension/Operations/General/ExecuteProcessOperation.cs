@@ -69,9 +69,9 @@ Exec c:\tools\7za.exe (
         public string WarningTextRegex { get; set; }
         [Category("Logging")]
         [ScriptAlias("LogArguments")]
-        [DisplayName("Log Arguments")]
+        [DisplayName("Log arguments")]
         [DefaultValue(true)]
-        public bool LogArguments { get; set; }
+        public bool LogArguments { get; set; } = true;
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
