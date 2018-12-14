@@ -61,14 +61,19 @@ namespace Inedo.Extensions.UserDirectories
         [Category("Advanced")]
         public string[] NetBiosNameMaps { get; set; }
 
+        [Persistent]
+        [Category("Advanced")]
+        [DisplayName("Search recursively")]
+        [Description("Check group memberships recursively instead of only checking the groups that a user is directly a member of. This may cause reduced performance.")]
+        public bool SearchGroupsRecursively { get; set; }
+
         public ADUserDirectory()
         {
             this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
             this.netBiosNameMaps = new Lazy<IDictionary<string, string>>(this.BuildNetBiosNameMaps);
         }
 
-        public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm)
-            => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
+        public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
 
         private HashSet<CredentialedDomain> BuildDomainsToSearch()
         {
@@ -166,14 +171,11 @@ namespace Inedo.Extensions.UserDirectories
             }
         }
 
-        public override IUserDirectoryUser TryGetUser(string userName)
-            => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
+        public override IUserDirectoryUser TryGetUser(string userName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
 
-        public override IUserDirectoryGroup TryGetGroup(string groupName)
-            => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
+        public override IUserDirectoryGroup TryGetGroup(string groupName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
 
-        public override IUserDirectoryPrincipal TryGetPrincipal(string principalName)
-            => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.UsersAndGroups, principalName));
+        public override IUserDirectoryPrincipal TryGetPrincipal(string principalName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.UsersAndGroups, principalName));
 
         public override IUserDirectoryUser TryParseLogonUser(string logonUser)
         {
@@ -338,13 +340,39 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupName == null)
                     throw new ArgumentNullException(nameof(groupName));
 
-                var userSearchResult = directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
+                var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
                 if (userSearchResult == null)
                     return false;
 
                 var groupSet = LDAP.ExtractGroupNames(userSearchResult);
+                var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
+                if (groupSet.Contains(compareName))
+                    return true;
 
-                return groupSet.Contains(GroupId.Parse(groupName)?.Principal ?? groupName);
+                if (this.directory.SearchGroupsRecursively)
+                {
+                    var groupsToSearch = new Queue<string>(groupSet);
+                    var groupsSearched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    while (groupsToSearch.Count > 0)
+                    {
+                        var nextGroup = groupsToSearch.Dequeue();
+                        if (groupsSearched.Add(nextGroup))
+                        {
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            if (groupSearchResult != null)
+                            {
+                                var groupGroups = LDAP.ExtractGroupNames(groupSearchResult);
+                                foreach (var g in groupGroups)
+                                    groupsToSearch.Enqueue(g);
+                            }
+                        }
+                    }
+
+                    return groupsSearched.Contains(compareName);
+                }
+
+                return false;
             }
 
             public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
