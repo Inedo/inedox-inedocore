@@ -257,7 +257,14 @@ namespace Inedo.Extensions.Operations.ProGet
                 request.Headers.Add("X-ApiKey", AH.Unprotect(apiKey));
 
             if (!string.IsNullOrWhiteSpace(this.UserName))
-                request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(InedoLib.UTF8Encoding.GetBytes(this.UserName + ":" + this.Password)));
+            {
+                this.Log.LogDebug($"Making request as {this.UserName}...");
+                request.Credentials = new NetworkCredential(this.UserName, this.Password);
+            }
+            else
+            {
+                request.UseDefaultCredentials = true;
+            }
 
             if (deployInfo != null)
             {

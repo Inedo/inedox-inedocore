@@ -46,8 +46,8 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Inedo.UPack, Version=1.0.3.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.UPack.1.0.3\lib\net45\Inedo.UPack.dll</HintPath>
+    <Reference Include="Inedo.UPack, Version=1.0.6.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.UPack.1.0.6\lib\net45\Inedo.UPack.dll</HintPath>
     </Reference>
     <Reference Include="InedoLib, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
       <HintPath>..\packages\Inedo.SDK.1.0.4\lib\net452\InedoLib.dll</HintPath>
@@ -198,13 +198,12 @@
     <Compile Include="VariableFunctions\Xml\XmlEncode.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>powershell -Command "if (Test-Path C:\Projects\Hedgehog\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Hedgehog\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\Hedgehog\Extensions\$(TargetName).zip -Destination C:\Projects\Hedgehog\Extensions\$(TargetName).inedox -Force }"
-powershell -Command "if (Test-Path C:\Projects\ProGet\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\ProGet\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\ProGet\Extensions\$(TargetName).zip -Destination C:\Projects\ProGet\Extensions\$(TargetName).inedox -Force }"
-powershell -Command "if (Test-Path C:\Projects\Otter\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Otter\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\Otter\Extensions\$(TargetName).zip -Destination C:\Projects\Otter\Extensions\$(TargetName).inedox -Force }"
-powershell -Command "if (Test-Path C:\Projects\BuildMaster\Extensions -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\BuildMaster\Extensions\$(TargetName).zip -Force; Move-Item C:\Projects\BuildMaster\Extensions\$(TargetName).zip -Destination C:\Projects\BuildMaster\Extensions\$(TargetName).inedox -Force }"</PostBuildEvent>
+    <PostBuildEvent>powershell -Command "if (Test-Path C:\Projects\Extensions\Shared -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Extensions\Shared\$(TargetName).zip -Force; Move-Item C:\Projects\Extensions\Shared\$(TargetName).zip -Destination C:\Projects\Extensions\Shared\$(TargetName).inedox -Force }"</PostBuildEvent>
   </PropertyGroup>
 </Project>
