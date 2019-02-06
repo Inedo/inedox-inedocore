@@ -250,7 +250,8 @@ namespace Inedo.Extensions.Operations.ProGet
             var request = WebRequest.CreateHttp(url);
             request.KeepAlive = false;
             request.AllowReadStreamBuffering = false;
-            request.AllowWriteStreamBuffering = false;
+            request.AllowWriteStreamBuffering = true;
+            request.PreAuthenticate = true;
             request.Timeout = Timeout.Infinite;
             request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
             if (apiKey != null)
