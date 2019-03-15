@@ -208,8 +208,10 @@ namespace Inedo.Extensions.Operations.HTTP
             };
             job.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
             context.CancellationToken.Register(() => job.Cancel());
-            await executer.ExecuteJobAsync(job).ConfigureAwait(false);
-            this.ResponseBodyVariable = job.Operation.ResponseBodyVariable;
+            var response = (HttpOperationBase)await executer.ExecuteJobAsync(job).ConfigureAwait(false);
+
+            this.ResponseBodyVariable = response.ResponseBodyVariable;
+
         }
 
         protected abstract Task PerformRequestAsync(CancellationToken cancellationToken);
@@ -230,12 +232,12 @@ namespace Inedo.Extensions.Operations.HTTP
 
             public override void SerializeResponse(Stream stream, object result)
             {
-                return;
+                new BinaryFormatter().Serialize(stream, this.Operation);
             }
 
             public override object DeserializeResponse(Stream stream)
             {
-                return null;
+                return (HttpOperationBase)new BinaryFormatter().Deserialize(stream);
             }
 
             public override async Task<object> ExecuteAsync(CancellationToken cancellationToken)
