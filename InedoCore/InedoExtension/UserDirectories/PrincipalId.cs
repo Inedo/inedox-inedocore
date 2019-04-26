@@ -58,6 +58,16 @@ namespace Inedo.Extensions.UserDirectories
             if (string.IsNullOrWhiteSpace(domain))
                 return null;
 
+            try
+            {
+                // do not return the account if it is disabled
+                if (isUser && int.TryParse(result.GetPropertyValue("userAccountControl"), out int flags) && (flags & 0x02) != 0)
+                    return null;
+            }
+            catch
+            {
+            }
+
             if (isUser)
                 return new UserId(principalName, domain);
             else
