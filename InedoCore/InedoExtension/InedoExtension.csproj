@@ -113,6 +113,7 @@
     <Compile Include="Operations\Otter\SetOtterVariablesOperation.cs" />
     <Compile Include="Operations\ProGet\ChangePackageVersionOperation.cs" />
     <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
+    <Compile Include="Operations\ProGet\CreatePackageOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
     <Compile Include="Operations\ProGet\EnsurePackageOperation.Otter.cs" />
     <Compile Include="Operations\ProGet\GetPackageOperation.cs" />
