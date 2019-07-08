@@ -50,12 +50,16 @@ namespace Inedo.Extensions.Operations.ProGet
         public string CredentialName { get; set; }
         [ScriptAlias("Host")]
         [DisplayName("ProGet host")]
+        [Category("Connection/Identity")]
+        [PlaceholderText("Use server URL from credentials")]
         [MappedCredential(nameof(InedoProductCredentials.Host))]
         [Description("This should be the host name (or URL) of the server only, without the /api/ endpoint or the feed name.")]
         public string HostName { get; set; }
         [ScriptAlias("ApiKey")]
         [DisplayName("API key")]
+        [Category("Connection/Identity")]
         [FieldEditMode(FieldEditMode.Password)]
+        [PlaceholderText("Use API key from credentials")]
         [MappedCredential(nameof(InedoProductCredentials.ApiKey))]
         [Description("The API key must have permission to use the Repackaging API in the connected ProGet instance.")]
         public string ApiKey { get; set; }
