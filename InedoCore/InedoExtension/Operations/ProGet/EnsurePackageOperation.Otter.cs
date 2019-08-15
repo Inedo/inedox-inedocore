@@ -138,13 +138,13 @@ namespace Inedo.Extensions.Operations.ProGet
             }
         }
 
-        public override ComparisonResult Compare(PersistedConfiguration other)
+        public override Task<ComparisonResult> CompareAsync(PersistedConfiguration other, IOperationCollectionContext context)
         {
             var config = (ProGetPackageConfiguration)other;
             if (config?.Current != true)
-                return new ComparisonResult(new[] { new Difference("Current", true, false) });
+                return Task.FromResult(new ComparisonResult(new[] { new Difference("Current", true, false) }));
             else
-                return new ComparisonResult(Enumerable.Empty<Difference>());
+                return Task.FromResult(new ComparisonResult(Enumerable.Empty<Difference>()));
         }
     }
 }

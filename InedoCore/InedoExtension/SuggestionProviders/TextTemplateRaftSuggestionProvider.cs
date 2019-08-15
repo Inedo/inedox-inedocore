@@ -11,7 +11,9 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using (var raft = RaftRepository.OpenRaft(RaftRepository.DefaultName))
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 if (raft == null)
                     return Enumerable.Empty<string>();
