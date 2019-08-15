@@ -155,7 +155,7 @@ Apply-Template hdars
                         templateName = templateNameParts[0];
                     }
 
-                    using (var raft = RaftRepository.OpenRaft(raftName))
+                    using (var raft = await context.OpenRaftAsync(raftName, OpenRaftOptions.OptimizeLoadTime | OpenRaftOptions.ReadOnly))
                     {
                         if (raft == null)
                             throw new ExecutionFailureException("Raft not found.");

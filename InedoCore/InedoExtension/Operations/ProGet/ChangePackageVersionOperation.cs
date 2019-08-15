@@ -21,6 +21,9 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Repack-Package")]
     public sealed class ChangePackageVersionOperation : RemoteExecuteOperation, IHasCredentials<InedoProductCredentials>
     {
+        [NonSerialized]
+        private IPackageManager packageManager;
+
         [Required]
         [ScriptAlias("Feed")]
         [DisplayName("Feed")]
@@ -63,6 +66,17 @@ namespace Inedo.Extensions.Operations.ProGet
         [MappedCredential(nameof(InedoProductCredentials.ApiKey))]
         [Description("The API key must have permission to use the Repackaging API in the connected ProGet instance.")]
         public string ApiKey { get; set; }
+
+        [ScriptAlias("PackageSource")]
+        [DisplayName("Package source")]
+        [Category("Connection/Identity")]
+        public string PackageSource { get; set; }
+
+        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+        {
+            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
+            await base.BeforeRemoteExecuteAsync(context);
+        }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
@@ -156,6 +170,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
 
                 this.LogInformation("Repackage was successful.");
+
+                return new RepackageInfo(this.PackageName, this.PackageVersion, this.NewVersion);
             }
             catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
             {
@@ -167,6 +183,25 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             return null;
+        }
+
+        protected override async Task AfterRemoteExecuteAsync(object result)
+        {
+            if (this.packageManager != null && result is RepackageInfo info)
+            {
+                foreach (var p in await this.packageManager.GetBuildPackagesAsync(default))
+                {
+                    if (p.Active && string.Equals(p.Name, info.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, info.OriginalVersion, StringComparison.OrdinalIgnoreCase) && string.Equals(p.PackageSource, this.PackageSource, StringComparison.OrdinalIgnoreCase))
+                        await this.packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
+                }
+
+                await this.packageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(info.PackageName, info.NewVersion, null, this.PackageSource),
+                    default
+                );
+            }
+
+            await base.AfterRemoteExecuteAsync(result);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
@@ -217,5 +252,20 @@ namespace Inedo.Extensions.Operations.ProGet
         }
 
         private static string GetPackageDisplayName(string group, string name) => string.IsNullOrWhiteSpace(group) ? name : (group + "/" + name);
+
+        [Serializable]
+        private sealed class RepackageInfo
+        {
+            public RepackageInfo(string packageName, string originalVersion, string newVersion)
+            {
+                this.PackageName = packageName;
+                this.OriginalVersion = originalVersion;
+                this.NewVersion = newVersion;
+            }
+
+            public string PackageName { get; }
+            public string OriginalVersion { get; }
+            public string NewVersion { get; }
+        }
     }
 }
