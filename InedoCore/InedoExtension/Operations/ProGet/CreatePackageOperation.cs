@@ -25,9 +25,6 @@ namespace Inedo.Extensions.Operations.ProGet
     [Tag("proget")]
     public sealed class CreatePackageOperation : RemoteExecuteOperation
     {
-        [NonSerialized]
-        private IPackageManager packageManager;
-
         [ScriptAlias("From")]
         [PlaceholderText("$WorkingDirectory")]
         [DisplayName("Source directory")]
@@ -68,15 +65,10 @@ namespace Inedo.Extensions.Operations.ProGet
         [Description("Additional properties may be specified using map syntax. For example: %(description: my package description)")]
         public IReadOnlyDictionary<string, RuntimeValue> Metadata { get; set; }
 
-        [Category("Advanced")]
-        [ScriptAlias("PackageSource")]
-        public string PackageSource { get; set; }
-
-        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+        protected override Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             this.ValidateArguments();
-            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
-            await base.BeforeRemoteExecuteAsync(context);
+            return base.BeforeRemoteExecuteAsync(context);
         }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
@@ -140,7 +132,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 this.LogInformation("Package created.");
             }
 
-            return new PackageInfo(this.Name, this.Version);
+            return null;
 
             bool isIgnored(string propertyName)
             {
@@ -168,19 +160,6 @@ namespace Inedo.Extensions.Operations.ProGet
                         throw new ArgumentException();
                 }
             }
-        }
-
-        protected override async Task AfterRemoteExecuteAsync(object result)
-        {
-            if (this.packageManager != null && result is PackageInfo info)
-            {
-                await this.packageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(info.PackageName, info.Version, null, this.PackageSource),
-                    default
-                );
-            }
-
-            await base.AfterRemoteExecuteAsync(result);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
@@ -214,19 +193,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
             if (UniversalPackageVersion.TryParse(this.Version) == null)
                 throw new EncoderFallbackException("Specified package version is not a valid semantic version.");
-        }
-
-        [Serializable]
-        private sealed class PackageInfo
-        {
-            public PackageInfo(string packageName, string version)
-            {
-                this.PackageName = packageName;
-                this.Version = version;
-            }
-
-            public string PackageName { get; }
-            public string Version { get; }
         }
     }
 }

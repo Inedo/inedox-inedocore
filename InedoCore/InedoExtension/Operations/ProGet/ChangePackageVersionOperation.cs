@@ -10,6 +10,7 @@ using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SuggestionProviders;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -70,6 +71,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
         [Category("Connection/Identity")]
+        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
         public string PackageSource { get; set; }
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)

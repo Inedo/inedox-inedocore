@@ -28,6 +28,9 @@ namespace Inedo.Extensions.Operations.ProGet
 #pragma warning restore CS0618 // Type or member is obsolete
         , IHasCredentials<InedoProductCredentials>
     {
+        [NonSerialized]
+        private IPackageManager packageManager;
+
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
         public string CredentialName { get; set; }
@@ -109,6 +112,18 @@ namespace Inedo.Extensions.Operations.ProGet
 #pragma warning restore CS0618 // Type or member is obsolete
         public string Password { get; set; }
 
+        [Category("Connection/Identity")]
+        [ScriptAlias("PackageSource")]
+        [DisplayName("Package source")]
+        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        public string PackageSource { get; set; }
+
+        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+        {
+            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
+            await base.BeforeRemoteExecuteAsync(context);
+        }
+
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
             var client = new ProGetClient(this.Server, this.FeedName, this.UserName, this.Password, this, context.CancellationToken);
@@ -167,7 +182,20 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             this.LogInformation("Package pushed.");
-            return null;
+            return new PackageInfo(this.Name, this.Version);
+        }
+
+        protected override async Task AfterRemoteExecuteAsync(object result)
+        {
+            if (this.packageManager != null && result is PackageInfo info)
+            {
+                await this.packageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(info.PackageName, info.Version, null, this.PackageSource),
+                    default
+                );
+            }
+
+            await base.AfterRemoteExecuteAsync(result);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
@@ -176,6 +204,19 @@ namespace Inedo.Extensions.Operations.ProGet
                 new RichDescription("Push ", new Hilite(config[nameof(Name)]), " Package"),
                 new RichDescription("to ProGet feed ", config[nameof(Server)])
             );
+        }
+
+        [Serializable]
+        private sealed class PackageInfo
+        {
+            public PackageInfo(string packageName, string version)
+            {
+                this.PackageName = packageName;
+                this.Version = version;
+            }
+
+            public string PackageName { get; }
+            public string Version { get; }
         }
     }
 }
