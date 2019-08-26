@@ -67,6 +67,12 @@ namespace Inedo.Extensions.UserDirectories
         [Description("Check group memberships recursively instead of only checking the groups that a user is directly a member of. This may cause reduced performance.")]
         public bool SearchGroupsRecursively { get; set; }
 
+        [Persistent]
+        [Category("Advanced")]
+        [DisplayName("Include gMSA")]
+        [Description("When locating users in the directory, include Group Managed Service Accounts.")]
+        public bool IncludeGroupManagedServiceAccounts{ get; set; }
+
         public ADUserDirectory()
         {
             this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
@@ -251,10 +257,14 @@ namespace Inedo.Extensions.UserDirectories
             if (string.IsNullOrEmpty(searchTerm))
                 yield break;
 
+            var userSearchQuery = "objectCategory=user";
+            if (this.IncludeGroupManagedServiceAccounts)
+                userSearchQuery = "|(objectCategory=user)(objectCategory=msDS-GroupManagedServiceAccount)";
+
             var categoryFilter = AH.Switch<PrincipalSearchType, string>(searchType)
-                .Case(PrincipalSearchType.UsersAndGroups, "(|(objectCategory=user)(objectCategory=group))")
+                .Case(PrincipalSearchType.UsersAndGroups, $"(|({userSearchQuery})(objectCategory=group))")
                 .Case(PrincipalSearchType.Groups, "(objectCategory=group)")
-                .Case(PrincipalSearchType.Users, "(objectCategory=user)")
+                .Case(PrincipalSearchType.Users, $"({userSearchQuery})")
                 .End();
 
             var st = LDAP.Escape(searchTerm);
