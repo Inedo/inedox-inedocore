@@ -190,7 +190,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (this.packageManager != null && result is PackageInfo info)
             {
                 await this.packageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(info.PackageName, info.Version, null, this.PackageSource),
+                    new AttachedPackage(AttachedPackageType.Universal, info.PackageName, info.Version, null, this.PackageSource),
                     default
                 );
             }
