@@ -191,14 +191,19 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             if (this.packageManager != null && result is RepackageInfo info)
             {
+                var packageType = AttachedPackageType.Universal;
+
                 foreach (var p in await this.packageManager.GetBuildPackagesAsync(default))
                 {
-                    if (p.Active && string.Equals(p.Name, info.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, info.OriginalVersion, StringComparison.OrdinalIgnoreCase) && string.Equals(p.PackageSource, this.PackageSource, StringComparison.OrdinalIgnoreCase))
+                    if (p.Active && string.Equals(p.Name, info.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, info.OriginalVersion, StringComparison.OrdinalIgnoreCase))
+                    {
+                        packageType = p.PackageType;
                         await this.packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
+                    }
                 }
 
                 await this.packageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(info.PackageName, info.NewVersion, null, this.PackageSource),
+                    new AttachedPackage(packageType, info.PackageName, info.NewVersion, null, AH.NullIf(this.PackageSource, string.Empty)),
                     default
                 );
             }
