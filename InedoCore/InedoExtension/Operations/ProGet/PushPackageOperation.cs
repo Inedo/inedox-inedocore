@@ -191,8 +191,6 @@ ProGet::Push-Package
                                 this.LogError("Name and Version properties are required unless pushing a package that already has those properties set.");
                                 return null;
                             }
-                            this.Name = package.Name;
-                            this.Version = package.Version.ToString();
                         }
                     }
                     catch
@@ -227,7 +225,7 @@ ProGet::Push-Package
 
         protected override async Task AfterRemoteExecuteAsync(object result)
         {
-            if (this.packageManager != null && result is PackageInfo info)
+            if (this.packageManager != null && result is PackageInfo info && !string.IsNullOrWhiteSpace(this.PackageSource))
             {
                 await this.packageManager.AttachPackageToBuildAsync(
                     new AttachedPackage(AttachedPackageType.Universal, info.PackageName, info.Version, null, this.PackageSource),
