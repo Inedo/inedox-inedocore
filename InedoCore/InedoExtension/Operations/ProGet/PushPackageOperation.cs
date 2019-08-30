@@ -191,6 +191,8 @@ ProGet::Push-Package
                                 this.LogError("Name and Version properties are required unless pushing a package that already has those properties set.");
                                 return null;
                             }
+                            this.Name = package.Name;
+                            this.Version = package.Version.ToString();
                         }
                     }
                     catch
