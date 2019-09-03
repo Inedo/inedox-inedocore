@@ -189,7 +189,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
         protected override async Task AfterRemoteExecuteAsync(object result)
         {
-            if (this.packageManager != null && result is RepackageInfo info)
+            if (this.packageManager != null && result is RepackageInfo info && !string.IsNullOrWhiteSpace(this.PackageSource))
             {
                 var packageType = AttachedPackageType.Universal;
 
