@@ -24,13 +24,17 @@ Exec c:\tools\7za.exe (
 );")]
     public sealed class ExecuteProcessOperation : ExecuteOperation
     {
-        private Lazy<Regex> warnRegex;
+        private readonly Lazy<Regex> warnRegex;
+        private readonly Lazy<Regex> progressRegex;
+        private readonly Lazy<Regex> outputFilterRegex;
+        private volatile int percent;
+        private volatile string status;
 
         public ExecuteProcessOperation()
         {
-            this.warnRegex = new Lazy<Regex>(
-                () => !string.IsNullOrWhiteSpace(this.WarningTextRegex) ? new Regex(this.WarningTextRegex) : null
-            );
+            this.warnRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.WarningTextRegex) ? new Regex(this.WarningTextRegex) : null);
+            this.progressRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.ReportProgressRegex) ? new Regex(this.ReportProgressRegex) : null);
+            this.outputFilterRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.OutputTextRegex) ? new Regex(this.OutputTextRegex) : null);
         }
 
         public string Target { get; set; }
@@ -72,6 +76,18 @@ Exec c:\tools\7za.exe (
         [DisplayName("Log arguments")]
         [DefaultValue(true)]
         public bool LogArguments { get; set; } = true;
+        [Category("Advanced")]
+        [ScriptAlias("ReportProgressRegex")]
+        [DisplayName("Report progress regex")]
+        [Description("When set to a valid regular expression string, attempts to parse every output message for real-time progress updates. To capature a status message, use a group with name \"m\". To capture a percent complete as a number from 0 to 100, use a group with name \"p\".")]
+        public string ReportProgressRegex { get; set; }
+        [Category("Advanced")]
+        [ScriptAlias("OutputFilterRegex")]
+        [DisplayName("Output filter regex")]
+        [Description("When set to a valid regular expression string, only output messages which match this expression will be logged.")]
+        public string OutputTextRegex { get; set; }
+
+        public override OperationProgress GetProgress() => new OperationProgress(AH.NullIf(this.percent, -1), this.status);
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
@@ -111,7 +127,7 @@ Exec c:\tools\7za.exe (
             startInfo.WorkingDirectory = context.ResolvePath(this.WorkingDirectory);
 
             this.LogDebug("Process: " + startInfo.FileName);
-            if (LogArguments)
+            if (this.LogArguments)
                 this.LogDebug("Arguments: " + startInfo.Arguments);
                 
             this.LogDebug("Working directory: " + startInfo.WorkingDirectory);
@@ -178,10 +194,37 @@ Exec c:\tools\7za.exe (
         }
         private void Process_OutputDataReceived(object sender, ProcessDataReceivedEventArgs e)
         {
-            var regex = this.warnRegex.Value;
-            if (regex != null)
+            var progressRegex = this.progressRegex.Value;
+            if (progressRegex != null)
             {
-                var match = regex.Match(e.Data);
+                var match = progressRegex.Match(e.Data);
+                if (match.Success)
+                {
+                    var percentGroup = match.Groups["p"];
+                    if (percentGroup != null && percentGroup.Success)
+                    {
+                        // use decimal to allow for easier capturing of percentages
+                        if (decimal.TryParse(percentGroup.Value, out var percent))
+                            this.percent = (int)Math.Min(Math.Max(percent, 0), 100);
+                    }
+
+                    var statusGroup = match.Groups["m"];
+                    if (statusGroup != null && statusGroup.Success)
+                        this.status = AH.NullIf(statusGroup.Value, string.Empty);
+                }
+            }
+
+            var filterRegex = this.outputFilterRegex.Value;
+            if (filterRegex != null)
+            {
+                if (!filterRegex.IsMatch(e.Data))
+                    return;
+            }
+
+            var warnRegex = this.warnRegex.Value;
+            if (warnRegex != null)
+            {
+                var match = warnRegex.Match(e.Data);
                 if (match.Success)
                 {
                     this.LogWarning(AH.CoalesceString(match.Groups["m"]?.Value, e.Data));

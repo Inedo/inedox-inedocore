@@ -36,7 +36,7 @@ namespace Inedo.Extensions.Operations.General
             this.LogInformation($"Sleeping for {this.Seconds} seconds...");
             await Task.Delay(this.Seconds * 1000, context.CancellationToken).ConfigureAwait(false);
 
-            this.LogInformation("Yaaaaaawn that was a good nap!");
+            this.LogInformation("Done sleeping.");
         }
         public override OperationProgress GetProgress()
         {
