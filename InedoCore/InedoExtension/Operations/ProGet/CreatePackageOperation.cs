@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
@@ -11,9 +12,12 @@ using Inedo.ExecutionEngine;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 using Inedo.UPack;
+using Inedo.UPack.Net;
 using Inedo.UPack.Packaging;
+using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -23,8 +27,12 @@ namespace Inedo.Extensions.Operations.ProGet
     [Description("Creates a universal package from the specified directory.")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("proget")]
-    public sealed class CreatePackageOperation : RemoteExecuteOperation
+    public sealed class CreatePackageOperation : RemotePackageOperationBase
     {
+        private string userName;
+        private string password;
+        private string feedUrl;
+
         [ScriptAlias("From")]
         [PlaceholderText("$WorkingDirectory")]
         [DisplayName("Source directory")]
@@ -58,6 +66,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
         public string Version { get; set; }
+
+        [ScriptAlias("PackageSource")]
+        [DisplayName("Package source")]
+        [Category("Package Source (Preview)")]
+        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [Description("When specified, the package will be uploaded to this package source and attached to the current build.")]
+        public override string PackageSource { get; set; }
 
         [Category("Advanced")]
         [ScriptAlias("Metadata")]
@@ -132,6 +147,29 @@ namespace Inedo.Extensions.Operations.ProGet
                 this.LogInformation("Package created.");
             }
 
+            // when package source is specified, upload it
+            if (!string.IsNullOrWhiteSpace(this.PackageSource))
+            {
+                // start computing the hash in the background
+                var computeHashTask = Task.Factory.StartNew(() => computePackageHash(outputFileName), TaskCreationOptions.LongRunning);
+
+                this.LogDebug("Package source URL: " + this.feedUrl);
+                this.LogInformation($"Uploading package to {this.PackageSource}...");
+
+                using (var fileStream = FileEx.Open(outputFileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
+                {
+                    var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.feedUrl), this.userName, AH.CreateSecureString(this.password)));
+                    await client.UploadPackageAsync(fileStream, context.CancellationToken);
+                }
+
+                this.LogDebug("Package uploaded.");
+
+                this.LogDebug("Waiting for package hash to be computed...");
+                var hash = await computeHashTask;
+                this.LogDebug("Package SHA1: " + new HexString(hash));
+                return hash;
+            }
+
             return null;
 
             bool isIgnored(string propertyName)
@@ -160,6 +198,30 @@ namespace Inedo.Extensions.Operations.ProGet
                         throw new ArgumentException();
                 }
             }
+
+            byte[] computePackageHash(string fileName)
+            {
+                using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan))
+                using (var sha1 = SHA1.Create())
+                {
+                    return sha1.ComputeHash(fileStream);
+                }
+            }
+        }
+
+        protected override async Task AfterRemoteExecuteAsync(object result)
+        {
+            await base.AfterRemoteExecuteAsync(result);
+
+            if (this.PackageManager != null && !string.IsNullOrWhiteSpace(this.PackageSource))
+            {
+                this.LogDebug("Attaching package to build...");
+                await this.PackageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(AttachedPackageType.Universal, GetFullPackageName(this.Group, this.Name), this.Version, (byte[])result, this.PackageSource),
+                    default
+                );
+                this.LogDebug("Package attached.");
+            }
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
@@ -175,6 +237,13 @@ namespace Inedo.Extensions.Operations.ProGet
                     new DirectoryHilite(config[nameof(SourceDirectory)])
                 )
             );
+        }
+
+        private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
+        {
+            this.userName = userName;
+            this.password = password;
+            this.feedUrl = feedUrl;
         }
 
         private void ValidateArguments()
