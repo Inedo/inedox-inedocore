@@ -186,7 +186,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.apiKey = password;
 
-            var match = Regex.Match(feedUrl, @"^(?<1>[^/]+)/upack/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
+            var match = Regex.Match(feedUrl, @"^(?<1>.+)/upack/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
             if (!match.Success)
                 throw new ExecutionFailureException($"This operation requires a ProGet feed endpoint URL to be specified in the \"{this.PackageSource}\" package source.");
 

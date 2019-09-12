@@ -1,11 +1,18 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using System.Security;
+using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.IO;
+using Inedo.UPack;
+using Inedo.UPack.Net;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -80,5 +87,36 @@ namespace Inedo.Extensions.Operations.ProGet
         private protected abstract void SetPackageSourceProperties(string userName, string password, string feedUrl);
 
         private protected static string GetFullPackageName(string group, string name) => string.IsNullOrWhiteSpace(group) ? name : (group + "/" + name);
+
+        private protected async Task<byte[]> UploadAndComputeHashAsync(string fileName, string feedUrl, string userName, SecureString password, CancellationToken cancellationToken)
+        {
+            // start computing the hash in the background
+            var computeHashTask = Task.Factory.StartNew(computePackageHash, TaskCreationOptions.LongRunning);
+
+            this.LogDebug("Package source URL: " + feedUrl);
+            this.LogInformation($"Uploading package to {this.PackageSource}...");
+
+            using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
+            {
+                var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(feedUrl), userName, password));
+                await client.UploadPackageAsync(fileStream, cancellationToken);
+            }
+
+            this.LogDebug("Package uploaded.");
+
+            this.LogDebug("Waiting for package hash to be computed...");
+            var hash = await computeHashTask;
+            this.LogDebug("Package SHA1: " + new HexString(hash));
+            return hash;
+
+            byte[] computePackageHash()
+            {
+                using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan))
+                using (var sha1 = SHA1.Create())
+                {
+                    return sha1.ComputeHash(fileStream);
+                }
+            }
+        }
     }
 }

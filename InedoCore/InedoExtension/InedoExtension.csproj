@@ -122,6 +122,7 @@
     <Compile Include="Operations\ProGet\PackageDeployer.cs" />
     <Compile Include="Operations\ProGet\ProGetClient.cs" />
     <Compile Include="Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
+    <Compile Include="Operations\ProGet\PushPackageFileOperation.cs" />
     <Compile Include="Operations\ProGet\PushPackageOperation.cs" />
     <Compile Include="Operations\ProGet\QueryPackageOperation.cs" />
     <Compile Include="Operations\ProGet\RemotePackageOperationBase.cs" />

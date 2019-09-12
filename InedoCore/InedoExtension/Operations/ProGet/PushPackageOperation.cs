@@ -30,7 +30,8 @@ ProGet::Push-Package
     PackageSource: ApplicationPackages,
     FilePath: ProfitCalc-$ReleaseNumber.upack
 );")]
-    [Note("When a Package Source is specified, its credentials will be used to connect to the remote server only if credentials are not specified explicitly on this operation (i.e. using the \"Credentials\" property).")]
+    [Note("If uploading to a Package Source, use the ProGet::PushPackageFile operation instead.")]
+    [SeeAlso(typeof(PushPackageFileOperation))]
 #pragma warning disable CS0618 // Type or member is obsolete
     public sealed class PushPackageOperation : RemoteExecuteOperation, IHasCredentials<ProGetCredentials>
 #pragma warning restore CS0618 // Type or member is obsolete

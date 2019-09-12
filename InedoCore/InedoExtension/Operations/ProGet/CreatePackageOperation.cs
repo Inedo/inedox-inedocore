@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
@@ -15,7 +14,6 @@ using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 using Inedo.UPack;
-using Inedo.UPack.Net;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 
@@ -149,26 +147,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             // when package source is specified, upload it
             if (!string.IsNullOrWhiteSpace(this.PackageSource))
-            {
-                // start computing the hash in the background
-                var computeHashTask = Task.Factory.StartNew(() => computePackageHash(outputFileName), TaskCreationOptions.LongRunning);
-
-                this.LogDebug("Package source URL: " + this.feedUrl);
-                this.LogInformation($"Uploading package to {this.PackageSource}...");
-
-                using (var fileStream = FileEx.Open(outputFileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
-                {
-                    var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.feedUrl), this.userName, AH.CreateSecureString(this.password)));
-                    await client.UploadPackageAsync(fileStream, context.CancellationToken);
-                }
-
-                this.LogDebug("Package uploaded.");
-
-                this.LogDebug("Waiting for package hash to be computed...");
-                var hash = await computeHashTask;
-                this.LogDebug("Package SHA1: " + new HexString(hash));
-                return hash;
-            }
+                return await this.UploadAndComputeHashAsync(outputFileName, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
 
             return null;
 
@@ -196,15 +175,6 @@ namespace Inedo.Extensions.Operations.ProGet
                         return value.AsDictionary().ToDictionary(p => p.Key, p => convert(p.Value));
                     default:
                         throw new ArgumentException();
-                }
-            }
-
-            byte[] computePackageHash(string fileName)
-            {
-                using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan))
-                using (var sha1 = SHA1.Create())
-                {
-                    return sha1.ComputeHash(fileStream);
                 }
             }
         }
