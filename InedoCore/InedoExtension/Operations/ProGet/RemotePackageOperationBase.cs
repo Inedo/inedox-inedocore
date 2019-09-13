@@ -52,6 +52,8 @@ namespace Inedo.Extensions.Operations.ProGet
                     int? applicationId = null;
                     int? environmentId = null;
 
+                    this.LogDebug($"Looking up credentials ({packageSource.CredentialName})...");
+
                     if (context is IStandardContext standardContext)
                     {
                         applicationId = standardContext.ProjectId;
@@ -94,7 +96,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var computeHashTask = Task.Factory.StartNew(computePackageHash, TaskCreationOptions.LongRunning);
 
             this.LogDebug("Package source URL: " + feedUrl);
-            this.LogInformation($"Uploading package to {this.PackageSource}...");
+            this.LogInformation($"Uploading package to {this.PackageSource} (user: {userName})...");
 
             using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
             {
