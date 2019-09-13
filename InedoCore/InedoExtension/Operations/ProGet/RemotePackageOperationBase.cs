@@ -96,7 +96,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var computeHashTask = Task.Factory.StartNew(computePackageHash, TaskCreationOptions.LongRunning);
 
             this.LogDebug("Package source URL: " + feedUrl);
-            this.LogInformation($"Uploading package to {this.PackageSource} (user: {userName})...");
+            this.LogInformation($"Uploading package to {this.PackageSource}...");
 
             using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
             {
