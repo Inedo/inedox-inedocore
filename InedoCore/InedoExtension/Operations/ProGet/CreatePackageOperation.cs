@@ -75,6 +75,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [Category("Advanced")]
         [ScriptAlias("Metadata")]
         [DisplayName("Additional metadata")]
+        [FieldEditMode(FieldEditMode.Multiline)]
         [Description("Additional properties may be specified using map syntax. For example: %(description: my package description)")]
         public IReadOnlyDictionary<string, RuntimeValue> Metadata { get; set; }
 
@@ -120,6 +121,9 @@ namespace Inedo.Extensions.Operations.ProGet
                     metadata[m.Key] = convert(m.Value);
                 }
             }
+
+            // Ensure output directory exists
+            DirectoryEx.Create(PathEx.GetDirectoryName(outputFileName));
 
             using (var package = new UniversalPackageBuilder(new FileStream(outputFileName, this.Overwrite ? FileMode.Create : FileMode.CreateNew), metadata))
             {
