@@ -124,7 +124,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 this.LogInformation("Repackage was successful.");
 
-                return new RepackageInfo(this.PackageName, this.PackageVersion, this.NewVersion);
+                return new RepackageInfo(GetFullPackageName(this.PackageGroup, this.PackageName), this.PackageVersion, this.NewVersion);
             }
             catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
             {
