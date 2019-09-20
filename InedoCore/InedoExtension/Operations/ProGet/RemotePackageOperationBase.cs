@@ -31,59 +31,16 @@ namespace Inedo.Extensions.Operations.ProGet
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             string userName = null;
-            string password = null;
+            SecureString password = null;
             string feedUrl = null;
             await base.BeforeRemoteExecuteAsync(context);
             this.PackageManager = await context.TryGetServiceAsync<IPackageManager>();
 
             // if package source is specified, look up the info while still executing locally
             if (!string.IsNullOrEmpty(this.PackageSource))
-            {
-                var packageSource = SDK.GetPackageSources()
-                    .FirstOrDefault(s => string.Equals(s.Name, this.PackageSource, StringComparison.OrdinalIgnoreCase));
+                this.ResolvePackageSource(context, this.PackageSource, out userName, out password, out feedUrl);
 
-                if (packageSource == null)
-                    throw new ExecutionFailureException($"Package source \"{this.PackageSource}\" not found.");
-
-                feedUrl = packageSource.FeedUrl;
-
-                if (!string.IsNullOrEmpty(packageSource.CredentialName))
-                {
-                    int? applicationId = null;
-                    int? environmentId = null;
-
-                    this.LogDebug($"Looking up credentials ({packageSource.CredentialName})...");
-
-                    if (context is IStandardContext standardContext)
-                    {
-                        applicationId = standardContext.ProjectId;
-                        environmentId = standardContext.EnvironmentId;
-                    }
-
-                    var userNameCredentials = (UsernamePasswordCredentials)ResourceCredentials.TryCreate("UsernamePassword", packageSource.CredentialName, environmentId, applicationId, false);
-                    if (userNameCredentials != null)
-                    {
-                        // assign these values to the operation so they get serialized prior to remote execute
-                        userName = userNameCredentials.UserName;
-                        password = AH.Unprotect(userNameCredentials.Password);
-                    }
-                    else
-                    {
-                        var productCredentials = (InedoProductCredentials)ResourceCredentials.TryCreate("InedoProduct", packageSource.CredentialName, environmentId, applicationId, false);
-                        if (productCredentials == null)
-                            throw new ExecutionFailureException($"Credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source must be Inedo Product credentials or Username & Password credentials.");
-
-                        if ((productCredentials.Products & InedoProduct.ProGet) == 0)
-                            this.LogWarning($"Inedo Product credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source are not marked as ProGet credentials.");
-
-                        // assign these values to the operation so they get serialized prior to remote execute
-                        userName = "api";
-                        password = AH.Unprotect(productCredentials.ApiKey);
-                    }
-                }
-            }
-
-            this.SetPackageSourceProperties(userName, password, feedUrl);
+            this.SetPackageSourceProperties(userName, AH.Unprotect(password), feedUrl);
         }
 
         private protected abstract void SetPackageSourceProperties(string userName, string password, string feedUrl);
@@ -117,6 +74,52 @@ namespace Inedo.Extensions.Operations.ProGet
                 using (var sha1 = SHA1.Create())
                 {
                     return sha1.ComputeHash(fileStream);
+                }
+            }
+        }
+
+        private protected void ResolvePackageSource(IOperationExecutionContext context, string name, out string userName, out SecureString password, out string feedUrl)
+        {
+            var packageSource = SDK.GetPackageSources()
+                .FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
+
+            if (packageSource == null)
+                throw new ExecutionFailureException($"Package source \"{name}\" not found.");
+
+            feedUrl = packageSource.FeedUrl;
+            userName = null;
+            password = null;
+
+            if (!string.IsNullOrEmpty(packageSource.CredentialName))
+            {
+                int? applicationId = null;
+                int? environmentId = null;
+
+                this.LogDebug($"Looking up credentials ({packageSource.CredentialName})...");
+
+                if (context is IStandardContext standardContext)
+                {
+                    applicationId = standardContext.ProjectId;
+                    environmentId = standardContext.EnvironmentId;
+                }
+
+                var userNameCredentials = (UsernamePasswordCredentials)ResourceCredentials.TryCreate("UsernamePassword", packageSource.CredentialName, environmentId, applicationId, false);
+                if (userNameCredentials != null)
+                {
+                    userName = userNameCredentials.UserName;
+                    password = userNameCredentials.Password;
+                }
+                else
+                {
+                    var productCredentials = (InedoProductCredentials)ResourceCredentials.TryCreate("InedoProduct", packageSource.CredentialName, environmentId, applicationId, false);
+                    if (productCredentials == null)
+                        throw new ExecutionFailureException($"Credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source must be Inedo Product credentials or Username & Password credentials.");
+
+                    if ((productCredentials.Products & InedoProduct.ProGet) == 0)
+                        this.LogWarning($"Inedo Product credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source are not marked as ProGet credentials.");
+
+                    userName = "api";
+                    password = productCredentials.ApiKey;
                 }
             }
         }
