@@ -103,7 +103,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!url.EndsWith("/"))
                 url += "/";
 
-            url += "api/repackaging/repackage";
+            url += "api/promotions";
 
             this.LogDebug($"Making request to {url}...");
             var request = WebRequest.CreateHttp(url);
@@ -141,7 +141,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 {
                 }
 
-                this.LogInformation("Repackage was successful.");
+                this.LogInformation("Promotion was successful.");
 
                 return true;
             }
