@@ -103,7 +103,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!url.EndsWith("/"))
                 url += "/";
 
-            url += "api/promotions";
+            url += "api/promotions/promote";
 
             this.LogDebug($"Making request to {url}...");
             var request = WebRequest.CreateHttp(url);
