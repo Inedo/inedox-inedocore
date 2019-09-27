@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security;
 using System.Security.Cryptography;
@@ -47,6 +48,28 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private protected static string GetFullPackageName(string group, string name) => string.IsNullOrWhiteSpace(group) ? name : (group + "/" + name);
 
+        private protected async Task<byte[]> UploadVirtualAndComputeHashAsync(string fileName, string feedUrl, string userName, SecureString password, CancellationToken cancellationToken)
+        {
+            var tempFileName = Path.GetTempFileName();
+            try
+            {
+                using (var vpackStream = File.OpenRead(fileName))
+                using (var tempZip = new ZipArchive(File.Create(tempFileName), ZipArchiveMode.Create))
+                {
+                    var upackEntry = tempZip.CreateEntry("upack.json");
+                    using (var upackStream = upackEntry.Open())
+                    {
+                        vpackStream.CopyTo(upackStream);
+                    }
+                }
+
+                return await this.UploadAndComputeHashAsync(tempFileName, feedUrl, userName, password, cancellationToken);
+            }
+            finally
+            {
+                File.Delete(tempFileName);
+            }
+        }
         private protected async Task<byte[]> UploadAndComputeHashAsync(string fileName, string feedUrl, string userName, SecureString password, CancellationToken cancellationToken)
         {
             // start computing the hash in the background

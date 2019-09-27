@@ -54,13 +54,16 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
                 throw new ExecutionFailureException($"Package file {fullPath} does not exist.");
 
             this.LogDebug("Verifying package...");
-            (var fullName, var version) = GetPackageInfo(fullPath);
+            (var fullName, var version, bool vpack) = GetPackageInfo(fullPath);
             this.LogDebug($"Package verified. Name: {fullName}, Version: {version}");
 
-            var hash = await this.UploadAndComputeHashAsync(fullPath, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
+            byte[] hash;
+            if (!vpack)
+                hash = await this.UploadAndComputeHashAsync(fullPath, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
+            else
+                hash = await this.UploadVirtualAndComputeHashAsync(fullPath, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
 
             return new PackageInfo(fullName, version, hash);
-
         }
 
         protected override async Task AfterRemoteExecuteAsync(object result)
@@ -99,7 +102,7 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             this.feedUrl = feedUrl;
         }
 
-        private static (string fullName, string version) GetPackageInfo(string path)
+        private static (string fullName, string version, bool vpack) GetPackageInfo(string path)
         {
             if (path.EndsWith(".vpack", StringComparison.OrdinalIgnoreCase))
             {
@@ -114,7 +117,7 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
                     if (string.IsNullOrWhiteSpace(version))
                         throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"version\" property.");
 
-                    return (GetFullPackageName(group, name), version);
+                    return (GetFullPackageName(group, name), version, true);
                 }
             }
 
@@ -122,7 +125,7 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             {
                 using (var package = new UniversalPackage(path))
                 {
-                    return (GetFullPackageName(package.Group, package.Name), package.Version.ToString());
+                    return (GetFullPackageName(package.Group, package.Name), package.Version.ToString(), false);
                 }
             }
             catch (Exception ex)
