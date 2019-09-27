@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -11,6 +12,8 @@ using Inedo.IO;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 using Inedo.Web.Plans.ArgumentEditors;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -50,36 +53,14 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             if (!FileEx.Exists(fullPath))
                 throw new ExecutionFailureException($"Package file {fullPath} does not exist.");
 
-            string group;
-            string name;
-            string version;
-
             this.LogDebug("Verifying package...");
-
-            using (var package = openPackage(fullPath))
-            {
-                group = package.Group;
-                name = package.Name;
-                version = package.Version.ToString();
-            }
-
-            this.LogDebug($"Package verfied. Name: {GetFullPackageName(group, name)}, Version: {version}");
+            (var fullName, var version) = GetPackageInfo(fullPath);
+            this.LogDebug($"Package verified. Name: {fullName}, Version: {version}");
 
             var hash = await this.UploadAndComputeHashAsync(fullPath, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
 
-            return new PackageInfo(GetFullPackageName(group, name), version, hash);
+            return new PackageInfo(fullName, version, hash);
 
-            UniversalPackage openPackage(string path)
-            {
-                try
-                {
-                    return new UniversalPackage(path);
-                }
-                catch (Exception ex)
-                {
-                    throw new ExecutionFailureException($"{path} is not a valid universal package file: {ex.Message}");
-                }
-            }
         }
 
         protected override async Task AfterRemoteExecuteAsync(object result)
@@ -116,6 +97,38 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             this.userName = userName;
             this.password = password;
             this.feedUrl = feedUrl;
+        }
+
+        private static (string fullName, string version) GetPackageInfo(string path)
+        {
+            if (path.EndsWith(".vpack", StringComparison.OrdinalIgnoreCase))
+            {
+                using (var reader = new JsonTextReader(File.OpenText(path)))
+                {
+                    var obj = JObject.Load(reader);
+                    var group = (string)obj.Property("group");
+                    var name = (string)obj.Property("name");
+                    var version = (string)obj.Property("version");
+                    if (string.IsNullOrWhiteSpace(name))
+                        throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"name\" property.");
+                    if (string.IsNullOrWhiteSpace(version))
+                        throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"version\" property.");
+
+                    return (GetFullPackageName(group, name), version);
+                }
+            }
+
+            try
+            {
+                using (var package = new UniversalPackage(path))
+                {
+                    return (GetFullPackageName(package.Group, package.Name), package.Version.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ExecutionFailureException($"{path} is not a valid universal package file: {ex.Message}");
+            }
         }
 
         [Serializable]
