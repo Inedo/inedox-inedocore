@@ -367,6 +367,9 @@ namespace Inedo.Extensions.UserDirectories
                     while (groupsToSearch.Count > 0)
                     {
                         var nextGroup = groupsToSearch.Dequeue();
+                        if (StringComparer.OrdinalIgnoreCase.Equals(nextGroup, compareName))
+                            return true;
+
                         if (groupsSearched.Add(nextGroup))
                         {
                             var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
@@ -378,8 +381,6 @@ namespace Inedo.Extensions.UserDirectories
                             }
                         }
                     }
-
-                    return groupsSearched.Contains(compareName);
                 }
 
                 return false;
