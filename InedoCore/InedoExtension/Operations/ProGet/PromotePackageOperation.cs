@@ -29,15 +29,15 @@ namespace Inedo.Extensions.Operations.ProGet
         private string toFeed;
         private string apiKey;
 
-        [Required]
-        [DisplayName("From")]
+        [DisplayName("From source")]
         [ScriptAlias("From")]
         [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [PlaceholderText("Infer from package name")]
         public override string PackageSource { get; set; }
-        [Required]
-        [DisplayName("To")]
+        [DisplayName("To source")]
         [ScriptAlias("To")]
         [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [PlaceholderText("Same as From")]
         public string TargetPackageSource { get; set; }
 
         [ScriptAlias("Group")]
@@ -46,7 +46,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Name")]
-        public string PackageName { get; set; }
+        public override string PackageName { get; set; }
         [Required]
         [ScriptAlias("Version")]
         [DisplayName("Version")]
@@ -58,12 +58,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
-            if (string.IsNullOrWhiteSpace(this.PackageSource))
-                throw new ExecutionFailureException("\"From\" is required.");
-
-            if (string.IsNullOrWhiteSpace(this.TargetPackageSource))
-                throw new ExecutionFailureException("\"To\" is required.");
-
             if (string.IsNullOrWhiteSpace(this.PackageName))
                 throw new ExecutionFailureException("\"Name\" is required.");
 
@@ -71,6 +65,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw new ExecutionFailureException("\"Version\" is required.");
 
             await base.BeforeRemoteExecuteAsync(context);
+
+            this.TargetPackageSource ??= this.PackageSource;
 
             this.ResolvePackageSource(context, this.TargetPackageSource, out var toUserName, out var toPassword, out var toFeedUrl);
 
@@ -81,7 +77,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             var match = Regex.Match(toFeedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
             if (!match.Success)
-                throw new ExecutionFailureException($"This operation requires a ProGet feed endpoint URL to be specified in the \"{this.TargetPackageSource}\" package source.");
+                throw new ExecutionFailureException($"Could not feed name from feedUrl: " + feedUrl);
 
             this.toFeed = match.Groups[2].Value;
         }

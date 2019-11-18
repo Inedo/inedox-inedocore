@@ -29,9 +29,9 @@ namespace Inedo.Extensions.Operations.ProGet
         private string password;
         private string feedUrl;
 
-        [Required]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
+        [PlaceholderText("Infer from package name")]
         [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
         public override string PackageSource { get; set; }
 
@@ -39,7 +39,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
         [SuggestableValue(typeof(PackageNameFromSourceSuggestionProvider))]
-        public string PackageName { get; set; }
+        public override string PackageName { get; set; }
 
         [ScriptAlias("Version")]
         [DisplayName("Package version")]

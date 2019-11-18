@@ -24,6 +24,8 @@ namespace Inedo.Extensions.Operations.ProGet
         {
         }
 
+        public abstract string PackageName { get; set; }
+
         public abstract string PackageSource { get; set; }
 
         [field: NonSerialized]
@@ -36,6 +38,12 @@ namespace Inedo.Extensions.Operations.ProGet
             string feedUrl = null;
             await base.BeforeRemoteExecuteAsync(context);
             this.PackageManager = await context.TryGetServiceAsync<IPackageManager>();
+
+            // if package source not specified, try to infer it from the package name
+            if (string.IsNullOrEmpty(this.PackageSource) && this.PackageManager != null)
+                this.PackageSource = (await this.PackageManager.GetBuildPackagesAsync(context.CancellationToken))
+                    .FirstOrDefault(p => string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase))
+                    ?.PackageSource;
 
             // if package source is specified, look up the info while still executing locally
             if (!string.IsNullOrEmpty(this.PackageSource))

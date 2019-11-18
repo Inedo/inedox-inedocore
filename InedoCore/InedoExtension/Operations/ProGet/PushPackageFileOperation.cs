@@ -47,6 +47,8 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
         public override string PackageSource { get; set; }
 
+        public override string PackageName { get => null; set => throw new InvalidOperationException(); }
+
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
             var fullPath = context.ResolvePath(this.FilePath);
