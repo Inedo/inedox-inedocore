@@ -29,6 +29,28 @@ Copy-Files(
     Overwrite: true
 );
 ")]
+    [Example(@"
+# copy a file, renaming it during the copy
+Copy-Files(
+    From: $WorkingDirectory/build,
+    To: $WorkingDirectory/staging,
+    Include: HDARS.exe,
+    Verbose: true,
+    RenameFrom: .exe,
+    RenameTo: .$ReleaseNumber.exe
+);
+")]
+    [Example(@"
+# copy files, renaming them to fit the format desired by this application
+Copy-Files(
+    From: vendorData,
+    To: vendorData2,
+    Verbose: true,
+    RenameFrom: ""^(?<module>[a-z]+)\.(?<name>.*)\.xml$"",
+    RenameTo: `${name}-`${module}.xml,
+    RenameRegex: true
+);
+")]
     public sealed class CopyFilesOperation : ExecuteOperation
     {
         private int filesCopied;
@@ -81,7 +103,10 @@ Copy-Files(
             if (!string.IsNullOrEmpty(this.RenameFrom))
             {
                 var renameFrom = new Regex(this.RenameRegex ? this.RenameFrom : Regex.Escape(this.RenameFrom), RegexOptions.Singleline | RegexOptions.CultureInvariant);
-                this.renameFile = name => renameFrom.Replace(name, this.RenameTo);
+                var renameTo = this.RenameTo ?? string.Empty;
+                if (!this.RenameRegex)
+                    renameTo = renameTo.Replace("$", "$$");
+                this.renameFile = name => renameFrom.Replace(name, renameTo);
             }
 
             this.LogInformation($"Copying files from {sourceDirectory} to {targetDirectory}...");
