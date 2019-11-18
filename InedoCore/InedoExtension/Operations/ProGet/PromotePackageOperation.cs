@@ -66,7 +66,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             await base.BeforeRemoteExecuteAsync(context);
 
-            this.TargetPackageSource ??= this.PackageSource;
+            this.TargetPackageSource = this.TargetPackageSource ?? this.PackageSource;
 
             this.ResolvePackageSource(context, this.TargetPackageSource, out var toUserName, out var toPassword, out var toFeedUrl);
 
@@ -77,7 +77,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             var match = Regex.Match(toFeedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
             if (!match.Success)
-                throw new ExecutionFailureException($"Could not feed name from feedUrl: " + feedUrl);
+                throw new ExecutionFailureException($"Could not feed name from feedUrl: " + toFeedUrl);
 
             this.toFeed = match.Groups[2].Value;
         }
