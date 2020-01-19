@@ -34,6 +34,8 @@ namespace Inedo.Extensions.Operations.ProGet
         [field: NonSerialized]
         private protected IPackageManager PackageManager { get; private set; }
 
+        protected virtual bool ResolveNuGetPackageSources => false;
+
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             string userName = null;
@@ -114,11 +116,15 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private protected void ResolvePackageSource(IOperationExecutionContext context, string name, out string userName, out SecureString password, out string feedUrl)
         {
-            var packageSource = (UniversalPackageSource)SecureResource.TryCreate(name, new ResourceResolutionContext(null));
-            if (packageSource == null)
+            var packageSource = SecureResource.TryCreate(name, new ResourceResolutionContext(null));
+            if (packageSource is NuGetPackageSource && !this.ResolveNuGetPackageSources)
+                throw new ExecutionFailureException($"Package source \"{name}\" must be a universal package feed.");
+            else if (!(packageSource is UniversalPackageSource))
+                throw new ExecutionFailureException($"Package source \"{name}\" must be universal {(this.ResolveNuGetPackageSources ? " or nuget" : "")}.");
+            else if (packageSource == null)
                 throw new ExecutionFailureException($"Package source \"{name}\" not found.");
 
-            feedUrl = packageSource.ApiEndpointUrl;
+            feedUrl = (packageSource as UniversalPackageSource)?.ApiEndpointUrl ?? (packageSource as NuGetPackageSource)?.ApiEndpointUrl;
             userName = null;
             password = null;
 

@@ -24,6 +24,8 @@ namespace Inedo.Extensions.Operations.ProGet
     [Description("Changes the version number of a package in a ProGet feed and adds a repackaging entry to its metadata.")]
     public sealed class ChangePackageVersionOperation : RemotePackageOperationBase
     {
+        protected override bool ResolveNuGetPackageSources => true;
+
         private string apiKey;
         private string hostName;
         private string feedName;
