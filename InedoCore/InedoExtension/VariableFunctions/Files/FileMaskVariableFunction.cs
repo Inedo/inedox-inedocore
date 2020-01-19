@@ -16,7 +16,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("FileMask")]
     [Description("Returns a list of files matching the mask on the current server.")]
     [Tag("files")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class FileMaskVariableFunction : VectorVariableFunction, IAsyncVariableFunction
     {
         [VariableFunctionParameter(0)]

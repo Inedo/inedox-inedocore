@@ -11,6 +11,9 @@ using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.SecureResources;
+using Inedo.Extensions.Credentials;
+using Inedo.Extensions.SecureResources;
 using Inedo.IO;
 using Inedo.UPack;
 using Inedo.UPack.Net;
@@ -111,47 +114,30 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private protected void ResolvePackageSource(IOperationExecutionContext context, string name, out string userName, out SecureString password, out string feedUrl)
         {
-            var packageSource = SDK.GetPackageSources()
-                .FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
-
+            var packageSource = (UniversalPackageSource)SecureResource.TryCreate(name, new ResourceResolutionContext(null));
             if (packageSource == null)
                 throw new ExecutionFailureException($"Package source \"{name}\" not found.");
 
-            feedUrl = packageSource.FeedUrl;
+            feedUrl = packageSource.ApiEndpointUrl;
             userName = null;
             password = null;
 
-            if (!string.IsNullOrEmpty(packageSource.CredentialName))
+            var creds = packageSource.GetCredentials(new CredentialResolutionContext(null, null));
+            if (creds != null)
             {
-                int? applicationId = null;
-                int? environmentId = null;
-
                 this.LogDebug($"Looking up credentials ({packageSource.CredentialName})...");
-
-                if (context is IStandardContext standardContext)
+                if (creds is TokenCredentials tc)
                 {
-                    applicationId = standardContext.ProjectId;
-                    environmentId = standardContext.EnvironmentId;
+                    userName = "api";
+                    password = tc.Token;
                 }
-
-                var userNameCredentials = (UsernamePasswordCredentials)ResourceCredentials.TryCreate("UsernamePassword", packageSource.CredentialName, environmentId, applicationId, false);
-                if (userNameCredentials != null)
+                else if (creds is Inedo.Extensions.Credentials.UsernamePasswordCredentials upc)
                 {
-                    userName = userNameCredentials.UserName;
-                    password = userNameCredentials.Password;
+                    userName = upc.UserName;
+                    password = upc.Password;
                 }
                 else
-                {
-                    var productCredentials = (InedoProductCredentials)ResourceCredentials.TryCreate("InedoProduct", packageSource.CredentialName, environmentId, applicationId, false);
-                    if (productCredentials == null)
-                        throw new ExecutionFailureException($"Credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source must be Inedo Product credentials or Username & Password credentials.");
-
-                    if ((productCredentials.Products & InedoProduct.ProGet) == 0)
-                        this.LogWarning($"Inedo Product credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source are not marked as ProGet credentials.");
-
-                    userName = "api";
-                    password = productCredentials.ApiKey;
-                }
+                    throw new InvalidOperationException();
             }
         }
     }

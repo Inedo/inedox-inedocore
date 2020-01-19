@@ -84,100 +84,102 @@ Apply-Template hdars
         [DefaultValue(TemplateNewLineMode.Auto)]
         public TemplateNewLineMode NewLineMode { get; set; }
 
-        public override async Task ExecuteAsync(IOperationExecutionContext context)
-        {
-            var template = await getTemplateAsync().ConfigureAwait(false);
+        public override Task ExecuteAsync(IOperationExecutionContext context) => throw new NotImplementedException();
 
-            this.LogDebug("Detecting newlines in source template...");
-            var sourceNewLines = template.Contains("\r\n") ? TemplateNewLineMode.Windows
-                : template.Contains("\n") ? TemplateNewLineMode.Linux
-                : TemplateNewLineMode.Auto;
+        //public override async Task ExecuteAsync(IOperationExecutionContext context)
+        //{
+        //    var template = await getTemplateAsync().ConfigureAwait(false);
 
-            this.LogDebug("Applying template...");
-            var result = await context.ApplyTextTemplateAsync(template, this.AdditionalVariables).ConfigureAwait(false);
-            this.LogInformation("Template applied.");
+        //    this.LogDebug("Detecting newlines in source template...");
+        //    var sourceNewLines = template.Contains("\r\n") ? TemplateNewLineMode.Windows
+        //        : template.Contains("\n") ? TemplateNewLineMode.Linux
+        //        : TemplateNewLineMode.Auto;
 
-            if (this.NewLineMode == TemplateNewLineMode.Windows)
-                result = result.Replace("\n", "\r\n");
+        //    this.LogDebug("Applying template...");
+        //    var result = await context.ApplyTextTemplateAsync(template, this.AdditionalVariables).ConfigureAwait(false);
+        //    this.LogInformation("Template applied.");
 
-            if (!string.IsNullOrWhiteSpace(this.OutputFile))
-            {
-                var path = context.ResolvePath(this.OutputFile);
-                this.LogDebug($"Writing output to {path}...");
-                var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-                if (this.NewLineMode == TemplateNewLineMode.Auto)
-                    result = result.Replace("\n", fileOps.NewLine);
+        //    if (this.NewLineMode == TemplateNewLineMode.Windows)
+        //        result = result.Replace("\n", "\r\n");
 
-                await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(path));
-                await fileOps.WriteAllTextAsync(path, result).ConfigureAwait(false);
-            }
+        //    if (!string.IsNullOrWhiteSpace(this.OutputFile))
+        //    {
+        //        var path = context.ResolvePath(this.OutputFile);
+        //        this.LogDebug($"Writing output to {path}...");
+        //        var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
+        //        if (this.NewLineMode == TemplateNewLineMode.Auto)
+        //            result = result.Replace("\n", fileOps.NewLine);
 
-            this.LogDebug("Setting output variable...");
-            this.OutputVariable = result;
+        //        await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(path));
+        //        await fileOps.WriteAllTextAsync(path, result).ConfigureAwait(false);
+        //    }
 
-            async Task<string> getTemplateAsync()
-            {
-                if (!string.IsNullOrEmpty(this.Literal))
-                {
-                    this.LogDebug("Applying literal template: " + this.Literal);
-                    return this.Literal;
-                }
+        //    this.LogDebug("Setting output variable...");
+        //    this.OutputVariable = result;
 
-                if (!string.IsNullOrEmpty(this.InputFile))
-                {
-                    var path = context.ResolvePath(this.InputFile);
-                    this.LogDebug($"Using file {path} as template...");
-                    var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-                    if (!await fileOps.FileExistsAsync(path).ConfigureAwait(false))
-                        throw new ExecutionFailureException("Template file not found.");
+        //    async Task<string> getTemplateAsync()
+        //    {
+        //        if (!string.IsNullOrEmpty(this.Literal))
+        //        {
+        //            this.LogDebug("Applying literal template: " + this.Literal);
+        //            return this.Literal;
+        //        }
 
-                    return await fileOps.ReadAllTextAsync(path).ConfigureAwait(false);
-                }
-                
-                if (!string.IsNullOrEmpty(this.Asset))
-                {
-                    string templateName;
-                    string raftName;
+        //        if (!string.IsNullOrEmpty(this.InputFile))
+        //        {
+        //            var path = context.ResolvePath(this.InputFile);
+        //            this.LogDebug($"Using file {path} as template...");
+        //            var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
+        //            if (!await fileOps.FileExistsAsync(path).ConfigureAwait(false))
+        //                throw new ExecutionFailureException("Template file not found.");
 
-                    var templateNameParts = this.Asset.Split(new[] { "::" }, 2, StringSplitOptions.None);
-                    if (templateNameParts.Length == 2)
-                    {
-                        raftName = templateNameParts[0];
-                        templateName = templateNameParts[1];
-                    }
-                    else
-                    {
-                        if (SDK.ProductName == "BuildMaster")
-                            raftName = context.TryGetFunctionValue("$ApplicationName")?.AsString() ?? "";
-                        else
-                            raftName = RaftRepository.DefaultName;
+        //            return await fileOps.ReadAllTextAsync(path).ConfigureAwait(false);
+        //        }
 
-                        templateName = templateNameParts[0];
-                    }
+        //        if (!string.IsNullOrEmpty(this.Asset))
+        //        {
+        //            string templateName;
+        //            string raftName;
 
-                    using (var raft = await context.OpenRaftAsync(raftName, OpenRaftOptions.OptimizeLoadTime | OpenRaftOptions.ReadOnly))
-                    {
-                        if (raft == null)
-                            throw new ExecutionFailureException("Raft not found.");
+        //            var templateNameParts = this.Asset.Split(new[] { "::" }, 2, StringSplitOptions.None);
+        //            if (templateNameParts.Length == 2)
+        //            {
+        //                raftName = templateNameParts[0];
+        //                templateName = templateNameParts[1];
+        //            }
+        //            else
+        //            {
+        //                if (SDK.ProductName == "BuildMaster")
+        //                    raftName = context.TryGetFunctionValue("$ApplicationName")?.AsString() ?? "";
+        //                else
+        //                    raftName = RaftRepository.DefaultName;
 
-                        using (var stream = await raft.OpenRaftItemAsync(RaftItemType.TextTemplate, templateName, FileMode.Open, FileAccess.Read))
-                        {
-                            if (stream == null)
-                                throw new ExecutionFailureException($"Template \"{templateName}\" not found in raft.");
+        //                templateName = templateNameParts[0];
+        //            }
 
-                            this.LogDebug("Loading template from raft...");
-                            using (var reader = new StreamReader(stream, InedoLib.UTF8Encoding))
-                            {
-                                return await reader.ReadToEndAsync().ConfigureAwait(false);
-                            }
-                        }
-                    }
-                }
+        //            using (var raft = await context.OpenRaftAsync(raftName, OpenRaftOptions.OptimizeLoadTime | OpenRaftOptions.ReadOnly))
+        //            {
+        //                if (raft == null)
+        //                    throw new ExecutionFailureException("Raft not found.");
 
-                this.LogWarning("No template specified. Setting output to empty string.");
-                return string.Empty;
-            }
-        }
+        //                using (var stream = await raft.OpenRaftItemAsync(RaftItemType.TextTemplate, templateName, FileMode.Open, FileAccess.Read))
+        //                {
+        //                    if (stream == null)
+        //                        throw new ExecutionFailureException($"Template \"{templateName}\" not found in raft.");
+
+        //                    this.LogDebug("Loading template from raft...");
+        //                    using (var reader = new StreamReader(stream, InedoLib.UTF8Encoding))
+        //                    {
+        //                        return await reader.ReadToEndAsync().ConfigureAwait(false);
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        this.LogWarning("No template specified. Setting output to empty string.");
+        //        return string.Empty;
+        //    }
+        //}
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {

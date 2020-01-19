@@ -14,7 +14,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [Description("Returns a string containing all of the arguments combined into a complete path.")]
     [VariadicVariableFunction(nameof(AdditionalPaths))]
     [Tag("files")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class PathCombineVariableFunction : ScalarVariableFunction
     {
         [DisplayName("path1")]
