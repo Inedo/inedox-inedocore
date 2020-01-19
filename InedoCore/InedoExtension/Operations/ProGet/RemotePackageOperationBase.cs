@@ -117,14 +117,21 @@ namespace Inedo.Extensions.Operations.ProGet
         private protected void ResolvePackageSource(IOperationExecutionContext context, string name, out string userName, out SecureString password, out string feedUrl)
         {
             var packageSource = SecureResource.TryCreate(name, new ResourceResolutionContext(null));
-            if (packageSource is NuGetPackageSource && !this.ResolveNuGetPackageSources)
-                throw new ExecutionFailureException($"Package source \"{name}\" must be a universal package feed.");
-            else if (!(packageSource is UniversalPackageSource))
-                throw new ExecutionFailureException($"Package source \"{name}\" must be universal {(this.ResolveNuGetPackageSources ? " or nuget" : "")}.");
-            else if (packageSource == null)
+            if (packageSource == null)
                 throw new ExecutionFailureException($"Package source \"{name}\" not found.");
+            else if (packageSource is NuGetPackageSource nps)
+            {
+                if (!this.ResolveNuGetPackageSources)
+                    throw new ExecutionFailureException($"Package source \"{name}\" must be a universal package feed.");
+                feedUrl = nps.ApiEndpointUrl;
+            }
+            else if (packageSource is UniversalPackageSource ups)
+            {
+                feedUrl = ups.ApiEndpointUrl;
+            }
+            else
+                throw new ExecutionFailureException($"Package source \"{name}\" must be universal {(this.ResolveNuGetPackageSources ? " or nuget" : "")}.");
 
-            feedUrl = (packageSource as UniversalPackageSource)?.ApiEndpointUrl ?? (packageSource as NuGetPackageSource)?.ApiEndpointUrl;
             userName = null;
             password = null;
 
