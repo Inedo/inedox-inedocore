@@ -176,6 +176,7 @@
     <Compile Include="VariableFunctions\Servers\AllServersVariableFunction.cs" />
     <Compile Include="VariableFunctions\Servers\EnvironmentVariableVariableFunction.cs" />
     <Compile Include="VariableFunctions\Servers\PathCombineVariableFunction.cs" />
+    <Compile Include="VariableFunctions\Servers\ResolvePathVariableFunction.cs" />
     <Compile Include="VariableFunctions\Servers\ServerNameVariableFunction.cs" />
     <Compile Include="VariableFunctions\Servers\ServerRoleNameVariableFunction.cs" />
     <Compile Include="VariableFunctions\Servers\ServersInEnvironmentVariableFunction.cs" />
