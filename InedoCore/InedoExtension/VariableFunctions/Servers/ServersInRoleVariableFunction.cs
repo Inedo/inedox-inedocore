@@ -47,9 +47,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
             }
             else
             {
-#warning FIX
-                return 1000;
-                //return context.ServerRoleId;
+                return context.ServerRoleId;
             }
         }
     }

@@ -14,10 +14,9 @@ namespace Inedo.Extensions.VariableFunctions.Server
     {
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
-#warning FIX
-            //if (context.ServerRoleId != null)
-            //    return SDK.GetServerRoles().FirstOrDefault(s => s.Id == context.ServerRoleId)?.Name;
-            //else
+            if (context.ServerRoleId != null)
+                return SDK.GetServerRoles().FirstOrDefault(s => s.Id == context.ServerRoleId)?.Name;
+            else
                 return string.Empty;
         }
     }

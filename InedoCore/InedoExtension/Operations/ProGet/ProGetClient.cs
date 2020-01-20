@@ -473,7 +473,6 @@ namespace Inedo.Extensions.Operations.ProGet
             string relativeUrl;
             if (SDK.ProductName == "BuildMaster")
             {
-#warning Can we handle this better?
                 relativeUrl = context.ExpandVariables($"applications/{((IVariableFunctionContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
             }
             else

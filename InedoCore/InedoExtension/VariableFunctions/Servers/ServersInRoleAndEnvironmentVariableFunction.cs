@@ -48,11 +48,10 @@ namespace Inedo.Extensions.VariableFunctions.Server
         private int? FindRole(string roleName, IVariableFunctionContext context)
         {
             var allRoles = SDK.GetServerRoles();
-#warning FIX
-            //if (!string.IsNullOrEmpty(roleName))
+            if (!string.IsNullOrEmpty(roleName))
                 return allRoles.FirstOrDefault(r => r.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase))?.Id;
-            //else
-                //return context.ServerRoleId;
+            else
+                return context.ServerRoleId;
         }
 
         private int? FindEnvironment(string environmentName, IVariableFunctionContext context)

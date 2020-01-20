@@ -84,6 +84,7 @@ Apply-Template hdars
         [DefaultValue(TemplateNewLineMode.Auto)]
         public TemplateNewLineMode NewLineMode { get; set; }
 
+#warning ApplyTemplateOperation is uninclused
         public override Task ExecuteAsync(IOperationExecutionContext context) => throw new NotImplementedException();
 
         //public override async Task ExecuteAsync(IOperationExecutionContext context)

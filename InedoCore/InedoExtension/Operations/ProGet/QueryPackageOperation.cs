@@ -13,11 +13,15 @@ using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.SecureResources;
+using Inedo.Extensions.Credentials;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.UPack;
 using Inedo.UPack.Net;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
+using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -51,34 +55,13 @@ Query-Package
 
 Log-Debug 'Package name is $(%packageData.name).';
 ")]
-    public sealed class QueryPackageOperation : ExecuteOperation, IHasCredentials<UsernamePasswordCredentials>
+    public sealed class QueryPackageOperation : ExecuteOperation
     {
-        [ScriptAlias("PackageFile")]
-        [DisplayName("Package file")]
-        [Category("Advanced")]
-        [Description("When specified, FeedUrl, UserName, Password, PackageName, and PackageVersion are ignored.")]
-        public string PackageFile { get; set; }
-
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        public string FeedUrl { get; set; }
-
+        [ScriptAlias("From")]
         [ScriptAlias("Credentials")]
-        [DisplayName("Credentials")]
-        public string CredentialName { get; set; }
-
-        [ScriptAlias("UserName")]
-        [DisplayName("User name")]
-        [Category("Connection/Identity")]
-        [PlaceholderText("user name from credentials")]
-        [MappedCredential(nameof(UsernamePasswordCredentials.UserName))]
-        public string UserName { get; set; }
-
-        [ScriptAlias("Password")]
-        [Category("Connection/Identity")]
-        [PlaceholderText("password from credentials")]
-        [MappedCredential(nameof(UsernamePasswordCredentials.Password))]
-        public SecureString Password { get; set; }
+        [DisplayName("From package source")]
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSource { get; set; }
 
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
@@ -97,6 +80,29 @@ Log-Debug 'Package name is $(%packageData.name).';
         [Description("When specified, this string variable will be set to \"true\" if the package exists or \"false\" if it does not.")]
         public bool Exists { get; set; }
 
+        [ScriptAlias("PackageFile")]
+        [DisplayName("Package file")]
+        [Category("Advanced")]
+        [Description("When specified, FeedUrl, UserName, Password, PackageName, and PackageVersion are ignored.")]
+        public string PackageFile { get; set; }
+
+        [ScriptAlias("FeedUrl")]
+        [DisplayName("Feed URL")]
+        [Category("Connection/Identity")]
+        [PlaceholderText("url from package source")]
+        public string FeedUrl { get; set; }
+
+        [ScriptAlias("UserName")]
+        [DisplayName("User name")]
+        [Category("Connection/Identity")]
+        [PlaceholderText("user name from package source's credentials")]
+        public string UserName { get; set; }
+
+        [ScriptAlias("Password")]
+        [Category("Connection/Identity")]
+        [PlaceholderText("password from package source's credentials")]
+        public SecureString Password { get; set; }
+
         [Output]
         [Category("Advanced")]
         [ScriptAlias("Metadata")]
@@ -106,6 +112,31 @@ Log-Debug 'Package name is $(%packageData.name).';
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
+            if (!string.IsNullOrEmpty(this.PackageSource))
+            {
+                var resource = SecureResource.TryCreate(this.PackageSource, (IResourceResolutionContext)context) as UniversalPackageSource;
+                if (resource == null)
+                {
+                    this.LogError($"Package Source \"{this.PackageSource}\" was not found.");
+                    return;
+                }
+                this.FeedUrl = resource.ApiEndpointUrl;
+
+                var creds = resource.GetCredentials((ICredentialResolutionContext)context);
+                if (creds is UsernamePasswordCredentials upc)
+                {
+                    this.LogDebug($"Using \"{resource.CredentialName}\" credential (UserName=\"{upc.UserName}\").");
+                    this.UserName = upc.UserName;
+                    this.Password = upc.Password;
+                }
+                else if (creds is TokenCredentials tc)
+                {
+                    this.LogDebug($"Using \"{resource.CredentialName}\" credential (api key).");
+                    this.UserName = "api";
+                    this.Password = tc.Token;
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(this.PackageFile))
             {
                 if (string.IsNullOrWhiteSpace(this.FeedUrl))

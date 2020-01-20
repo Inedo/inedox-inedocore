@@ -10,6 +10,7 @@ using Inedo.Documentation;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
+using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -28,7 +29,7 @@ namespace Inedo.Extensions.UserDirectories
         SpecificDomains
     }
 
-    [DisplayName("Active Directory (New)")]
+    [DisplayName("Active Directory (LDAP)")]
     [Description("Queries the current domain, global catalog for trusted domains, or a specific list of domains for users and group membership.")]
     public sealed class ADUserDirectory : UserDirectory
     {
@@ -429,8 +430,9 @@ namespace Inedo.Extensions.UserDirectories
                 if (split.Length < 2)
                     return new CredentialedDomain(split[0], null);
 
-                var creds = ResourceCredentials.Create<UsernamePasswordCredentials>(split[1]);
-                return new CredentialedDomain(split[0], creds.UserName, AH.Unprotect(creds.Password));
+                var cred = SecureCredentials.Create(split[1], CredentialResolutionContext.None);
+                var usernameCred = (cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) as UsernamePasswordCredentials;
+                return new CredentialedDomain(split[0], usernameCred.UserName, AH.Unprotect(usernameCred.Password));
             }
 
             public CredentialedDomain(string name, string userName = null, string password = null)
