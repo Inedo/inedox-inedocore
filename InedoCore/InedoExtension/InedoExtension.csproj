@@ -138,6 +138,7 @@
     <Compile Include="Operations\ProGet\RemotePackageOperationBase.cs" />
     <Compile Include="PosixFileMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RemoteHttpRequest.cs" />
     <Compile Include="SuggestionProviders\FeedNameSuggestionProvider.cs" />
     <Compile Include="SuggestionProviders\OtterEnvironmentNameSuggestionProvider.cs" />
     <Compile Include="SuggestionProviders\OtterRoleNameSuggestionProvider.cs" />
