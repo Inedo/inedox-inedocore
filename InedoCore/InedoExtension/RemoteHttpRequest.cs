@@ -104,22 +104,24 @@ namespace Inedo.Extensions
                 startInfo.AppendArgs(procExec, "--data-raw", InedoLib.UTF8Encoding.GetString(this.UploadData));
             }
 
-            using var process = procExec.CreateProcess(startInfo);
-            var recorder = new RemoteHttpResponse.Recorder(this.Progress);
-            process.OutputDataReceived += (s, e) =>
+            using (var process = procExec.CreateProcess(startInfo))
             {
-                recorder.ProcessHeader(e.Data);
-            };
+                var recorder = new RemoteHttpResponse.Recorder(this.Progress);
+                process.OutputDataReceived += (s, e) =>
+                {
+                    recorder.ProcessHeader(e.Data);
+                };
 
-            // TODO: find a way to get machine-readable progress information
+                // TODO: find a way to get machine-readable progress information
 
-            process.Start();
-            await process.WaitAsync(cancellationToken);
+                process.Start();
+                await process.WaitAsync(cancellationToken);
 
-            if (process.ExitCode != 0)
-                throw new IOException("curl exited with code " + process.ExitCode);
+                if (process.ExitCode != 0)
+                    throw new IOException("curl exited with code " + process.ExitCode);
 
-            return recorder.Response;
+                return recorder.Response;
+            }
         }
         private async Task<RemoteHttpResponse> DoWGet(Agent agent, IRemoteProcessExecuter procExec, CancellationToken cancellationToken)
         {
