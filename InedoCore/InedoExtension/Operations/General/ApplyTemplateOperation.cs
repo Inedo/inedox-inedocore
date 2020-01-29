@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
@@ -133,45 +131,14 @@ Apply-Template hdars
 
                     return await fileOps.ReadAllTextAsync(path).ConfigureAwait(false);
                 }
-                
+
                 if (!string.IsNullOrEmpty(this.Asset))
                 {
-                    string templateName;
-                    string raftName;
+                    var raftItem = SDK.GetRaftItem(RaftItemType.TextTemplate, this.Asset, context);
+                    if (raftItem == null)
+                        throw new ExecutionFailureException($"Template \"{this.Asset}\" not found.");
 
-                    var templateNameParts = this.Asset.Split(new[] { "::" }, 2, StringSplitOptions.None);
-                    if (templateNameParts.Length == 2)
-                    {
-                        raftName = templateNameParts[0];
-                        templateName = templateNameParts[1];
-                    }
-                    else
-                    {
-                        if (SDK.ProductName == "BuildMaster")
-                            raftName = context.TryGetFunctionValue("$ApplicationName")?.AsString() ?? "";
-                        else
-                            raftName = RaftRepository.DefaultName;
-
-                        templateName = templateNameParts[0];
-                    }
-
-                    using (var raft = await context.OpenRaftAsync(raftName, OpenRaftOptions.OptimizeLoadTime | OpenRaftOptions.ReadOnly))
-                    {
-                        if (raft == null)
-                            throw new ExecutionFailureException("Raft not found.");
-
-                        using (var stream = await raft.OpenRaftItemAsync(RaftItemType.TextTemplate, templateName, FileMode.Open, FileAccess.Read))
-                        {
-                            if (stream == null)
-                                throw new ExecutionFailureException($"Template \"{templateName}\" not found in raft.");
-
-                            this.LogDebug("Loading template from raft...");
-                            using (var reader = new StreamReader(stream, InedoLib.UTF8Encoding))
-                            {
-                                return await reader.ReadToEndAsync().ConfigureAwait(false);
-                            }
-                        }
-                    }
+                    return raftItem.Content;
                 }
 
                 this.LogWarning("No template specified. Setting output to empty string.");

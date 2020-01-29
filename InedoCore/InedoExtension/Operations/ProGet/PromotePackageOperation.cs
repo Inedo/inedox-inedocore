@@ -24,6 +24,8 @@ namespace Inedo.Extensions.Operations.ProGet
     [Description("Promotes a package from one feed to another in a ProGet instance.")]
     public sealed class PromotePackageOperation : RemotePackageOperationBase
     {
+        protected override bool ResolveNuGetPackageSources => true;
+
         private string hostName;
         private string fromFeed;
         private string toFeed;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
@@ -28,10 +29,33 @@ Copy-Files(
     Overwrite: true
 );
 ")]
+    [Example(@"
+# copy a file, renaming it during the copy
+Copy-Files(
+    From: $WorkingDirectory/build,
+    To: $WorkingDirectory/staging,
+    Include: HDARS.exe,
+    Verbose: true,
+    RenameFrom: .exe,
+    RenameTo: .$ReleaseNumber.exe
+);
+")]
+    [Example(@"
+# copy files, renaming them to fit the format desired by this application
+Copy-Files(
+    From: vendorData,
+    To: vendorData2,
+    Verbose: true,
+    RenameFrom: ""^(?<module>[a-z]+)\.(?<name>.*)\.xml$"",
+    RenameTo: `${name}-`${module}.xml,
+    RenameRegex: true
+);
+")]
     public sealed class CopyFilesOperation : ExecuteOperation
     {
         private int filesCopied;
         private int directoriesCopied;
+        private Func<string, string> renameFile;
 
         [ScriptAlias("Include")]
         [MaskingDescription]
@@ -54,11 +78,36 @@ Copy-Files(
         [ScriptAlias("Overwrite")]
         [DisplayName("Overwrite target files")]
         public bool Overwrite { get; set; }
+        [Category("Rename")]
+        [ScriptAlias("RenameFrom")]
+        [DisplayName("Rename from")]
+        public string RenameFrom { get; set; }
+        [Category("Rename")]
+        [ScriptAlias("RenameTo")]
+        [DisplayName("Rename to")]
+        public string RenameTo { get; set; }
+        [Category("Rename")]
+        [ScriptAlias("RenameRegex")]
+        [DisplayName("Use regular expression")]
+        [DefaultValue(false)]
+        public bool RenameRegex { get; set; }
 
         public override Task ExecuteAsync(IOperationExecutionContext context)
         {
+            if (string.IsNullOrEmpty(this.RenameFrom) && !string.IsNullOrEmpty(this.RenameTo))
+                throw new InvalidOperationException("If RenameTo is set, RenameFrom must also be set.");
+
             var sourceDirectory = context.ResolvePath(this.SourceDirectory);
             var targetDirectory = context.ResolvePath(this.TargetDirectory);
+
+            if (!string.IsNullOrEmpty(this.RenameFrom))
+            {
+                var renameFrom = new Regex(this.RenameRegex ? this.RenameFrom : Regex.Escape(this.RenameFrom), RegexOptions.Singleline | RegexOptions.CultureInvariant);
+                var renameTo = this.RenameTo ?? string.Empty;
+                if (!this.RenameRegex)
+                    renameTo = renameTo.Replace("$", "$$");
+                this.renameFile = name => renameFrom.Replace(name, renameTo);
+            }
 
             this.LogInformation($"Copying files from {sourceDirectory} to {targetDirectory}...");
             return this.CopyDirectoryAsync(context.Agent.GetService<IFileOperationsExecuter>(), sourceDirectory, targetDirectory, context);
@@ -83,8 +132,11 @@ Copy-Files(
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                var targetFileName = PathEx.Combine(targetPath, file.FullName.Substring(sourcePath.Length).TrimStart('/', '\\'));
+                var targetFileName = fileOps.CombinePath(targetPath, file.FullName.Substring(sourcePath.Length).TrimStart('/', '\\'));
                 var targetDirectoryName = PathEx.GetDirectoryName(targetFileName);
+                if (this.renameFile != null)
+                    targetFileName = fileOps.CombinePath(targetDirectoryName, this.renameFile(PathEx.GetFileName(targetFileName)));
+
                 if (this.VerboseLogging)
                     this.LogDebug($"Copying {file.FullName} to {targetFileName}...");
 

@@ -123,7 +123,9 @@ Exec c:\tools\7za.exe (
             }
 
             var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
-            startInfo.FileName = context.ResolvePath(startInfo.FileName);
+            var resolvedFileName = context.ResolvePath(startInfo.FileName);
+            if (await fileOps.FileExistsAsync(resolvedFileName))
+                startInfo.FileName = resolvedFileName;
             startInfo.WorkingDirectory = context.ResolvePath(this.WorkingDirectory);
 
             this.LogDebug("Process: " + startInfo.FileName);

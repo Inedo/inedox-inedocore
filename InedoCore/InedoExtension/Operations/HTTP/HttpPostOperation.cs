@@ -60,7 +60,7 @@ Post-Http http://httpbin.org/post
         [DisplayName("Log request data")]
         public bool LogRequestData { get; set; }
 
-        public override async Task ExecuteAsync(IOperationExecutionContext context)
+        protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
         {
             try
             {

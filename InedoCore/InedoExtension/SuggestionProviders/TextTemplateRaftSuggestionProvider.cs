@@ -9,21 +9,9 @@ namespace Inedo.Extensions.SuggestionProviders
 {
     internal sealed class TextTemplateRaftSuggestionProvider : ISuggestionProvider
     {
-        public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
+        public Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            using (var raft = RaftRepository.OpenRaft(RaftRepository.DefaultName))
-#pragma warning restore CS0618 // Type or member is obsolete
-            {
-                if (raft == null)
-                    return Enumerable.Empty<string>();
-
-                var items = await raft.GetRaftItemsAsync(RaftItemType.TextTemplate).ConfigureAwait(false);
-
-                return items
-                    .Select(i => i.ItemName)
-                    .ToList();
-            }
+            return Task.FromResult(SDK.GetRaftItems(RaftItemType.TextTemplate, null).Select(i => i.Name));
         }
     }
 }

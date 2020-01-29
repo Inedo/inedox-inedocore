@@ -17,7 +17,7 @@ foreach $Env in @AllEnvironments
     Log-Information $Env;
 }
 ")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class AllEnvironmentsVariableFunction : VectorVariableFunction
     {
         protected override IEnumerable EvaluateVector(IVariableFunctionContext context)

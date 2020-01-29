@@ -17,7 +17,7 @@ foreach $Role in @AllRoles
     Log-Information $Role;
 }
 ")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class AllRolesVariableFunction : VectorVariableFunction
     {
         protected override IEnumerable EvaluateVector(IVariableFunctionContext context)

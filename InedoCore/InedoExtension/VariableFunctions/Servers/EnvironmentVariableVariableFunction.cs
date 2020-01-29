@@ -15,7 +15,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
 set $Path = $EnvironmentVariable(PATH);
 Log-Information $Path;
 ")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class EnvironmentVariableVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

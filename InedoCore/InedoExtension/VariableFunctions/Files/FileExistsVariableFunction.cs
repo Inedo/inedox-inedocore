@@ -10,7 +10,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("FileExists")]
     [Description("Returns \"true\" if the specified file exists on the current server.")]
     [Tag("files")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class FileExistsVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

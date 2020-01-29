@@ -13,10 +13,16 @@ using Inedo.IO;
 
 namespace Inedo.Extensions.VariableFunctions.Files
 {
+    [ScriptAlias("FilesOnDisk")]
     [ScriptAlias("FileMask")]
     [Description("Returns a list of files matching the mask on the current server.")]
     [Tag("files")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
+    [Example(@"
+set @ProjectFiles = @FilesOnDisk(*.csproj); # gets project files in working directory
+
+set @NonXDarFiles = @FilesOnDisk(**, **.xdr, $TmpPath); # gets all files except those with an .xdr extension
+")]
     public sealed class FileMaskVariableFunction : VectorVariableFunction, IAsyncVariableFunction
     {
         [VariableFunctionParameter(0)]
@@ -27,6 +33,10 @@ namespace Inedo.Extensions.VariableFunctions.Files
         [ScriptAlias("excludes")]
         public IEnumerable<string> Excludes { get; set; }
 
+        [VariableFunctionParameter(2, Optional = true)]
+        [ScriptAlias("directory")]
+        public IEnumerable<string> InDirectory { get; set; }
+
         protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
         {
             var execContext = context as IOperationExecutionContext;
@@ -34,7 +44,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
                 throw new VariableFunctionException("Execution context is not available.");
 
             var fileOps = execContext.Agent.GetService<IFileOperationsExecuter>();
-            var fileInfos = fileOps.GetFileSystemInfosAsync(execContext.WorkingDirectory, new MaskingContext(this.Includes, this.Excludes)).Result();
+            var fileInfos = fileOps.GetFileSystemInfosAsync(AH.CoalesceString(this.InDirectory, execContext.WorkingDirectory), new MaskingContext(this.Includes, this.Excludes)).GetAwaiter().GetResult();
             return fileInfos.Select(fi => fi.FullName);
         }
 
@@ -45,7 +55,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
                 throw new VariableFunctionException("Execution context is not available.");
 
             var fileOps = await execContext.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-            var fileInfos = await fileOps.GetFileSystemInfosAsync(execContext.WorkingDirectory, new MaskingContext(this.Includes, this.Excludes)).ConfigureAwait(false);
+            var fileInfos = await fileOps.GetFileSystemInfosAsync(AH.CoalesceString(this.InDirectory, execContext.WorkingDirectory), new MaskingContext(this.Includes, this.Excludes)).ConfigureAwait(false);
             return new RuntimeValue(fileInfos.Select(fi => new RuntimeValue(fi.FullName)));
         }
     }
