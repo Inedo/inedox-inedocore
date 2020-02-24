@@ -115,6 +115,11 @@ Exec c:\tools\7za.exe (
                 return;
             }
 
+            if (!string.IsNullOrEmpty(this.Target) && (!string.IsNullOrEmpty(this.FileName) || !string.IsNullOrEmpty(this.Arguments)))
+            {
+                this.LogWarning("When using the default property (i.e. \"exec process.exe args (...)\", do not specify a Filename or Arguments property, because they will be ignored.");
+            }
+
             var startInfo = GetFileNameAndArguments(this.FileName, this.Arguments, this.Target);
             if (startInfo == null)
             {
