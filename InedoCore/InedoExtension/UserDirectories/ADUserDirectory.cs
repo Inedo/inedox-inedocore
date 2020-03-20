@@ -74,6 +74,12 @@ namespace Inedo.Extensions.UserDirectories
         [Description("When locating users in the directory, include Group Managed Service Accounts.")]
         public bool IncludeGroupManagedServiceAccounts{ get; set; }
 
+        [Persistent]
+        [Category("Advanced")]
+        [DisplayName("Use LDAPS")]
+        [Description("When connecting to your local Active Directory, connect via LDAP over SSL.")]
+        public bool UseLdaps { get; set; }
+
         public ADUserDirectory()
         {
             this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
@@ -327,7 +333,9 @@ namespace Inedo.Extensions.UserDirectories
             UsersAndGroups = Users | Groups
         }
 
-        private string GetLdapRoot() => string.IsNullOrEmpty(DomainControllerAddress) ? "LDAP://" : $"LDAP://{this.DomainControllerAddress}/";
+        private string GetLdapProtocol() => this.UseLdaps ? "LDAPS://" : "LDAP://";
+
+        private string GetLdapRoot() => string.IsNullOrEmpty(this.DomainControllerAddress) ? this.GetLdapProtocol() : $"{this.GetLdapProtocol()}{this.DomainControllerAddress}/";
 
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
