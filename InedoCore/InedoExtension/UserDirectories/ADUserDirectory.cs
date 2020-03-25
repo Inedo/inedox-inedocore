@@ -247,7 +247,7 @@ namespace Inedo.Extensions.UserDirectories
             foreach (var domain in domains)
             {
                 this.LogDebug($"Searching domain {domain}...");
-                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
+                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password, this.UseLdaps ? AuthenticationTypes.SecureSocketsLayer : AuthenticationTypes.Secure))
                 using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = searchString.ToString();
@@ -284,7 +284,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogDebug("Searching domain: " + domain);
 
-                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password))
+                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password, this.UseLdaps ? AuthenticationTypes.SecureSocketsLayer : AuthenticationTypes.Secure))
                 using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = filter;
@@ -333,9 +333,12 @@ namespace Inedo.Extensions.UserDirectories
             UsersAndGroups = Users | Groups
         }
 
-        private string GetLdapProtocol() => this.UseLdaps ? "LDAPS://" : "LDAP://";
+        //private string GetLdapProtocol() => this.UseLdaps ? "LDAPS://" : "LDAP://";
 
-        private string GetLdapRoot() => string.IsNullOrEmpty(this.DomainControllerAddress) ? this.GetLdapProtocol() : $"{this.GetLdapProtocol()}{this.DomainControllerAddress}/";
+       // private string GetLdapRoot() => string.IsNullOrEmpty(this.DomainControllerAddress) ? this.GetLdapProtocol() : $"{this.GetLdapProtocol()}{this.DomainControllerAddress}/";
+        private string GetLdapRoot() => string.IsNullOrEmpty(this.DomainControllerAddress) 
+                                                                ? "LDAP://" 
+                                                                  : $"LDAP://{this.DomainControllerAddress + (this.UseLdaps ? (this.DomainControllerAddress.Contains(":") ? string.Empty : ":636") : string.Empty)}/";
 
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
         {
