@@ -95,6 +95,7 @@ namespace AD.Tester
                 DomainsToSearch = ToArray(txtDomains.Text),
                 SearchGroupsRecursively = cblOptions.SelectedIndices.Contains(0),
                 IncludeGroupManagedServiceAccounts = cblOptions.SelectedIndices.Contains(1),
+                UseLdaps = cblOptions.SelectedIndices.Contains(2),
             };
 
             dir.MessageLogged += this.MessageLogged;
