@@ -28,9 +28,9 @@ namespace Inedo.Extensions.Operations.ProGet
         private string hostName;
         private string feedName;
 
-        [Required]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
+        [PlaceholderText("Infer from package name")]
         [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
         public override string PackageSource { get; set; }
 
@@ -40,7 +40,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Name")]
-        public string PackageName { get; set; }
+        public override string PackageName { get; set; }
         [Required]
         [ScriptAlias("Version")]
         [DisplayName("Version")]
@@ -131,7 +131,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
                 {
                     var message = reader.ReadToEnd();
-                    this.LogError($"The server responsed with {(int)exResponse.StatusCode}: {message}");
+                    this.LogError($"The server responded with {(int)exResponse.StatusCode}: {message}");
                 }
             }
 
@@ -186,9 +186,9 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.apiKey = password;
 
-            var match = Regex.Match(feedUrl, @"^(?<1>.+)/upack/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
+            var match = Regex.Match(feedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
             if (!match.Success)
-                throw new ExecutionFailureException($"This operation requires a ProGet feed endpoint URL to be specified in the \"{this.PackageSource}\" package source.");
+                throw new ExecutionFailureException($"Could not determine host name or feed name from feedUrl: " + feedUrl);
 
             this.hostName = match.Groups[1].Value;
             this.feedName = match.Groups[2].Value;

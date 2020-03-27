@@ -59,7 +59,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
-        public string Name { get; set; }
+        public override string PackageName { get; set; }
         [Required]
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
@@ -89,7 +89,7 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var outputFileName = context.ResolvePath(this.Output);
             if (Directory.Exists(outputFileName) || !outputFileName.EndsWith(".upack", StringComparison.OrdinalIgnoreCase))
-                outputFileName = Path.Combine(outputFileName, $"{this.Name}-{this.Version}.upack");
+                outputFileName = Path.Combine(outputFileName, $"{this.PackageName}-{this.Version}.upack");
 
             var sourceDirectory = context.ResolvePath(this.SourceDirectory);
 
@@ -105,7 +105,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var metadata = new UniversalPackageMetadata
             {
                 Group = this.Group,
-                Name = this.Name,
+                Name = this.PackageName,
                 Version = UniversalPackageVersion.Parse(this.Version)
             };
 
@@ -191,7 +191,7 @@ namespace Inedo.Extensions.Operations.ProGet
             {
                 this.LogDebug("Attaching package to build...");
                 await this.PackageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(AttachedPackageType.Universal, GetFullPackageName(this.Group, this.Name), this.Version, (byte[])result, this.PackageSource),
+                    new AttachedPackage(AttachedPackageType.Universal, GetFullPackageName(this.Group, this.PackageName), this.Version, (byte[])result, this.PackageSource),
                     default
                 );
                 this.LogDebug("Package attached.");
@@ -203,7 +203,7 @@ namespace Inedo.Extensions.Operations.ProGet
             return new ExtendedRichDescription(
                 new RichDescription(
                     "Create ",
-                    new Hilite((config[nameof(Group)] + "/" + config[nameof(Name)]).Trim('/') + " " + config[nameof(Version)]),
+                    new Hilite((config[nameof(Group)] + "/" + config[nameof(PackageName)]).Trim('/') + " " + config[nameof(Version)]),
                     " universal package"
                 ),
                 new RichDescription(
@@ -222,7 +222,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private void ValidateArguments()
         {
-            if (string.IsNullOrEmpty(this.Name))
+            if (string.IsNullOrEmpty(this.PackageName))
                 throw new ExecutionFailureException("Missing \"Name\" argument.");
 
             if (string.IsNullOrEmpty(this.Version))
@@ -231,7 +231,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrEmpty(this.Group) && !UniversalPackageId.IsValidGroup(this.Group))
                 throw new ExecutionFailureException("Invalid package group specified.");
 
-            if (!UniversalPackageId.IsValidName(this.Name))
+            if (!UniversalPackageId.IsValidName(this.PackageName))
                 throw new ExecutionFailureException("Invalid package name specified.");
 
             if (UniversalPackageVersion.TryParse(this.Version) == null)
