@@ -13,7 +13,7 @@ namespace Inedo.Extensions.UserDirectories
         private static readonly LazyRegex LdapUnescapeRegex = new LazyRegex(@"\\([,\\#+<>;""=])", RegexOptions.Compiled);
         private static readonly LazyRegex LdapSplitRegex = new LazyRegex(@"(?<!\\),", RegexOptions.Compiled);
 
-        public static string GetDomainNameFromNetbiosName(string netbiosName, IDictionary<string, string> manualOverride)
+        public static string GetDomainNameFromNetbiosName(string netbiosName, IDictionary<string, string> manualOverride, bool useLdaps, string ldapsPort = null)
         {
             if (manualOverride == null)
                 throw new ArgumentNullException(nameof(manualOverride));
@@ -23,8 +23,12 @@ namespace Inedo.Extensions.UserDirectories
             if (manualOverride.TryGetValue(netbiosName, out string overridden))
                 return overridden;
 
-            using (var rootDSE = new DirectoryEntry("LDAP://RootDSE"))
-            using (var rootDSEConfig = new DirectoryEntry("LDAP://cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
+            if (useLdaps && ldapsPort == null)
+                ldapsPort = ":636";
+
+
+            using (var rootDSE = new DirectoryEntry("LDAP://RootDSE" + (useLdaps ? ldapsPort + "/" : string.Empty)))
+            using (var rootDSEConfig = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
             using (var searcher = new DirectorySearcher(rootDSEConfig))
             {
                 searcher.SearchScope = SearchScope.OneLevel;
