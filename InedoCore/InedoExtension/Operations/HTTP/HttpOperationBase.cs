@@ -21,6 +21,9 @@ using Inedo.Extensions.Credentials;
 using Inedo.Web;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 using LegacyUsernamePasswordCredentials = Inedo.Extensibility.Credentials.UsernamePasswordCredentials;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
@@ -85,6 +88,13 @@ namespace Inedo.Extensions.Operations.HTTP
         [DisplayName("Password")]
         [PlaceholderText("Use password from credential")]
         public string Password { get; set; }
+        [Category("Options")]
+        [ScriptAlias("IgnoreSslErrors")]
+        [DisplayName("Ignore SSL Errors")]
+        [DefaultValue(false)]
+        public bool IgnoreSslErrors { get; set; }
+
+
 
         protected long TotalSize = 0;
         protected long CurrentPosition = 0;
@@ -124,11 +134,19 @@ namespace Inedo.Extensions.Operations.HTTP
             if (!string.IsNullOrWhiteSpace(this.UserName))
             {
                 this.LogDebug($"Making request as {this.UserName}...");
-                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) });
+                var handler = new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) };
+                if (this.IgnoreSslErrors)
+                    IgnoreSslErrorsOnHttpClientHandler(handler);
+
+                client = new HttpClient(handler);
             }
             else
             {
-                client = new HttpClient();
+                var handler = new HttpClientHandler();
+                if (this.IgnoreSslErrors)
+                    IgnoreSslErrorsOnHttpClientHandler(handler);
+
+                client = new HttpClient(handler);
             }
 
             client.Timeout = Timeout.InfiniteTimeSpan;
@@ -148,6 +166,19 @@ namespace Inedo.Extensions.Operations.HTTP
 
             return client;
         }
+
+        private void IgnoreSslErrorsOnHttpClientHandler(HttpClientHandler handler)
+        {
+            // This can be replaced with the following when we upgrade .NET Framework to 4.7.1+ or to .NET Core
+            // handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
+            var handlerType = handler.GetType();
+            var property = handlerType.GetProperty("ServerCertificateCustomValidationCallback");
+            if (property != null)
+                property.SetValue(handler, (Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool>)((message, cert, chain, sslPolicy) => true));
+            else
+                this.LogWarning("Ignore SSL Errors is enabled but HttpClientHandler is missing the ServerCertificateCustomValidationCallback.  Cannot bypass SSL errors.");
+        }
+
         protected async Task ProcessResponseAsync(HttpResponseMessage response)
         {
             var message = $"Server responded with status code {(int)response.StatusCode} - {response.ReasonPhrase}";
