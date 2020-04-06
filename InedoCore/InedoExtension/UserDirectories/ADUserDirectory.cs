@@ -203,7 +203,7 @@ namespace Inedo.Extensions.UserDirectories
             if(this.UseLdaps && !string.IsNullOrWhiteSpace(this.DomainControllerAddress) && this.DomainControllerAddress.Contains(":"))
             {
                 var hostParts = this.DomainControllerAddress.TrimEnd('/').Split(':');
-                ldapsPort = hostParts[hostParts.Length-1];
+                ldapsPort = ":"+hostParts[hostParts.Length-1];
             }
 
             var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value, this.UseLdaps, ldapsPort);
