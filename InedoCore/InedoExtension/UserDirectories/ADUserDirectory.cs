@@ -198,8 +198,14 @@ namespace Inedo.Extensions.UserDirectories
             var parts = logonUser.Split(new[] { '\\' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 2)
                 return null;
+            var ldapsPort = ":636";
+            if(this.UseLdaps && !string.IsNullOrWhiteSpace(this.DomainControllerAddress) && this.DomainControllerAddress.Contains(":"))
+            {
+                var hostParts = this.DomainControllerAddress.TrimEnd('/').Split(':');
+                ldapsPort = ":"+hostParts[hostParts.Length-1];
+            }
 
-            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value);
+            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value, this.UseLdaps, ldapsPort);
             return this.TryGetUser($"{parts[1]}@{domain}");
         }
 
@@ -334,7 +340,7 @@ namespace Inedo.Extensions.UserDirectories
         }
 
         private string GetLdapRoot() => string.IsNullOrEmpty(this.DomainControllerAddress) 
-                                                                ? ("LDAP://" + (this.UseLdaps ? (this.DomainControllerAddress.Contains(":") ? string.Empty : ":636/") : string.Empty))
+                                                                ? ("LDAP://" + (this.UseLdaps ? ":636/" : string.Empty))
                                                                   : ($"LDAP://{this.DomainControllerAddress + (this.UseLdaps ? (this.DomainControllerAddress.Contains(":") ? string.Empty : ":636") : string.Empty)}/");
 
         private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
