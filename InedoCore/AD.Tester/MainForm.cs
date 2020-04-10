@@ -157,5 +157,16 @@ namespace AD.Tester
             else
                 return s;
         }
+
+        private void parseLogin_Click(object sender, EventArgs e)
+        {
+            var dir = this.CreateDirectory();
+
+            var principal = dir.TryParseLogonUser(txtParseLogin.Text);
+
+            gvResults.Rows.Clear();
+            if(principal != null)
+                AddToGrid(principal);
+        }
     }
 }

@@ -55,6 +55,11 @@
             this.txtUserName = new System.Windows.Forms.TextBox();
             this.txtGroup = new System.Windows.Forms.TextBox();
             this.btnGetUser = new System.Windows.Forms.Button();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.parseLogin = new System.Windows.Forms.Button();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.label9 = new System.Windows.Forms.Label();
+            this.txtParseLogin = new System.Windows.Forms.TextBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.gvResults = new System.Windows.Forms.DataGridView();
             this.colType = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -71,6 +76,8 @@
             this.tableLayoutPanel2.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tableLayoutPanel3.SuspendLayout();
+            this.tabPage3.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).BeginInit();
             this.groupBox4.SuspendLayout();
@@ -274,6 +281,7 @@
             // 
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(2, 15);
             this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
@@ -440,6 +448,71 @@
             this.btnGetUser.UseVisualStyleBackColor = true;
             this.btnGetUser.Click += new System.EventHandler(this.btnGetUser_Click);
             // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.parseLogin);
+            this.tabPage3.Controls.Add(this.tableLayoutPanel4);
+            this.tabPage3.Location = new System.Drawing.Point(4, 22);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage3.Size = new System.Drawing.Size(452, 154);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "Parse LogonName";
+            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // parseLogin
+            // 
+            this.parseLogin.Location = new System.Drawing.Point(332, 117);
+            this.parseLogin.Margin = new System.Windows.Forms.Padding(2);
+            this.parseLogin.Name = "parseLogin";
+            this.parseLogin.Size = new System.Drawing.Size(117, 32);
+            this.parseLogin.TabIndex = 2;
+            this.parseLogin.Text = "Get User";
+            this.parseLogin.UseVisualStyleBackColor = true;
+            this.parseLogin.Click += new System.EventHandler(this.parseLogin_Click);
+            // 
+            // tableLayoutPanel4
+            // 
+            this.tableLayoutPanel4.ColumnCount = 2;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 35F));
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 65F));
+            this.tableLayoutPanel4.Controls.Add(this.label9, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.txtParseLogin, 1, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 1;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 102F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(446, 102);
+            this.tableLayoutPanel4.TabIndex = 1;
+            // 
+            // label9
+            // 
+            this.label9.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(2, 0);
+            this.label9.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(152, 102);
+            this.label9.TabIndex = 0;
+            this.label9.Text = "Logon Username:";
+            this.label9.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // txtParseLogin
+            // 
+            this.txtParseLogin.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtParseLogin.Location = new System.Drawing.Point(158, 2);
+            this.txtParseLogin.Margin = new System.Windows.Forms.Padding(2);
+            this.txtParseLogin.Name = "txtParseLogin";
+            this.txtParseLogin.Size = new System.Drawing.Size(286, 20);
+            this.txtParseLogin.TabIndex = 1;
+            // 
             // groupBox3
             // 
             this.groupBox3.Controls.Add(this.gvResults);
@@ -544,6 +617,9 @@
             this.tabPage2.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel3.PerformLayout();
+            this.tabPage3.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
+            this.tableLayoutPanel4.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).EndInit();
             this.groupBox4.ResumeLayout(false);
@@ -588,6 +664,11 @@
         private System.Windows.Forms.TextBox txtUserName;
         private System.Windows.Forms.TextBox txtGroup;
         private System.Windows.Forms.Button btnGetUser;
+        private System.Windows.Forms.TabPage tabPage3;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.TextBox txtParseLogin;
+        private System.Windows.Forms.Button parseLogin;
     }
 }
 
