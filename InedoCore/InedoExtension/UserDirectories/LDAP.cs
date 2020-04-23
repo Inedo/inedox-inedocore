@@ -27,7 +27,7 @@ namespace Inedo.Extensions.UserDirectories
                 ldapsPort = ":636";
 
 
-            using (var rootDSE = new DirectoryEntry("LDAP://RootDSE" + (useLdaps ? ldapsPort + "/" : string.Empty)))
+            using (var rootDSE = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "RootDSE"))
             using (var rootDSEConfig = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
             using (var searcher = new DirectorySearcher(rootDSEConfig))
             {
