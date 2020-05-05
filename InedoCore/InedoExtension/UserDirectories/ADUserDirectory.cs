@@ -9,6 +9,7 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.UserDirectories;
+using Inedo.Extensions.Credentials;
 using Inedo.Serialization;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 
@@ -450,8 +451,14 @@ namespace Inedo.Extensions.UserDirectories
                 var usernameCred = (cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) as UsernamePasswordCredentials;
                 if (usernameCred == null)
                 {
-                    var typ = (usernameCred?.GetType() ?? cred?.GetType())?.FullName ?? "null";
-                    throw new InvalidOperationException($"Credential {split[1]} has an unexpected type ({typ}); expected {typeof(UsernamePasswordCredentials).FullName}.");
+                    var typ = (usernameCred?.GetType() ?? cred?.GetType())?.AssemblyQualifiedName ?? "null";
+                    throw new InvalidOperationException(
+                        $"Credential {split[1]} has an unexpected type ({typ}); " +
+                        $"expected {typeof(UsernamePasswordCredentials).AssemblyQualifiedName}" +
+#pragma warning disable CS0618 // Type or member is obsolete
+                        $" or {typeof(Inedo.Extensibility.Credentials.UsernamePasswordCredentials).AssemblyQualifiedName}" +
+#pragma warning restore CS0618 // Type or member is obsolete
+                        $".");
                 }
                 return new CredentialedDomain(split[0], usernameCred.UserName, AH.Unprotect(usernameCred.Password));
             }
