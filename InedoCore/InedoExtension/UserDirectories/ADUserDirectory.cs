@@ -448,6 +448,11 @@ namespace Inedo.Extensions.UserDirectories
 
                 var cred = SecureCredentials.Create(split[1], CredentialResolutionContext.None);
                 var usernameCred = (cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) as UsernamePasswordCredentials;
+                if (usernameCred == null)
+                {
+                    var typ = (usernameCred?.GetType() ?? cred?.GetType())?.FullName ?? "null";
+                    throw new InvalidOperationException($"Credential {split[1]} has an unexpected type ({typ}); expected {typeof(UsernamePasswordCredentials).FullName}.");
+                }
                 return new CredentialedDomain(split[0], usernameCred.UserName, AH.Unprotect(usernameCred.Password));
             }
 
