@@ -448,19 +448,21 @@ namespace Inedo.Extensions.UserDirectories
                     return new CredentialedDomain(split[0], null);
 
                 var cred = SecureCredentials.Create(split[1], CredentialResolutionContext.None);
-                var usernameCred = (cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) as UsernamePasswordCredentials;
-                if (usernameCred == null)
-                {
-                    var typ = (usernameCred?.GetType() ?? cred?.GetType())?.AssemblyQualifiedName ?? "null";
-                    throw new InvalidOperationException(
-                        $"Credential {split[1]} has an unexpected type ({typ}); " +
-                        $"expected {typeof(UsernamePasswordCredentials).AssemblyQualifiedName}" +
+                
+                if (cred is UsernamePasswordCredentials userPassCred)
+                    return new CredentialedDomain(split[0], userPassCred.UserName, AH.Unprotect(userPassCred.Password));
+
 #pragma warning disable CS0618 // Type or member is obsolete
+                if (cred is Inedo.Extensibility.Credentials.UsernamePasswordCredentials legacyPassCred)
+                    return new CredentialedDomain(split[0], legacyPassCred.UserName, AH.Unprotect(legacyPassCred.Password));
+
+                var unexpectedType = cred?.GetType()?.AssemblyQualifiedName ?? "null";
+                throw new InvalidOperationException(
+                    $"Credential {split[1]} has an unexpected type ({unexpectedType}); " +
+                    $"expected {typeof(UsernamePasswordCredentials).AssemblyQualifiedName}" +
                         $" or {typeof(Inedo.Extensibility.Credentials.UsernamePasswordCredentials).AssemblyQualifiedName}" +
-#pragma warning restore CS0618 // Type or member is obsolete
                         $".");
-                }
-                return new CredentialedDomain(split[0], usernameCred.UserName, AH.Unprotect(usernameCred.Password));
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             public CredentialedDomain(string name, string userName = null, string password = null)
