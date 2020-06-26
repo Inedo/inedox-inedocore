@@ -21,7 +21,7 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Repack-Package")]
     [DisplayName("Repackage Package")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [Description("Changes the version number of a package in a ProGet feed and adds a repackaging entry to its metadata.")]
+    [Description("Creates a new package with an altered version number to a ProGet feed and adds a repackaging entry to its metadata for auditing.")]
     public sealed class ChangePackageVersionOperation : RemotePackageOperationBase
     {
         private string apiKey;
