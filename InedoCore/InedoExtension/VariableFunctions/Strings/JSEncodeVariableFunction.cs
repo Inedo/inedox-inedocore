@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
-using System.Web;
 using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
+using Newtonsoft.Json;
 
 namespace Inedo.Extensions.VariableFunctions.Strings
 {
@@ -14,6 +14,6 @@ namespace Inedo.Extensions.VariableFunctions.Strings
         [VariableFunctionParameter(0)]
         public string Text { get; set; }
 
-        protected override object EvaluateScalar(IVariableFunctionContext context) => HttpUtility.JavaScriptStringEncode(this.Text ?? string.Empty);
+        protected override object EvaluateScalar(IVariableFunctionContext context) => JsonConvert.ToString(this.Text ?? string.Empty);
     }
 }
