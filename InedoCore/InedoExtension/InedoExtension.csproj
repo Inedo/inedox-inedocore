@@ -3,21 +3,17 @@
     <AssemblyName>InedoCore</AssemblyName>
     <RootNamespace>Inedo.Extensions</RootNamespace>
     <OutputType>Library</OutputType>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.DirectoryServices" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.7.2">
+    <PackageReference Include="Inedo.SDK" Version="1.9.0-ci.32">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Inedo.UPack" Version="1.0.8">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
+    <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
   </ItemGroup>
 </Project>
