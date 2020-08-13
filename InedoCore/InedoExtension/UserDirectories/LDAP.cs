@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace Inedo.Extensions.UserDirectories
@@ -26,17 +27,30 @@ namespace Inedo.Extensions.UserDirectories
             if (useLdaps && ldapsPort == null)
                 ldapsPort = ":636";
 
-
-            using (var rootDSE = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "RootDSE"))
-            using (var rootDSEConfig = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
-            using (var searcher = new DirectorySearcher(rootDSEConfig))
+            using var conn = new LdapConnection(new LdapDirectoryIdentifier(null));
+            var response = conn.SendRequest(new SearchRequest("", "(&(objectClass=*))", SearchScope.Base));
+            if (response is SearchResponse sr && sr.Entries.Count > 0)
             {
-                searcher.SearchScope = SearchScope.OneLevel;
-                searcher.PropertiesToLoad.Add("dnsRoot");
-                searcher.Filter = "nETBIOSName=" + netbiosName;
+                var cfg = sr.Entries[0].GetPropertyValue("configurationNamingContext");
 
-                return searcher.FindOne()?.Properties["dnsRoot"]?[0]?.ToString();
+                var response2 = conn.SendRequest(new SearchRequest("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, SearchScope.Subtree));
+                if (response2 is SearchResponse sr2 && sr2.Entries.Count > 0)
+                    return sr2.Entries[0].GetPropertyValue("dnsRoot");
             }
+
+            return null;
+
+
+            //using (var rootDSE = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "RootDSE"))
+            //using (var rootDSEConfig = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
+            //using (var searcher = new DirectorySearcher(rootDSEConfig))
+            //{
+            //    searcher.SearchScope = SearchScope.OneLevel;
+            //    searcher.PropertiesToLoad.Add("dnsRoot");
+            //    searcher.Filter = "nETBIOSName=" + netbiosName;
+
+            //    return searcher.FindOne()?.Properties["dnsRoot"]?[0]?.ToString();
+            //}
         }
 
         public static string Escape(string s)
@@ -66,7 +80,7 @@ namespace Inedo.Extensions.UserDirectories
         /// Returns a period-separated concatenation of all of the domain components (fully-qualified) of the path
         /// </summary>
         /// <param name="result">The result.</param>
-        public static string GetDomainPath(this SearchResult result) => GetDomainPath(result.Path);
+        public static string GetDomainPath(this SearchResultEntry result) => GetDomainPath(result.DistinguishedName);
         /// <summary>
         /// Returns a period-separated concatenation of all of the domain components (fully-qualified) of the path
         /// </summary>
@@ -79,25 +93,25 @@ namespace Inedo.Extensions.UserDirectories
                 select p.Substring("DC=".Length)
             );
         }
-        public static string GetPropertyValue(this SearchResult sr, string propertyName)
+        public static string GetPropertyValue(this SearchResultEntry sr, string propertyName)
         {
             if (sr == null)
                 throw new ArgumentNullException(nameof(sr));
 
-            var propertyCollection = sr.Properties?[propertyName];
+            var propertyCollection = sr.Attributes?[propertyName];
             if (propertyCollection == null || propertyCollection.Count == 0)
                 return string.Empty;
 
             return propertyCollection[0]?.ToString() ?? string.Empty;
         }
 
-        public static ISet<string> ExtractGroupNames(SearchResult user)
+        public static ISet<string> ExtractGroupNames(SearchResultEntry user)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
             var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string memberOf in user.Properties["memberof"])
+            foreach (string memberOf in user.Attributes["memberof"])
             {
                 var groupNames = from part in memberOf.Split(',')
                                  where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)

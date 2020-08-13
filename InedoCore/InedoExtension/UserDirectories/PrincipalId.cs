@@ -1,5 +1,5 @@
 ﻿using System;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -35,7 +35,7 @@ namespace Inedo.Extensions.UserDirectories
         public string ToFullyQualifiedName() => $"{this.Principal}@{this.DomainAlias}";
         public string GetDomainSearchPath() => "DC=" + this.DomainAlias.Replace(".", ",DC=");
 
-        public static PrincipalId FromSearchResult(SearchResult result)
+        public static PrincipalId FromSearchResult(SearchResultEntry result)
         {
             if (result == null)
                 return null;
