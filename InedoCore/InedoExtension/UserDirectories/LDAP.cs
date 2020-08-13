@@ -14,7 +14,7 @@ namespace Inedo.Extensions.UserDirectories
         private static readonly LazyRegex LdapUnescapeRegex = new LazyRegex(@"\\([,\\#+<>;""=])", RegexOptions.Compiled);
         private static readonly LazyRegex LdapSplitRegex = new LazyRegex(@"(?<!\\),", RegexOptions.Compiled);
 
-        public static string GetDomainNameFromNetbiosName(string netbiosName, IDictionary<string, string> manualOverride, bool useLdaps, string ldapsPort = null)
+        public static string GetDomainNameFromNetbiosName(string netbiosName, IDictionary<string, string> manualOverride, bool useLdaps)
         {
             if (manualOverride == null)
                 throw new ArgumentNullException(nameof(manualOverride));
@@ -24,10 +24,7 @@ namespace Inedo.Extensions.UserDirectories
             if (manualOverride.TryGetValue(netbiosName, out string overridden))
                 return overridden;
 
-            if (useLdaps && ldapsPort == null)
-                ldapsPort = ":636";
-
-            using var conn = new LdapConnection(new LdapDirectoryIdentifier(null));
+            using var conn = new LdapConnection(useLdaps ? new LdapDirectoryIdentifier(null) : new LdapDirectoryIdentifier(null, 636));
             var response = conn.SendRequest(new SearchRequest("", "(&(objectClass=*))", SearchScope.Base));
             if (response is SearchResponse sr && sr.Entries.Count > 0)
             {
@@ -39,18 +36,6 @@ namespace Inedo.Extensions.UserDirectories
             }
 
             return null;
-
-
-            //using (var rootDSE = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "RootDSE"))
-            //using (var rootDSEConfig = new DirectoryEntry("LDAP://" + (useLdaps ? ldapsPort + "/" : string.Empty) + "cn=Partitions," + rootDSE.Properties["configurationNamingContext"][0].ToString()))
-            //using (var searcher = new DirectorySearcher(rootDSEConfig))
-            //{
-            //    searcher.SearchScope = SearchScope.OneLevel;
-            //    searcher.PropertiesToLoad.Add("dnsRoot");
-            //    searcher.Filter = "nETBIOSName=" + netbiosName;
-
-            //    return searcher.FindOne()?.Properties["dnsRoot"]?[0]?.ToString();
-            //}
         }
 
         public static string Escape(string s)

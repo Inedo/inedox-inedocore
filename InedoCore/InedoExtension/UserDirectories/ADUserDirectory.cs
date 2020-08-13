@@ -22,6 +22,12 @@ namespace Inedo.Extensions.UserDirectories
         private readonly Lazy<HashSet<CredentialedDomain>> domainsToSearch;
         private readonly Lazy<IDictionary<string, string>> netBiosNameMaps;
 
+        public ADUserDirectory()
+        {
+            this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
+            this.netBiosNameMaps = new Lazy<IDictionary<string, string>>(this.BuildNetBiosNameMaps);
+        }
+
         [Persistent]
         [DisplayName("Search mode")]
         public ADSearchMode SearchMode { get; set; }
@@ -66,12 +72,6 @@ namespace Inedo.Extensions.UserDirectories
         [Description("When connecting to your local Active Directory, connect via LDAP over SSL.")]
         public bool UseLdaps { get; set; }
 
-        public ADUserDirectory()
-        {
-            this.domainsToSearch = new Lazy<HashSet<CredentialedDomain>>(this.BuildDomainsToSearch);
-            this.netBiosNameMaps = new Lazy<IDictionary<string, string>>(this.BuildNetBiosNameMaps);
-        }
-
         public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
         {
@@ -105,14 +105,8 @@ namespace Inedo.Extensions.UserDirectories
             var parts = logonUser.Split(new[] { '\\' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 2)
                 return null;
-            var ldapsPort = ":636";
-            if (this.UseLdaps && !string.IsNullOrWhiteSpace(this.DomainControllerAddress) && this.DomainControllerAddress.Contains(":"))
-            {
-                var hostParts = this.DomainControllerAddress.TrimEnd('/').Split(':');
-                ldapsPort = ":" + hostParts[hostParts.Length - 1];
-            }
 
-            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value, this.UseLdaps, ldapsPort);
+            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value, this.UseLdaps);
             return this.TryGetUser($"{parts[1]}@{domain}");
         }
 
