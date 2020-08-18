@@ -225,7 +225,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogDebug($"Searching domain {domain}...");
 
-                var result = this.Search("DC=" + domain.Name.Replace(".", ",DC="), searchString.ToString()).FirstOrDefault();
+                var result = this.Search("DC=" + domain.Name.Replace(".", ",DC="), searchString.ToString(), userName: domain.UserName, password: domain.Password).FirstOrDefault();
                 if (result != null)
                     return result;
             }
@@ -258,7 +258,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogDebug("Searching domain: " + domain);
 
-                foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter))
+                foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, userName: domain.UserName, password: domain.Password))
                 {
                     var principal = this.CreatePrincipal(result);
                     if (principal == null)
@@ -288,9 +288,9 @@ namespace Inedo.Extensions.UserDirectories
                 return new ActiveDirectoryGroup((GroupId)principalId);
             }
         }
-        private IEnumerable<SearchResultEntry> Search(string dn, string filter, SearchScope scope = SearchScope.Subtree)
+        private IEnumerable<SearchResultEntry> Search(string dn, string filter, SearchScope scope = SearchScope.Subtree, string userName = null, string password = null)
         {
-            using var conn = new LdapConnection(this.GetLdapId());
+            using var conn = string.IsNullOrWhiteSpace(userName) ? new LdapConnection(this.GetLdapId()) : new LdapConnection(this.GetLdapId(), new NetworkCredential(userName, password));
             conn.Bind();
 
             var request = new SearchRequest(dn, filter, scope);
