@@ -309,11 +309,10 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogError(ex.ToString());
                 if (ex.InnerException != null)
-                {
                     this.LogError("Inner Exception: " + ex.InnerException);
-                    if (ex.Response != null)
-                        this.LogError($"Response: Code={ex.Response.ResultCode}, Message={ex.Response.ErrorMessage}");
-                }
+
+                if (ex.Response != null)
+                    this.LogError($"Response: Code={ex.Response.ResultCode}, Message={ex.Response.ErrorMessage}");
 
                 throw;
             }
