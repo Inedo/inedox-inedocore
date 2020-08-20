@@ -289,19 +289,26 @@ namespace Inedo.Extensions.UserDirectories
         }
         private IEnumerable<SearchResultEntry> Search(string dn, string filter, SearchScope scope = SearchScope.Subtree, string userName = null, SecureString password = null)
         {
-            using var conn = string.IsNullOrWhiteSpace(userName) ? new LdapConnection(this.GetLdapId()) : new LdapConnection(this.GetLdapId(), new NetworkCredential(userName, password));
-            if (!string.IsNullOrWhiteSpace(userName))
-                conn.AuthType = AuthType.Negotiate;
-
-            conn.Bind();
-
-            var request = new SearchRequest(dn, filter, scope);
-            var response = conn.SendRequest(request);
-
-            if (response is SearchResponse sr)
+            try
             {
-                foreach (SearchResultEntry entry in sr.Entries)
-                    yield return entry;
+                using var conn = string.IsNullOrWhiteSpace(userName) ? new LdapConnection(this.GetLdapId()) : new LdapConnection(this.GetLdapId(), new NetworkCredential(userName, password));
+                if (!string.IsNullOrWhiteSpace(userName))
+                    conn.AuthType = AuthType.Negotiate;
+
+                conn.Bind();
+
+                var request = new SearchRequest(dn, filter, scope);
+                var response = conn.SendRequest(request);
+
+                if (response is SearchResponse sr)
+                    return sr.Entries.Cast<SearchResultEntry>();
+                else
+                    return Enumerable.Empty<SearchResultEntry>();
+            }
+            catch (Exception ex)
+            {
+                this.LogError(ex.ToString());
+                throw;
             }
         }
         private LdapDirectoryIdentifier GetLdapId()
