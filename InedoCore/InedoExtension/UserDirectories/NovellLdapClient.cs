@@ -52,19 +52,36 @@ namespace Inedo.Extensions.UserDirectories
 
             public override string DistinguishedName => this.entry.Dn;
 
-            public override string GetPropertyValue(string propertyName) => this.entry.GetAttribute(propertyName)?.StringValue;
+            public override string GetPropertyValue(string propertyName)
+            {
+                try
+                {
+                    return this.entry.GetAttribute(propertyName)?.StringValue;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             public override ISet<string> ExtractGroupNames()
             {
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var memberOf in this.entry.GetAttribute("memberof")?.StringValueArray ?? new string[0])
+                try
                 {
-                    var groupNames = from part in memberOf.Split(',')
-                                     where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                     let name = part.Substring("CN=".Length)
-                                     where !string.IsNullOrWhiteSpace(name)
-                                     select name;
+                    foreach (var memberOf in this.entry.GetAttribute("memberof")?.StringValueArray ?? new string[0])
+                    {
+                        var groupNames = from part in memberOf.Split(',')
+                                         where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
+                                         let name = part.Substring("CN=".Length)
+                                         where !string.IsNullOrWhiteSpace(name)
+                                         select name;
 
-                    groups.UnionWith(groupNames);
+                        groups.UnionWith(groupNames);
+                    }
+                }
+                catch
+                {
                 }
 
                 return groups;
