@@ -295,7 +295,10 @@ namespace Inedo.Extensions.UserDirectories
                 if (!string.IsNullOrWhiteSpace(userName))
                     conn.AuthType = AuthType.Negotiate;
 
-                conn.Bind();
+                if (!string.IsNullOrWhiteSpace(userName))
+                    conn.Bind(new NetworkCredential(userName, password));
+                else
+                    conn.Bind();
 
                 var request = new SearchRequest(dn, filter, scope);
                 var response = conn.SendRequest(request);
