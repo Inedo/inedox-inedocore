@@ -90,24 +90,5 @@ namespace Inedo.Extensions.UserDirectories
             return propertyCollection[0]?.ToString() ?? string.Empty;
         }
 
-        public static ISet<string> ExtractGroupNames(SearchResultEntry user)
-        {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
-
-            var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string memberOf in user.Attributes["memberof"])
-            {
-                var groupNames = from part in memberOf.Split(',')
-                                 where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                 let name = part.Substring("CN=".Length)
-                                 where !string.IsNullOrWhiteSpace(name)
-                                 select name;
-
-                groups.UnionWith(groupNames);
-            }
-
-            return groups;
-        }
     }
 }

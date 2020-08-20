@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.DirectoryServices.ActiveDirectory;
-using System.DirectoryServices.Protocols;
 using System.Linq;
 using System.Net;
 using System.Security;
@@ -83,8 +82,9 @@ namespace Inedo.Extensions.UserDirectories
 
             try
             {
-                using var conn = new LdapConnection(this.GetLdapId(), new NetworkCredential(userName, password));
-                conn.Bind();
+                using var conn = GetClient();
+                conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), null, this.UseLdaps);
+                conn.Bind(new NetworkCredential(userName, password));
                 return this.CreatePrincipal(result) as IUserDirectoryUser;
             }
             catch
@@ -176,7 +176,7 @@ namespace Inedo.Extensions.UserDirectories
 
             return maps;
         }
-        private SearchResultEntry TryGetPrincipal(PrincipalSearchType searchType, string principalName)
+        private LdapClientEntry TryGetPrincipal(PrincipalSearchType searchType, string principalName)
         {
             if (string.IsNullOrEmpty(principalName))
                 return null;
@@ -267,7 +267,7 @@ namespace Inedo.Extensions.UserDirectories
                 }
             }
         }
-        private IUserDirectoryPrincipal CreatePrincipal(SearchResultEntry result)
+        private IUserDirectoryPrincipal CreatePrincipal(LdapClientEntry result)
         {
             var principalId = PrincipalId.FromSearchResult(result);
             if (principalId == null)
@@ -287,43 +287,23 @@ namespace Inedo.Extensions.UserDirectories
                 return new ActiveDirectoryGroup((GroupId)principalId);
             }
         }
-        private IEnumerable<SearchResultEntry> Search(string dn, string filter, SearchScope scope = SearchScope.Subtree, string userName = null, SecureString password = null)
+        private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
         {
-            try
-            {
-                using var conn = string.IsNullOrWhiteSpace(userName) ? new LdapConnection(this.GetLdapId()) : new LdapConnection(this.GetLdapId(), new NetworkCredential(userName, password));
-                if (!string.IsNullOrWhiteSpace(userName))
-                    conn.AuthType = AuthType.Negotiate;
-
-                if (!string.IsNullOrWhiteSpace(userName))
-                    conn.Bind(new NetworkCredential(userName, password));
-                else
-                    conn.Bind();
-
-                var request = new SearchRequest(dn, filter, scope);
-                var response = conn.SendRequest(request);
-
-                if (response is SearchResponse sr)
-                    return sr.Entries.Cast<SearchResultEntry>();
-                else
-                    return Enumerable.Empty<SearchResultEntry>();
-            }
-            catch (DirectoryOperationException ex)
-            {
-                this.LogError(ex.ToString());
-                if (ex.InnerException != null)
-                    this.LogError("Inner Exception: " + ex.InnerException);
-
-                if (ex.Response != null)
-                    this.LogError($"Response: Code={ex.Response.ResultCode}, Message={ex.Response.ErrorMessage}");
-
-                throw;
-            }
+            using var conn = GetClient();
+            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), null, this.UseLdaps);
+            conn.Bind(new NetworkCredential(userName, password));
+            return conn.Search(dn, filter, scope).ToList();
         }
-        private LdapDirectoryIdentifier GetLdapId()
+        private static LdapClient GetClient()
         {
-            var server = AH.NullIf(this.DomainControllerAddress, string.Empty);
-            return this.UseLdaps ? new LdapDirectoryIdentifier(server, 636) : new LdapDirectoryIdentifier(server);
+#if NET452
+            return new DirectoryServicesLdapClient();
+#else
+            if (InedoLib.NetCore && InedoLib.IsLinux)
+                return new NovellLdapClient();
+            else
+                return new DirectoryServicesLdapClient();
+#endif
         }
 
         [Flags]
@@ -361,7 +341,7 @@ namespace Inedo.Extensions.UserDirectories
                 if (userSearchResult == null)
                     return false;
 
-                var groupSet = LDAP.ExtractGroupNames(userSearchResult);
+                var groupSet = userSearchResult.ExtractGroupNames();
                 var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
                 if (groupSet.Contains(compareName))
                     return true;
@@ -382,7 +362,7 @@ namespace Inedo.Extensions.UserDirectories
                             var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
                             if (groupSearchResult != null)
                             {
-                                var groupGroups = LDAP.ExtractGroupNames(groupSearchResult);
+                                var groupGroups = groupSearchResult.ExtractGroupNames();
                                 foreach (var g in groupGroups)
                                     groupsToSearch.Enqueue(g);
                             }

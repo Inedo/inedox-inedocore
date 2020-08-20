@@ -35,7 +35,7 @@ namespace Inedo.Extensions.UserDirectories
         public string ToFullyQualifiedName() => $"{this.Principal}@{this.DomainAlias}";
         public string GetDomainSearchPath() => "DC=" + this.DomainAlias.Replace(".", ",DC=");
 
-        public static PrincipalId FromSearchResult(SearchResultEntry result)
+        public static PrincipalId FromSearchResult(LdapClientEntry result)
         {
             if (result == null)
                 return null;
