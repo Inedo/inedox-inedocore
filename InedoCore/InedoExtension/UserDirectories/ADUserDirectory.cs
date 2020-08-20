@@ -305,9 +305,16 @@ namespace Inedo.Extensions.UserDirectories
                 else
                     return Enumerable.Empty<SearchResultEntry>();
             }
-            catch (Exception ex)
+            catch (DirectoryOperationException ex)
             {
                 this.LogError(ex.ToString());
+                if (ex.InnerException != null)
+                {
+                    this.LogError("Inner Exception: " + ex.InnerException);
+                    if (ex.Response != null)
+                        this.LogError($"Response: Code={ex.Response.ResultCode}, Message={ex.Response.ErrorMessage}");
+                }
+
                 throw;
             }
         }
