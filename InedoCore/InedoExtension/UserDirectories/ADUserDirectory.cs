@@ -5,6 +5,7 @@ using System.DirectoryServices.ActiveDirectory;
 using System.DirectoryServices.Protocols;
 using System.Linq;
 using System.Net;
+using System.Security;
 using System.Text;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -73,10 +74,7 @@ namespace Inedo.Extensions.UserDirectories
         public bool UseLdaps { get; set; }
 
         public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
-        public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
-        {
-            throw new NotImplementedException();
-        }
+        public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName) => throw new NotImplementedException();
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
             var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
@@ -136,10 +134,10 @@ namespace Inedo.Extensions.UserDirectories
 
             if (this.SearchMode == ADSearchMode.TrustedDomains)
             {
-                this.LogDebug($"Adding domain trust relationships...");
+                this.LogDebug("Adding domain trust relationships...");
                 addTrusts(domain.GetAllTrustRelationships());
 
-                this.LogDebug($"Getting current forest...");
+                this.LogDebug("Getting current forest...");
 
                 using var forest = Forest.GetCurrentForest();
                 this.LogDebug($"Adding trust relationships from \"{forest.Name}\"...");
@@ -198,7 +196,7 @@ namespace Inedo.Extensions.UserDirectories
                 searchString.Append("(|");
                 searchString.Append($"(sAMAccountName={LDAP.Escape(principalId?.Principal ?? principalName)})");
                 searchString.Append($"(name={LDAP.Escape(principalId?.Principal ?? principalName)})");
-                searchString.Append(")");
+                searchString.Append(')');
             }
             else if (searchType == PrincipalSearchType.UsersAndGroups)
             {
@@ -210,22 +208,23 @@ namespace Inedo.Extensions.UserDirectories
             HashSet<CredentialedDomain> domains;
             if (principalId == null)
             {
-                this.LogDebug($"No domain specified, searching through aliases.");
+                this.LogDebug("No domain specified, searching through aliases.");
                 domains = this.domainsToSearch.Value;
             }
             else
             {
                 this.LogDebug($"Domain alias \"{principalId.DomainAlias}\" will be used.");
-                domains = new HashSet<CredentialedDomain>();
-                domains.Add(this.domainsToSearch.Value.FirstOrDefault(x => x.Name.Equals(principalId.DomainAlias))
-                    ?? new CredentialedDomain(principalId.DomainAlias));
+                domains = new HashSet<CredentialedDomain>
+                {
+                    this.domainsToSearch.Value.FirstOrDefault(x => x.Name.Equals(principalId.DomainAlias)) ?? new CredentialedDomain(principalId.DomainAlias)
+                };
             }
 
             foreach (var domain in domains)
             {
                 this.LogDebug($"Searching domain {domain}...");
 
-                var result = this.Search("DC=" + domain.Name.Replace(".", ",DC="), searchString.ToString(), userName: domain.UserName, password: domain.Password).FirstOrDefault();
+                var result = this.Search("DC=" + domain.Name.Replace(".", ",DC="), searchString.ToString(), userName: domain.DomainQualifiedName, password: domain.Password).FirstOrDefault();
                 if (result != null)
                     return result;
             }
@@ -258,7 +257,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 this.LogDebug("Searching domain: " + domain);
 
-                foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, userName: domain.UserName, password: domain.Password))
+                foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, userName: domain.DomainQualifiedName, password: domain.Password))
                 {
                     var principal = this.CreatePrincipal(result);
                     if (principal == null)
@@ -288,13 +287,15 @@ namespace Inedo.Extensions.UserDirectories
                 return new ActiveDirectoryGroup((GroupId)principalId);
             }
         }
-        private IEnumerable<SearchResultEntry> Search(string dn, string filter, SearchScope scope = SearchScope.Subtree, string userName = null, string password = null)
+        private IEnumerable<SearchResultEntry> Search(string dn, string filter, SearchScope scope = SearchScope.Subtree, string userName = null, SecureString password = null)
         {
             using var conn = string.IsNullOrWhiteSpace(userName) ? new LdapConnection(this.GetLdapId()) : new LdapConnection(this.GetLdapId(), new NetworkCredential(userName, password));
+            if (!string.IsNullOrWhiteSpace(userName))
+                conn.AuthType = AuthType.Negotiate;
+
             conn.Bind();
 
             var request = new SearchRequest(dn, filter, scope);
-
             var response = conn.SendRequest(request);
 
             if (response is SearchResponse sr)
@@ -410,6 +411,19 @@ namespace Inedo.Extensions.UserDirectories
 
         private sealed class CredentialedDomain : IEquatable<CredentialedDomain>
         {
+            public CredentialedDomain(string name, string userName = null, SecureString password = null)
+            {
+                this.Name = name ?? throw new ArgumentNullException(nameof(name));
+                this.UserName = userName;
+                this.Password = password;
+                this.DomainQualifiedName = GetDomainQualifiedName(name, userName);
+            }
+
+            public string Name { get; }
+            public string UserName { get; }
+            public SecureString Password { get; }
+            public string DomainQualifiedName { get; }
+
             public static CredentialedDomain Create(string input)
             {
                 if (string.IsNullOrWhiteSpace(input))
@@ -423,31 +437,20 @@ namespace Inedo.Extensions.UserDirectories
                 var cred = SecureCredentials.Create(split[1], CredentialResolutionContext.None);
 
                 if (cred is UsernamePasswordCredentials userPassCred)
-                    return new CredentialedDomain(split[0], userPassCred.UserName, AH.Unprotect(userPassCred.Password));
+                    return new CredentialedDomain(split[0], userPassCred.UserName, userPassCred.Password);
 
 #pragma warning disable CS0618 // Type or member is obsolete
-                if (cred is Inedo.Extensibility.Credentials.UsernamePasswordCredentials legacyPassCred)
-                    return new CredentialedDomain(split[0], legacyPassCred.UserName, AH.Unprotect(legacyPassCred.Password));
+                if (cred is Extensibility.Credentials.UsernamePasswordCredentials legacyPassCred)
+                    return new CredentialedDomain(split[0], legacyPassCred.UserName, legacyPassCred.Password);
 
                 var unexpectedType = cred?.GetType()?.AssemblyQualifiedName ?? "null";
                 throw new InvalidOperationException(
                     $"Credential {split[1]} has an unexpected type ({unexpectedType}); " +
                     $"expected {typeof(UsernamePasswordCredentials).AssemblyQualifiedName}" +
-                        $" or {typeof(Inedo.Extensibility.Credentials.UsernamePasswordCredentials).AssemblyQualifiedName}" +
-                        $".");
+                    $" or {typeof(Extensibility.Credentials.UsernamePasswordCredentials).AssemblyQualifiedName}."
+                );
 #pragma warning restore CS0618 // Type or member is obsolete
             }
-
-            public CredentialedDomain(string name, string userName = null, string password = null)
-            {
-                this.Name = name ?? throw new ArgumentNullException(nameof(name));
-                this.UserName = userName;
-                this.Password = password;
-            }
-
-            public string Name { get; }
-            public string UserName { get; }
-            public string Password { get; }
 
             public bool Equals(CredentialedDomain other) => Equals(this, other);
             public override bool Equals(object obj) => Equals(this, obj as CredentialedDomain);
@@ -465,10 +468,18 @@ namespace Inedo.Extensions.UserDirectories
             {
                 if (ReferenceEquals(x, y))
                     return true;
-                if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
+                if (x is null || y is null)
                     return false;
 
                 return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name);
+            }
+
+            private static string GetDomainQualifiedName(string domainName, string userName)
+            {
+                if (userName.IndexOfAny(new[] { '\\', '@' }) >= 0)
+                    return userName;
+                else
+                    return userName + "@" + domainName;
             }
         }
     }
