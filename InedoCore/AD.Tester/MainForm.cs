@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows.Forms;
 using Inedo.Diagnostics;
 using Inedo.Extensibility.UserDirectories;
@@ -167,6 +168,27 @@ namespace AD.Tester
             gvResults.Rows.Clear();
             if(principal != null)
                 AddToGrid(principal);
+        }
+
+        private void label10_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnGetUsersForGrou_OnClick(object sender, EventArgs e)
+        {
+            var dir = this.CreateDirectory();
+
+            var principals = dir.GetGroupMembers(tbGroupUsersSearch.Text);
+
+            gvResults.Rows.Clear();
+            if (principals != null)
+            {
+                foreach(var principal in principals)
+                {
+                    AddToGrid(principal);
+                }
+            }
         }
     }
 }

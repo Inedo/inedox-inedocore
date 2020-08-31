@@ -68,6 +68,10 @@
             this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.txtLogs = new System.Windows.Forms.TextBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.label10 = new System.Windows.Forms.Label();
+            this.tbGroupUsersSearch = new System.Windows.Forms.TextBox();
+            this.btnGetUsersForGroup = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -81,6 +85,7 @@
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).BeginInit();
             this.groupBox4.SuspendLayout();
+            this.tabPage4.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -282,6 +287,7 @@
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
+            this.tabControl1.Controls.Add(this.tabPage4);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(2, 15);
             this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
@@ -591,6 +597,46 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Logs";
             // 
+            // tabPage4
+            // 
+            this.tabPage4.Controls.Add(this.btnGetUsersForGroup);
+            this.tabPage4.Controls.Add(this.tbGroupUsersSearch);
+            this.tabPage4.Controls.Add(this.label10);
+            this.tabPage4.Location = new System.Drawing.Point(4, 22);
+            this.tabPage4.Name = "tabPage4";
+            this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage4.Size = new System.Drawing.Size(452, 154);
+            this.tabPage4.TabIndex = 3;
+            this.tabPage4.Text = "Get Group\'s Users";
+            this.tabPage4.UseVisualStyleBackColor = true;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(7, 10);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(67, 13);
+            this.label10.TabIndex = 0;
+            this.label10.Text = "Group Name";
+            this.label10.Click += new System.EventHandler(this.label10_Click);
+            // 
+            // tbGroupUsersSearch
+            // 
+            this.tbGroupUsersSearch.Location = new System.Drawing.Point(80, 7);
+            this.tbGroupUsersSearch.Name = "tbGroupUsersSearch";
+            this.tbGroupUsersSearch.Size = new System.Drawing.Size(354, 20);
+            this.tbGroupUsersSearch.TabIndex = 1;
+            // 
+            // btnGetUsersForGroup
+            // 
+            this.btnGetUsersForGroup.Location = new System.Drawing.Point(359, 125);
+            this.btnGetUsersForGroup.Name = "btnGetUsersForGroup";
+            this.btnGetUsersForGroup.Size = new System.Drawing.Size(75, 23);
+            this.btnGetUsersForGroup.TabIndex = 2;
+            this.btnGetUsersForGroup.Text = "Get Users";
+            this.btnGetUsersForGroup.UseVisualStyleBackColor = true;
+            this.btnGetUsersForGroup.Click += new System.EventHandler(this.btnGetUsersForGrou_OnClick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -624,6 +670,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
+            this.tabPage4.ResumeLayout(false);
+            this.tabPage4.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -669,6 +717,10 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.TextBox txtParseLogin;
         private System.Windows.Forms.Button parseLogin;
+        private System.Windows.Forms.TabPage tabPage4;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Button btnGetUsersForGroup;
+        private System.Windows.Forms.TextBox tbGroupUsersSearch;
     }
 }
 
