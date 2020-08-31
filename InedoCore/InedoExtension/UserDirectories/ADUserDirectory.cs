@@ -159,7 +159,8 @@ namespace Inedo.Extensions.UserDirectories
 
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
         {
-            throw new NotImplementedException();
+            var group = (ActiveDirectoryGroup)this.TryGetGroup(groupName);
+            return group.GetMembers();
         }
 
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
@@ -272,6 +273,17 @@ namespace Inedo.Extensions.UserDirectories
             if (string.IsNullOrEmpty(searchTerm))
                 yield break;
 
+            var st = LDAP.Escape(searchTerm);
+            var filter = $"(|(userPrincipalName={st}*)(sAMAccountName={st}*)(name={st}*)(displayName={st}*))";
+
+            foreach (var principal in this.FindPrincipalsUsingLdap(searchType, filter))
+            {
+                yield return principal;
+            }
+        }
+
+        private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, SearchScope? scope = null, ReferralChasingOption? referralChasingOption = null)
+        {
             var userSearchQuery = "objectCategory=user";
             if (this.IncludeGroupManagedServiceAccounts)
                 userSearchQuery = "|(objectCategory=user)(objectCategory=msDS-GroupManagedServiceAccount)";
@@ -282,20 +294,22 @@ namespace Inedo.Extensions.UserDirectories
                 .Case(PrincipalSearchType.Users, $"({userSearchQuery})")
                 .End();
 
-            var st = LDAP.Escape(searchTerm);
-            var filter = $"(&{categoryFilter}(|(userPrincipalName={st}*)(sAMAccountName={st}*)(name={st}*)(displayName={st}*)))";
 
-            this.LogDebug("Search term: " + searchTerm);
+            var filter = $"(&{categoryFilter}{ldapSearch ?? string.Empty})";
+
             this.LogDebug("Filter string: " + filter);
 
             foreach (var domain in this.domainsToSearch.Value)
             {
                 this.LogDebug("Searching domain: " + domain);
 
-                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password, AuthenticationTypes.Secure))
-                using (var searcher = new DirectorySearcher(entry))
+                using (var entry = new DirectoryEntry(this.GetLdapRoot() + "DC=" + domain.Name.Replace(".", ",DC="), domain.UserName, domain.Password, AuthenticationTypes.Secure)) using (var searcher = new DirectorySearcher(entry))
                 {
                     searcher.Filter = filter;
+                    if (referralChasingOption != null)
+                        searcher.ReferralChasing = referralChasingOption.Value;
+                    if (scope != null)
+                        searcher.SearchScope = scope.Value;
 
                     using (var results = searcher.FindAll())
                     {
@@ -305,12 +319,14 @@ namespace Inedo.Extensions.UserDirectories
                             if (principal == null)
                                 continue;
 
+                            this.LogDebug($"User Member: {string.Join(", ", LDAP.ExtractGroupNames(result))}");
                             yield return principal;
                         }
                     }
                 }
             }
         }
+
         private IUserDirectoryPrincipal CreatePrincipal(SearchResult result)
         {
             var principalId = PrincipalId.FromSearchResult(result);
@@ -328,7 +344,7 @@ namespace Inedo.Extensions.UserDirectories
             }
             else
             {
-                return new ActiveDirectoryGroup((GroupId)principalId);
+                return new ActiveDirectoryGroup(this, (GroupId)principalId);
             }
         }
 
@@ -413,18 +429,76 @@ namespace Inedo.Extensions.UserDirectories
         private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
         {
             private readonly GroupId groupId;
+            private readonly ADUserDirectory directory;
 
-            public ActiveDirectoryGroup(GroupId groupId)
+            public ActiveDirectoryGroup(ADUserDirectory directory, GroupId groupId)
             {
+                this.directory = directory;
                 this.groupId = groupId ?? throw new ArgumentNullException(nameof(groupId));
             }
 
             string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
             string IUserDirectoryPrincipal.DisplayName => this.groupId.Principal;
-            
+
             public bool IsMemberOfGroup(string groupName)
             {
-                throw new NotSupportedException();
+                if (groupName == null)
+                    throw new ArgumentNullException(nameof(groupName));
+
+                var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                if (rootGroupSearchResult == null)
+                    return false;
+
+                var groupSet = LDAP.ExtractGroupNames(rootGroupSearchResult);
+                var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
+                if (groupSet.Contains(compareName))
+                    return true;
+
+                if (this.directory.SearchGroupsRecursively)
+                {
+                    var groupsToSearch = new Queue<string>(groupSet);
+                    var groupsSearched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    while (groupsToSearch.Count > 0)
+                    {
+                        var nextGroup = groupsToSearch.Dequeue();
+                        if (groupsSearched.Add(nextGroup))
+                        {
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            if (groupSearchResult != null)
+                            {
+                                var groupGroups = LDAP.ExtractGroupNames(groupSearchResult);
+                                foreach (var g in groupGroups)
+                                    groupsToSearch.Enqueue(g);
+                            }
+                        }
+                    }
+
+                    return groupsSearched.Contains(compareName);
+                }
+
+                return false;
+            }
+
+            internal IEnumerable<IUserDirectoryUser> GetMembers()
+            {
+                var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.Groups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", SearchScope.Subtree, ReferralChasingOption.All);
+
+                foreach (var user in users)
+                {
+                    if (user is IUserDirectoryUser userId)
+                        yield return userId;
+                    if (user is ActiveDirectoryGroup group)
+                    {
+                        if (this.directory.SearchGroupsRecursively)
+                        {
+                            foreach (var member in group.GetMembers())
+                                yield return member;
+                        }
+                    }
+                    continue;
+                }
             }
 
             public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other?.groupId);
