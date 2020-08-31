@@ -483,20 +483,12 @@ namespace Inedo.Extensions.UserDirectories
             internal IEnumerable<IUserDirectoryUser> GetMembers()
             {
                 var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
-                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.Groups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", SearchScope.Subtree, ReferralChasingOption.All);
+                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", SearchScope.Subtree, ReferralChasingOption.All);
 
                 foreach (var user in users)
                 {
                     if (user is IUserDirectoryUser userId)
                         yield return userId;
-                    if (user is ActiveDirectoryGroup group)
-                    {
-                        if (this.directory.SearchGroupsRecursively)
-                        {
-                            foreach (var member in group.GetMembers())
-                                yield return member;
-                        }
-                    }
                     continue;
                 }
             }
