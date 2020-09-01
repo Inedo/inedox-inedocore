@@ -475,7 +475,7 @@ namespace Inedo.Extensions.UserDirectories
                 this.Name = name ?? throw new ArgumentNullException(nameof(name));
                 this.UserName = userName;
                 this.Password = password;
-                this.DomainQualifiedName = GetDomainQualifiedName(name, userName);
+                this.DomainQualifiedName = userName != null ? GetDomainQualifiedName(name, userName) : null;
             }
 
             public string Name { get; }
