@@ -33,23 +33,41 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Inedo.Agents, Version=47.0.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.SDK.1.9.0-ci.37\lib\net452\Inedo.Agents.dll</HintPath>
+    </Reference>
     <Reference Include="Inedo.Agents.Client, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Inedo.Agents.Client.dll</HintPath>
+      <HintPath>..\packages\Inedo.SDK.1.9.0-ci.37\lib\net452\Inedo.Agents.Client.dll</HintPath>
     </Reference>
     <Reference Include="Inedo.ExecutionEngine, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Inedo.ExecutionEngine.dll</HintPath>
+      <HintPath>..\packages\Inedo.SDK.1.9.0-ci.37\lib\net452\Inedo.ExecutionEngine.dll</HintPath>
     </Reference>
-    <Reference Include="Inedo.SDK, Version=1.5.0.0, Culture=neutral, PublicKeyToken=29fae5dec3001603, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Inedo.SDK.dll</HintPath>
+    <Reference Include="Inedo.SDK, Version=1.9.0.0, Culture=neutral, PublicKeyToken=29fae5dec3001603, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.SDK.1.9.0-ci.37\lib\net452\Inedo.SDK.dll</HintPath>
+    </Reference>
+    <Reference Include="Inedo.UPack, Version=1.0.8.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inedo.UPack.1.0.8\lib\net45\Inedo.UPack.dll</HintPath>
     </Reference>
     <Reference Include="InedoLib, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\InedoLib.dll</HintPath>
+      <HintPath>..\packages\Inedo.SDK.1.9.0-ci.37\lib\net452\InedoLib.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.DirectoryServices.Protocols" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.2\lib\portable-net45+win8+wp8+wpa81\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -72,13 +90,15 @@
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InedoExtension\InedoExtension.csproj">
       <Project>{7481fb80-9de1-4afc-90a0-9e077dc6ef61}</Project>
       <Name>InedoExtension</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
