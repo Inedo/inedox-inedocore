@@ -73,7 +73,11 @@ namespace Inedo.Extensions.UserDirectories
         public bool UseLdaps { get; set; }
 
         public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
-        public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName) => throw new NotImplementedException();
+        public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
+        {
+            var group = (ActiveDirectoryGroup)this.TryGetGroup(groupName);
+            return group.GetMembers();
+        }
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
             var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
@@ -237,6 +241,18 @@ namespace Inedo.Extensions.UserDirectories
             if (string.IsNullOrEmpty(searchTerm))
                 yield break;
 
+            var st = LDAP.Escape(searchTerm);
+            var filter = $"(|(userPrincipalName={st}*)(sAMAccountName={st}*)(name={st}*)(displayName={st}*))";
+            this.LogDebug("Search term: " + searchTerm);
+
+            foreach (var principal in this.FindPrincipalsUsingLdap(searchType, filter))
+            {
+                yield return principal;
+            }
+        }
+        private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)//, ReferralChasingOption? referralChasingOption = null)
+        {
+          
             var userSearchQuery = "objectCategory=user";
             if (this.IncludeGroupManagedServiceAccounts)
                 userSearchQuery = "|(objectCategory=user)(objectCategory=msDS-GroupManagedServiceAccount)";
@@ -247,17 +263,14 @@ namespace Inedo.Extensions.UserDirectories
                 .Case(PrincipalSearchType.Users, $"({userSearchQuery})")
                 .End();
 
-            var st = LDAP.Escape(searchTerm);
-            var filter = $"(&{categoryFilter}(|(userPrincipalName={st}*)(sAMAccountName={st}*)(name={st}*)(displayName={st}*)))";
-
-            this.LogDebug("Search term: " + searchTerm);
+            var filter = $"(&{categoryFilter}{ldapSearch ?? string.Empty})";
             this.LogDebug("Filter string: " + filter);
 
             foreach (var domain in this.domainsToSearch.Value)
             {
                 this.LogDebug("Searching domain: " + domain);
 
-                foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, userName: domain.DomainQualifiedName, password: domain.Password))
+                foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, scope: scope, userName: domain.DomainQualifiedName, password: domain.Password))
                 {
                     var principal = this.CreatePrincipal(result);
                     if (principal == null)
@@ -284,7 +297,7 @@ namespace Inedo.Extensions.UserDirectories
             }
             else
             {
-                return new ActiveDirectoryGroup((GroupId)principalId);
+                return new ActiveDirectoryGroup(this, (GroupId)principalId);
             }
         }
         private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
@@ -383,9 +396,11 @@ namespace Inedo.Extensions.UserDirectories
         private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
         {
             private readonly GroupId groupId;
+            private readonly ADUserDirectory directory;
 
-            public ActiveDirectoryGroup(GroupId groupId)
+            public ActiveDirectoryGroup(ADUserDirectory directory, GroupId groupId)
             {
+                this.directory = directory;
                 this.groupId = groupId ?? throw new ArgumentNullException(nameof(groupId));
             }
 
@@ -394,7 +409,55 @@ namespace Inedo.Extensions.UserDirectories
 
             public bool IsMemberOfGroup(string groupName)
             {
-                throw new NotSupportedException();
+                if (groupName == null)
+                    throw new ArgumentNullException(nameof(groupName));
+
+                var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                if (rootGroupSearchResult == null)
+                    return false;
+
+                var groupSet = rootGroupSearchResult.ExtractGroupNames();
+                var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
+                if (groupSet.Contains(compareName))
+                    return true;
+
+                if (this.directory.SearchGroupsRecursively)
+                {
+                    var groupsToSearch = new Queue<string>(groupSet);
+                    var groupsSearched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    while (groupsToSearch.Count > 0)
+                    {
+                        var nextGroup = groupsToSearch.Dequeue();
+                        if (groupsSearched.Add(nextGroup))
+                        {
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            if (groupSearchResult != null)
+                            {
+                                var groupGroups = groupSearchResult.ExtractGroupNames();
+                                foreach (var g in groupGroups)
+                                    groupsToSearch.Enqueue(g);
+                            }
+                        }
+                    }
+
+                    return groupsSearched.Contains(compareName);
+                }
+
+                return false;
+            }
+
+            internal IEnumerable<IUserDirectoryUser> GetMembers()
+            {
+                var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
+
+                foreach (var user in users)
+                {
+                    if (user is IUserDirectoryUser userId)
+                        yield return userId;
+                    continue;
+                }
             }
 
             public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other?.groupId);
