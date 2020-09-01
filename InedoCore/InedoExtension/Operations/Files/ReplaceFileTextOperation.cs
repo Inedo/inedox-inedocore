@@ -19,6 +19,25 @@ namespace Inedo.Extensions.Operations.Files
     [Tag("files")]
     [ScriptAlias("Replace-Text")]
     [ScriptNamespace("Files", PreferUnqualified = true)]
+    [Example(@"# Replaces the product version in an example vdproj file with the BuildMaster release number
+Create-File example.vdproj
+(
+	Text: >>""Product""
+		{
+			""ProductVersion"" = ""8:1.0.0""
+		}>>
+);
+
+Replace-Text
+(
+	Include: **.vdproj,
+	SearchText: '""ProductVersion"" = ""(?<1>[0-9]+)\:[0-9]+\.[0-9]+\.[0-9]+""',
+	ReplaceWith: '""ProductVersion"" = ""`$1:$ReleaseNumber""',
+	Regex: true
+);
+
+Log-Information `$FileContents = $FileContents(example.vdproj);  # ""ProductVersion"" = ""8:1.2.3""
+")]
     public sealed class ReplaceFileTextOperation : ExecuteOperation
     {
         [ScriptAlias("Include")]
@@ -35,9 +54,17 @@ namespace Inedo.Extensions.Operations.Files
         public string SearchText { get; set; }
         [ScriptAlias("ReplaceWith")]
         [DisplayName("Replace with")]
+        [Description("The text that replaces all occurrences of the search string found in matching files. If the Regex property is true, this property can replace matched group numbers as well, e.g.<br/><pre>" +
+            "Example line: Version: 0.0.0-b05f2ad" + "\r\n" +
+            "SearchText: Version: (\\d+\\.\\d+\\.\\d+)(?&lt;commitId&gt;-\\w+)?" + "\r\n" +
+            "ReplaceWith: Version: $ReleaseNumber`${commitId} (was `$1)" + "\r\n" +
+            "Example result: Version: 1.2.3-b05f2ad (was 0.0.0)" +
+            "</pre><br/>" +
+            "<i>Note the backtick characters (`) used to escape the $ in the replacement text, which otherwise would be interpreted as OtterScript variables.</i>")]
         public string ReplaceText { get; set; }
         [ScriptAlias("Regex")]
         [DisplayName("Use regex")]
+        [Description("Determines whether the search text should be interpreted as <a target=\"_blank\" href=\"https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference\">.NET Regular Expression syntax</a>.")]
         public bool UseRegex { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)

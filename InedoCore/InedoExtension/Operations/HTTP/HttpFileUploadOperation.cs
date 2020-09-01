@@ -40,7 +40,7 @@ Upload-Http ReleaseNotes.xml (
 
         public string ResolvedFilePath { get; set; }
 
-        public override async Task ExecuteAsync(IOperationExecutionContext context)
+        protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
         {
             try
             {

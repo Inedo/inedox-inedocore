@@ -9,14 +9,13 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [ScriptAlias("ServerName")]
     [Description("name of the current server in context")]
     [Tag("servers")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class ServerNameVariableFunction : ScalarVariableFunction
     {
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
-            int? serverId = (context as IStandardContext)?.ServerId;
-            if (serverId != null)
-                return SDK.GetServers(true).FirstOrDefault(s => s.Id == serverId)?.Name;
+            if (context.ServerId != null)
+                return SDK.GetServers(true).FirstOrDefault(s => s.Id == context.ServerId)?.Name;
             else
                 return string.Empty;
         }

@@ -7,7 +7,7 @@ using Inedo.Extensibility.VariableFunctions;
 namespace Inedo.Extensions.VariableFunctions
 {
     [ScriptAlias("Date")]
-    [Description("Returns the current date and time of the local timezone in the specified .NET datetime format string, or ISO 8601 format (yyyy-MM-ddThh:mm:ss) if no format is specified.")]
+    [Description("Returns the current date and time of the local timezone in the specified .NET datetime format string, or ISO 8601 format (yyyy-MM-ddTHH:mm:ss) if no format is specified.")]
     [SeeAlso(typeof(DateUtcVariableFunction))]
     [Example(@"
 # format strings taken from https://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx
@@ -35,7 +35,7 @@ Log-Information $Result;
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
             if (string.IsNullOrEmpty(this.Format))
-                return DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss");
+                return DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
             else
                 return DateTime.Now.ToString(this.Format);
         }

@@ -17,6 +17,8 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     internal static class PackageDeployer
     {
+        private static readonly SemaphoreSlim registryLock = new SemaphoreSlim(1, 1);
+
         public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
         {
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
@@ -214,6 +216,7 @@ namespace Inedo.Extensions.Operations.ProGet
                         InstalledUsing = $"{SDK.ProductName}/{SDK.ProductVersion} (InedoCore/{Extension.Version})"
                     };
 
+                    await registryLock.WaitAsync(context.CancellationToken).ConfigureAwait(false);
                     try
                     {
                         using (var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
@@ -230,6 +233,10 @@ namespace Inedo.Extensions.Operations.ProGet
                     catch (TaskCanceledException)
                     {
                         log.LogWarning("Registering the package in the machine package registry timed out.");
+                    }
+                    finally
+                    {
+                        registryLock.Release();
                     }
                 }
             }

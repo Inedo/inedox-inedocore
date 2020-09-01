@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [ScriptAlias("ServersInRoleAndEnvironment")]
     [Description("Returns a list of all the servers in the specified role and environment name.")]
     [Tag("servers")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class ServersInRoleAndEnvironmentVariableFunction : VectorVariableFunction
     {
         [DisplayName("roleName")]
@@ -51,7 +51,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
             if (!string.IsNullOrEmpty(roleName))
                 return allRoles.FirstOrDefault(r => r.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase))?.Id;
             else
-                return (context as IStandardContext)?.ServerRoleId;
+                return context.ServerRoleId;
         }
 
         private int? FindEnvironment(string environmentName, IVariableFunctionContext context)

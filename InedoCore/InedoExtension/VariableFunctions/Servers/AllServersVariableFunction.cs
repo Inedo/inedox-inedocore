@@ -17,7 +17,7 @@ foreach $Server in @AllServers
     Log-Information $Server;
 }
 ")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class AllServersVariableFunction : VectorVariableFunction
     {
         [DisplayName("includeInactive")]

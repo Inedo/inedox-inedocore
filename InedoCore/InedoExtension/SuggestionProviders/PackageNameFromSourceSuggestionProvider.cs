@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.SecureResources;
+using Inedo.Extensions.Credentials;
+using Inedo.Extensions.SecureResources;
 using Inedo.UPack.Net;
 using Inedo.Web;
 
@@ -19,35 +22,31 @@ namespace Inedo.Extensions.SuggestionProviders
             if (string.IsNullOrWhiteSpace(sourceName))
                 return Enumerable.Empty<string>();
 
-            var source = SDK.GetPackageSources()
-                .FirstOrDefault(s => s.PackageType == AttachedPackageType.Universal && string.Equals(s.Name, sourceName, StringComparison.OrdinalIgnoreCase));
-
+            var source = (UniversalPackageSource)SecureResource.TryCreate(sourceName, new ResourceResolutionContext(null));
             if (source == null)
                 return Enumerable.Empty<string>();
 
             string userName = null;
             SecureString password = null;
 
-            if (!string.IsNullOrWhiteSpace(source.CredentialName))
+            var creds = source.GetCredentials(new CredentialResolutionContext(null, null));
+            if (creds != null)
             {
-                var userNameCredentials = (UsernamePasswordCredentials)ResourceCredentials.TryCreate("UsernamePassword", source.CredentialName, null, null, false);
-                if (userNameCredentials != null)
+                if (creds is TokenCredentials tc)
                 {
-                    userName = userNameCredentials.UserName;
-                    password = userNameCredentials.Password;
+                    userName = "api";
+                    password = tc.Token;
+                }
+                else if (creds is Inedo.Extensions.Credentials.UsernamePasswordCredentials upc)
+                {
+                    userName = upc.UserName;
+                    password = upc.Password;
                 }
                 else
-                {
-                    var productCredentials = (InedoProductCredentials)ResourceCredentials.TryCreate("InedoProduct", source.CredentialName, null, null, false);
-                    if (productCredentials != null)
-                    {
-                        userName = "api";
-                        password = productCredentials.ApiKey;
-                    }
-                }
+                    throw new InvalidOperationException();
             }
 
-            var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(source.FeedUrl), userName, password));
+            var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(source.ApiEndpointUrl), userName, password));
             return (await client.ListPackagesAsync(null, 200))
                 .OrderBy(p => p.Group ?? string.Empty)
                 .ThenBy(p => p.Name)

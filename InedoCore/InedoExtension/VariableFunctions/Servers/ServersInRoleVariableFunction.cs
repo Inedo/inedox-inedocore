@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [ScriptAlias("ServersInRole")]
     [Description("Returns a list of servers in the specified role.")]
     [Tag("servers")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class ServersInRoleVariableFunction : VectorVariableFunction
     {
         [DisplayName("roleName")]
@@ -47,7 +47,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
             }
             else
             {
-                return (context as IStandardContext)?.ServerRoleId;
+                return context.ServerRoleId;
             }
         }
     }

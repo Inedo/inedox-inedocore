@@ -33,7 +33,7 @@ Get-Http http://httpbin.org/get
         public GetHttpMethod Method { get; set; } = GetHttpMethod.GET;
         private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
 
-        public override async Task ExecuteAsync(IOperationExecutionContext context)
+        protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
         {
             try
             {

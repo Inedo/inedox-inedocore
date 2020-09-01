@@ -35,7 +35,7 @@ Download-Http http://example.org/upload-service/v3/hdars (
 
         public string ResolvedFilePath { get; set; }
 
-        public override async Task ExecuteAsync(IOperationExecutionContext context)
+        protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
         {
             try
             {

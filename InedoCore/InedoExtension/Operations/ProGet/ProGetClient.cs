@@ -11,8 +11,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
+using Inedo.ExecutionEngine.Variables;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.VariableFunctions;
 using Inedo.IO;
 using Newtonsoft.Json;
 
@@ -471,11 +473,7 @@ namespace Inedo.Extensions.Operations.ProGet
             string relativeUrl;
             if (SDK.ProductName == "BuildMaster")
             {
-                relativeUrl = context.ExpandVariables($"applications/{((IStandardContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
-            }
-            else if (SDK.ProductName == "Hedgehog")
-            {
-                relativeUrl = "deployment-sets/details?deploymentSetId=" + ((IStandardContext)context).DeploymentSetId;
+                relativeUrl = context.ExpandVariables($"applications/{((IVariableFunctionContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
             }
             else
             {

@@ -11,7 +11,7 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [ScriptAlias("FileContents")]
     [Description("Returns the contents of a file on the current server.")]
     [Tag("files")]
-    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Hedgehog | InedoProduct.Otter)]
+    [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
     public sealed class FileContentsVariableFunction : ScalarVariableFunction
     {
         [VariableFunctionParameter(0)]

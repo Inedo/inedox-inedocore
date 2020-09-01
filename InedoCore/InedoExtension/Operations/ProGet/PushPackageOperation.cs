@@ -10,6 +10,9 @@ using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.SecureResources;
+using Inedo.Extensions.Credentials;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 using Inedo.UPack.Packaging;
@@ -135,30 +138,25 @@ ProGet::Push-Package
             // if username is not already specified and there is a package source, look up any attached credentials
             if (string.IsNullOrEmpty(this.UserName) && !string.IsNullOrEmpty(this.PackageSource))
             {
-                var packageSource = SDK.GetPackageSources()
-                    .FirstOrDefault(s => string.Equals(s.Name, this.PackageSource, StringComparison.OrdinalIgnoreCase));
-
-                if (packageSource == null)
-                    throw new ExecutionFailureException($"Package source \"{this.PackageSource}\" not found.");
+                this.LogDebug($"Using package source {this.PackageSource}.");
+                var packageSource = (UniversalPackageSource)SecureResource.Create(this.PackageSource, (IResourceResolutionContext)context);
 
                 if (!string.IsNullOrEmpty(packageSource.CredentialName))
                 {
-                    int? applicationId = null;
-                    int? environmentId = null;
-
-                    if (context is IStandardContext standardContext)
+                    this.LogDebug($"Using credentials {packageSource.CredentialName}.");
+                    var creds = packageSource.GetCredentials((ICredentialResolutionContext)context);
+                    if (creds is TokenCredentials tc)
                     {
-                        applicationId = standardContext.ProjectId;
-                        environmentId = standardContext.EnvironmentId;
+                        this.UserName = "api";
+                        this.Password = AH.Unprotect(tc.Token);
                     }
-
-                    var credentials = (UsernamePasswordCredentials)ResourceCredentials.TryCreate("UsernamePassword", packageSource.CredentialName, environmentId, applicationId, false);
-                    if (credentials == null)
-                        throw new ExecutionFailureException($"Credentials ({packageSource.CredentialName}) specified in \"{packageSource.Name}\" package source must be a Username & Password credential.");
-
-                    // assign these values to the operation so they get serialized prior to remote execute
-                    this.UserName = credentials.UserName;
-                    this.Password = AH.Unprotect(credentials.Password);
+                    else if (creds is Inedo.Extensions.Credentials.UsernamePasswordCredentials upc)
+                    {
+                        this.UserName = upc.UserName;
+                        this.Password = AH.Unprotect(upc.Password);
+                    }
+                    else
+                        throw new InvalidOperationException();
                 }
             }
         }

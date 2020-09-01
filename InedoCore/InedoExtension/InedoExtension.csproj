@@ -1,218 +1,29 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7481FB80-9DE1-4AFC-90A0-9E077DC6EF61}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Inedo.Extensions</RootNamespace>
     <AssemblyName>InedoCore</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;Hedgehog</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <RootNamespace>Inedo.Extensions</RootNamespace>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>net452;netcoreapp3.1</TargetFrameworks>
     <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;Hedgehog</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Inedo.Agents.Client, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=9de986a2f8db80fc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Inedo.Agents.Client.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Inedo.ExecutionEngine, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=68703f0e52007e75, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Inedo.ExecutionEngine.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Inedo.SDK, Version=1.5.0.0, Culture=neutral, PublicKeyToken=29fae5dec3001603, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Inedo.SDK.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Inedo.UPack, Version=1.0.6.0, Culture=neutral, PublicKeyToken=473f66fe047b59d7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.UPack.1.0.6\lib\net45\Inedo.UPack.dll</HintPath>
-    </Reference>
-    <Reference Include="InedoLib, Version=1000.0.0.0, Culture=neutral, PublicKeyToken=112cfb71329714a6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\InedoLib.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inedo.SDK.1.5.0\lib\net452\Newtonsoft.Json.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <PackageReference Include="Inedo.SDK" Version="1.9.0-ci.37">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Inedo.UPack" Version="1.0.8">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net452'">
     <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.DirectoryServices.Protocols" />
     <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Configurations\Files\DirectoryConfiguration.cs" />
-    <Compile Include="Configurations\Files\FileConfiguration.cs" />
-    <Compile Include="Configurations\Network\HostsEntryConfiguration.cs" />
-    <Compile Include="Configurations\ProGet\ProGetPackageConfiguration.cs" />
-    <Compile Include="Extension.cs" />
-    <Compile Include="ListVariableSources\UniversalPackageListVariableSource.cs" />
-    <Compile Include="ListVariableSources\UniversalPackageVersionVariableSource.cs" />
-    <Compile Include="Namespaces.cs" />
-    <Compile Include="Operations\Files\ConcatenateFilesOperation.cs" />
-    <Compile Include="Operations\Files\CopyFilesOperation.cs" />
-    <Compile Include="Operations\Files\CreateFileOperation.cs" />
-    <Compile Include="Operations\Files\CreateZipFileOperation.cs" />
-    <Compile Include="Operations\Files\DeleteFilesOperation.cs" />
-    <Compile Include="Operations\Files\EnsureDirectoryOperation.cs" />
-    <Compile Include="Operations\Files\EnsureFileOperation.cs" />
-    <Compile Include="Operations\Files\RenameFileOperation.cs" />
-    <Compile Include="Operations\Files\ReplaceFileTextOperation.cs" />
-    <Compile Include="Operations\Files\SetFileAttributesOperation.cs" />
-    <Compile Include="Operations\Files\TransferFilesOperation.cs" />
-    <Compile Include="Operations\Files\UnzipFileOperation.cs" />
-    <Compile Include="Operations\General\ApplyTemplateOperation.cs" />
-    <Compile Include="Operations\General\ExecuteProcessOperation.cs" />
-    <Compile Include="Operations\General\SendEmailOperation.cs" />
-    <Compile Include="Operations\General\SleepOperation.cs" />
-    <Compile Include="Operations\HTTP\HttpFileDownloadOperation.cs" />
-    <Compile Include="Operations\HTTP\HttpFileUploadOperation.cs" />
-    <Compile Include="Operations\HTTP\HttpGetOperation.cs" />
-    <Compile Include="Operations\HTTP\HttpOperationBase.cs" />
-    <Compile Include="Operations\HTTP\HttpPostOperation.cs" />
-    <Compile Include="Operations\HTTP\StatusCodeRangeList.cs" />
-    <Compile Include="Operations\Network\EnsureHostsEntryOperation.cs" />
-    <Compile Include="Operations\Otter\ConfigurationStatusJsonModel.cs" />
-    <Compile Include="Operations\Otter\OtterClient.cs" />
-    <Compile Include="Operations\Otter\RemediateDriftOperation.cs" />
-    <Compile Include="Operations\Otter\ScopedVariableJsonModel.cs" />
-    <Compile Include="Operations\Otter\SetOtterVariablesOperation.cs" />
-    <Compile Include="Operations\ProGet\ChangePackageVersionOperation.cs" />
-    <Compile Include="Operations\ProGet\CollectPackagesOperation.cs" />
-    <Compile Include="Operations\ProGet\CreatePackageOperation.cs" />
-    <Compile Include="Operations\ProGet\EnsurePackageOperation.cs" />
-    <Compile Include="Operations\ProGet\EnsurePackageOperation.Otter.cs" />
-    <Compile Include="Operations\ProGet\GetPackageOperation.cs" />
-    <Compile Include="Operations\ProGet\InstallPackageOperation.cs" />
-    <Compile Include="Operations\ProGet\PackageDeployer.cs" />
-    <Compile Include="Operations\ProGet\ProGetClient.cs" />
-    <Compile Include="Operations\ProGet\ProGetPackageVersionSpecifier.cs" />
-    <Compile Include="Operations\ProGet\PromotePackageOperation.cs" />
-    <Compile Include="Operations\ProGet\PushPackageFileOperation.cs" />
-    <Compile Include="Operations\ProGet\PushPackageOperation.cs" />
-    <Compile Include="Operations\ProGet\QueryPackageOperation.cs" />
-    <Compile Include="Operations\ProGet\RemotePackageOperationBase.cs" />
-    <Compile Include="PosixFileMode.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SuggestionProviders\FeedNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\OtterEnvironmentNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\OtterRoleNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\OtterServerNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\PackageNameFromSourceSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\PackageNameSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\PackageSourceSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\PackageVersionSuggestionProvider.cs" />
-    <Compile Include="SuggestionProviders\TextTemplateRaftSuggestionProvider.cs" />
-    <Compile Include="UniversalPackages\IProGetPackageInstallTemplate.cs" />
-    <Compile Include="UniversalPackages\PackageRegistry.cs" />
-    <Compile Include="UniversalPackages\RegisteredPackage.cs" />
-    <Compile Include="UniversalPackages\Remote.cs" />
-    <Compile Include="UserDirectories\ADUserDirectory.cs" />
-    <Compile Include="UserDirectories\LDAP.cs" />
-    <Compile Include="UserDirectories\PrincipalId.cs" />
-    <Compile Include="VariableFunctions\CompareVariableFunction.cs" />
-    <Compile Include="VariableFunctions\DateUtcVariableFunction.cs" />
-    <Compile Include="VariableFunctions\DateVariableFunction.cs" />
-    <Compile Include="VariableFunctions\EvalVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Executions\ExecutionIdVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Executions\ExecutionStateVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Executions\GetVariableValueVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Executions\IsVariableDefinedVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Executions\WorkingDirectoryVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Files\DirectoryExistsVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Files\FileContentsVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Files\FileExistsVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Files\FileMaskVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Json\FromJsonVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Json\JSEncodeVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Json\ToJsonVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Lists\ListConcatVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Lists\ListCountVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Lists\ListIndexOfVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Lists\ListInsertVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Lists\ListItemVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Lists\ListRemoveVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Maps\MapAddVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Maps\MapItemVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Maps\MapKeysVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Maps\MapRemoveVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Math\DecrementVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Math\IncrementVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Math\RangeVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\AllEnvironmentsVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\AllRolesVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\AllServersVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\EnvironmentVariableVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\PathCombineVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\ServerNameVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\ServerRoleNameVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\ServersInEnvironmentVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\ServersInRoleAndEnvironmentVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Servers\ServersInRoleVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\CoalesceVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\HtmlEncodeVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\JoinVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\JSEncodeVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\MatchesRegexVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\NewLineVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\PadLeftVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\PadRightVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\RegexFindVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\RegexReplaceVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\ReplaceVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\SplitVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\SubstringVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\ToLowerVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\ToUpperVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\TrimEndVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\TrimStartVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\TrimVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Strings\UrlEncodeVariableFunction.cs" />
-    <Compile Include="VariableFunctions\Xml\XmlEncode.cs" />
+  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp3.1'">
+    <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
+    <PackageReference Include="System.DirectoryServices.Protocols" Version="5.0.0-preview.7.20364.11" />
+    <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="3.2.0" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>powershell -Command "if (Test-Path C:\Projects\Extensions\Shared -PathType Container) { Compress-Archive -Path '$(TargetDir)*' -DestinationPath C:\Projects\Extensions\Shared\$(TargetName).zip -Force; Move-Item C:\Projects\Extensions\Shared\$(TargetName).zip -Destination C:\Projects\Extensions\Shared\$(TargetName).inedox -Force }"</PostBuildEvent>
-  </PropertyGroup>
 </Project>
