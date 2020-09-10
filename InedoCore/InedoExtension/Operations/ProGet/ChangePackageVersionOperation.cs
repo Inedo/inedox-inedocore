@@ -188,12 +188,23 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.apiKey = password;
 
-            var match = Regex.Match(feedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
-            if (!match.Success)
-                throw new ExecutionFailureException($"Could not determine host name or feed name from feedUrl: " + feedUrl);
+            Uri uri;
+            try
+            {
+                uri = new Uri(feedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? feedUrl : ("http://" + feedUrl));
+            }
+            catch (Exception ex)
+            {
+                throw new ExecutionFailureException("Feed URL is invalid: " + ex.Message);
+            }
 
-            this.hostName = match.Groups[1].Value;
-            this.feedName = match.Groups[2].Value;
+            this.hostName = uri.GetLeftPart(UriPartial.Authority);
+
+            var pathParts = uri.AbsolutePath.Trim('/').Split(new[] { '/' });
+            if (pathParts.Length < 2)
+                throw new ExecutionFailureException("Could not determine feed name from feed URL " + feedUrl);
+
+            this.feedName = Uri.UnescapeDataString(pathParts[1]);
         }
 
         [Serializable]
