@@ -13,6 +13,8 @@ using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 
+#pragma warning disable CA1416 // Validate platform compatibility
+
 namespace Inedo.Extensions.UserDirectories
 {
     [DisplayName("Active Directory (LDAP)")]

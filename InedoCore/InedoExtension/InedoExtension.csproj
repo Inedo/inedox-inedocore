@@ -3,12 +3,13 @@
     <AssemblyName>InedoCore</AssemblyName>
     <RootNamespace>Inedo.Extensions</RootNamespace>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net452;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net452;net5.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>SYSLIB0011</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.9.0-ci.37">
+    <PackageReference Include="Inedo.SDK" Version="1.9.0-ci.43">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Inedo.UPack" Version="1.0.8">
@@ -21,9 +22,9 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp3.1'">
-    <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
-    <PackageReference Include="System.DirectoryServices.Protocols" Version="5.0.0-preview.7.20364.11" />
-    <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="3.2.0" />
+  <ItemGroup Condition="'$(TargetFramework)'=='net5.0'">
+    <PackageReference Include="System.DirectoryServices" Version="5.0.0" />
+    <PackageReference Include="System.DirectoryServices.Protocols" Version="5.0.0" />
+    <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="3.3.1" />
   </ItemGroup>
 </Project>
