@@ -219,20 +219,30 @@ namespace Inedo.Extensions.UserDirectories
 
             this.LogDebug($"Trying to a {searchType} search for principal \"{principalName}\"...");
 
+            var userSearchQuery = "objectCategory=user";
+            if (this.IncludeGroupManagedServiceAccounts)
+                userSearchQuery = "|(objectCategory=user)(objectCategory=msDS-GroupManagedServiceAccount)";
+
+            var categoryFilter = AH.Switch<PrincipalSearchType, string>(searchType)
+                .Case(PrincipalSearchType.UsersAndGroups, $"(|({userSearchQuery})(objectCategory=group))")
+                .Case(PrincipalSearchType.Groups, "(objectCategory=group)")
+                .Case(PrincipalSearchType.Users, $"({userSearchQuery})")
+                .End();
+
             PrincipalId principalId = null;
             var searchString = new StringBuilder();
             if (searchType == PrincipalSearchType.Users)
             {
                 principalId = UserId.Parse(principalName);
-                searchString.Append($"(sAMAccountName={LDAP.Escape(principalId?.Principal ?? principalName)})");
+                searchString.Append($"(&{categoryFilter}(sAMAccountName={LDAP.Escape(principalId?.Principal ?? principalName)}))");
             }
             else if (searchType.HasFlag(PrincipalSearchType.Groups))
             {
                 principalId = GroupId.Parse(principalName);
-                searchString.Append("(|");
+                searchString.Append($"(&{categoryFilter}(|");
                 searchString.Append($"(sAMAccountName={LDAP.Escape(principalId?.Principal ?? principalName)})");
                 searchString.Append($"(name={LDAP.Escape(principalId?.Principal ?? principalName)})");
-                searchString.Append(")");
+                searchString.Append("))");
             }
             else if (searchType == PrincipalSearchType.UsersAndGroups)
             {
