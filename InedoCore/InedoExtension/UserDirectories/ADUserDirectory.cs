@@ -100,6 +100,7 @@ namespace Inedo.Extensions.UserDirectories
         }
         public override IUserDirectoryUser TryGetUser(string userName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
         public override IUserDirectoryGroup TryGetGroup(string groupName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
+        [Obsolete("Please use TryGetUser and TryGetGroup instead", false)]
         public override IUserDirectoryPrincipal TryGetPrincipal(string principalName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.UsersAndGroups, principalName));
         public override IUserDirectoryUser TryParseLogonUser(string logonUser)
         {
