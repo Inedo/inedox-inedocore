@@ -9,10 +9,10 @@
     <NoWarn>SYSLIB0011</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.9.0-ci.46">
+    <PackageReference Include="Inedo.SDK" Version="1.9.1">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Inedo.UPack" Version="1.0.8">
+    <PackageReference Include="Inedo.UPack" Version="1.0.9">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
