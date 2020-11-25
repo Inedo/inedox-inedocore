@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.DirectoryServices.Protocols;
 using System.Linq;
 using System.Net;
+using System.Text;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -58,15 +59,31 @@ namespace Inedo.Extensions.UserDirectories
             public override ISet<string> ExtractGroupNames()
             {
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (string memberOf in this.result.Attributes["memberof"])
+                foreach (var memberOfObj in this.result.Attributes["memberof"])
                 {
-                    var groupNames = from part in memberOf.Split(',')
-                                     where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                     let name = part.Substring("CN=".Length)
-                                     where !string.IsNullOrWhiteSpace(name)
-                                     select name;
+                    string memberOf = null;
+                    switch(memberOfObj)
+                    {
+                        case byte[] memberOfBytes:
+                            memberOf = InedoLib.UTF8Encoding.GetString(memberOfBytes, 0, memberOfBytes.Length);
+                            break;
+                        case string memberOfStr:
+                            memberOf = memberOfStr;
+                            break;
+                        default:
+                            break;
+                    }
 
-                    groups.UnionWith(groupNames);
+                    if (!string.IsNullOrWhiteSpace(memberOf))
+                    {
+                        var groupNames = from part in memberOf.Split(',')
+                                         where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
+                                         let name = part.Substring("CN=".Length)
+                                         where !string.IsNullOrWhiteSpace(name)
+                                         select name;
+
+                        groups.UnionWith(groupNames);
+                    }
                 }
 
                 return groups;
