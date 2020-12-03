@@ -64,6 +64,12 @@
             this.btnGetUsersForGroup = new System.Windows.Forms.Button();
             this.tbGroupUsersSearch = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
+            this.tabPage5 = new System.Windows.Forms.TabPage();
+            this.btnLogin = new System.Windows.Forms.Button();
+            this.label12 = new System.Windows.Forms.Label();
+            this.label11 = new System.Windows.Forms.Label();
+            this.txtLoginPassword = new System.Windows.Forms.TextBox();
+            this.txtLoginUsername = new System.Windows.Forms.TextBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.gvResults = new System.Windows.Forms.DataGridView();
             this.colType = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -83,6 +89,7 @@
             this.tabPage3.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             this.tabPage4.SuspendLayout();
+            this.tabPage5.SuspendLayout();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).BeginInit();
             this.groupBox4.SuspendLayout();
@@ -288,6 +295,7 @@
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Controls.Add(this.tabPage4);
+            this.tabControl1.Controls.Add(this.tabPage5);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(2, 15);
             this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
@@ -557,7 +565,72 @@
             this.label10.Size = new System.Drawing.Size(67, 13);
             this.label10.TabIndex = 0;
             this.label10.Text = "Group Name";
-            this.label10.Click += new System.EventHandler(this.label10_Click);
+            // 
+            // tabPage5
+            // 
+            this.tabPage5.Controls.Add(this.btnLogin);
+            this.tabPage5.Controls.Add(this.label12);
+            this.tabPage5.Controls.Add(this.label11);
+            this.tabPage5.Controls.Add(this.txtLoginPassword);
+            this.tabPage5.Controls.Add(this.txtLoginUsername);
+            this.tabPage5.Location = new System.Drawing.Point(4, 22);
+            this.tabPage5.Name = "tabPage5";
+            this.tabPage5.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage5.Size = new System.Drawing.Size(452, 154);
+            this.tabPage5.TabIndex = 4;
+            this.tabPage5.Text = "Login";
+            this.tabPage5.UseVisualStyleBackColor = true;
+            // 
+            // btnLogin
+            // 
+            this.btnLogin.Location = new System.Drawing.Point(293, 95);
+            this.btnLogin.Name = "btnLogin";
+            this.btnLogin.Size = new System.Drawing.Size(75, 23);
+            this.btnLogin.TabIndex = 7;
+            this.btnLogin.Text = "Login";
+            this.btnLogin.UseVisualStyleBackColor = true;
+            this.btnLogin.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(6, 49);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(53, 13);
+            this.label12.TabIndex = 6;
+            this.label12.Text = "Password";
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(6, 14);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(55, 13);
+            this.label11.TabIndex = 5;
+            this.label11.Text = "Username";
+            // 
+            // txtLoginPassword
+            // 
+            this.txtLoginPassword.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtLoginPassword.Location = new System.Drawing.Point(80, 46);
+            this.txtLoginPassword.Margin = new System.Windows.Forms.Padding(2);
+            this.txtLoginPassword.Name = "txtLoginPassword";
+            this.txtLoginPassword.PasswordChar = '*';
+            this.txtLoginPassword.Size = new System.Drawing.Size(288, 20);
+            this.txtLoginPassword.TabIndex = 4;
+            // 
+            // txtLoginUsername
+            // 
+            this.txtLoginUsername.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtLoginUsername.Location = new System.Drawing.Point(80, 14);
+            this.txtLoginUsername.Margin = new System.Windows.Forms.Padding(2);
+            this.txtLoginUsername.Name = "txtLoginUsername";
+            this.txtLoginUsername.Size = new System.Drawing.Size(288, 20);
+            this.txtLoginUsername.TabIndex = 4;
             // 
             // groupBox3
             // 
@@ -668,6 +741,8 @@
             this.tableLayoutPanel4.PerformLayout();
             this.tabPage4.ResumeLayout(false);
             this.tabPage4.PerformLayout();
+            this.tabPage5.ResumeLayout(false);
+            this.tabPage5.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).EndInit();
             this.groupBox4.ResumeLayout(false);
@@ -721,6 +796,12 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Button btnGetUsersForGroup;
         private System.Windows.Forms.TextBox tbGroupUsersSearch;
+        private System.Windows.Forms.TabPage tabPage5;
+        private System.Windows.Forms.TextBox txtLoginUsername;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.TextBox txtLoginPassword;
+        private System.Windows.Forms.Button btnLogin;
     }
 }
 

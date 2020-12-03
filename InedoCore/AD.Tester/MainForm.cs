@@ -170,10 +170,6 @@ namespace AD.Tester
                 AddToGrid(principal);
         }
 
-        private void label10_Click(object sender, EventArgs e)
-        {
-
-        }
 
         private void btnGetUsersForGrou_OnClick(object sender, EventArgs e)
         {
@@ -188,6 +184,19 @@ namespace AD.Tester
                 {
                     AddToGrid(principal);
                 }
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var dir = this.CreateDirectory();
+
+            var user = dir.TryGetAndValidateUser(txtLoginUsername.Text, txtLoginPassword.Text);
+
+            gvResults.Rows.Clear();
+            if (user != null)
+            {
+                AddToGrid(user);
             }
         }
     }
