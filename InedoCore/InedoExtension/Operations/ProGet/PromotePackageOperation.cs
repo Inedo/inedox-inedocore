@@ -108,6 +108,8 @@ namespace Inedo.Extensions.Operations.ProGet
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             request.Headers.Add("X-ApiKey", this.apiKey);
+            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
+            request.UseDefaultCredentials = true;
 
             try
             {
