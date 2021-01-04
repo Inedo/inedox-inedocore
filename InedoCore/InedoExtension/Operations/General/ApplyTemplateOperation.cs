@@ -54,7 +54,6 @@ Apply-Template hdars
         [DisplayName("Store to variable")]
         [PlaceholderText("do not store in variable")]
         public string OutputVariable { get; set; }
-        [FilePathEditor]
         [ScriptAlias("OutputFile")]
         [DisplayName("Output file")]
         [PlaceholderText("do not write to file")]
@@ -65,7 +64,6 @@ Apply-Template hdars
         [FieldEditMode(FieldEditMode.Multiline)]
         [Category("Source")]
         public string Literal { get; set; }
-        [FilePathEditor]
         [ScriptAlias("InputFile")]
         [DisplayName("Input file")]
         [Category("Source")]

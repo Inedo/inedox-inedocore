@@ -56,7 +56,6 @@ ProGet::Push-Package
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
-        [FilePathEditor(IncludeFiles = true)]
         public string FilePath { get; set; }
 
         [ScriptAlias("Group")]

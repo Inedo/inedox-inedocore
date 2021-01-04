@@ -38,7 +38,6 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
-        [FilePathEditor(IncludeFiles = true)]
         public string FilePath { get; set; }
 
         [Required]
