@@ -47,6 +47,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Directory")]
         [DisplayName("Target directory")]
         [Description("The directory path on disk of the package contents.")]
+        [FilePathEditor]
         public string TargetDirectory { get; set; }
 
         [ScriptAlias("DeleteExtra")]
