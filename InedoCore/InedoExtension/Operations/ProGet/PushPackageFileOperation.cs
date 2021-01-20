@@ -11,7 +11,6 @@ using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
-using Inedo.Web.Plans.ArgumentEditors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -38,7 +37,6 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
-        [FilePathEditor(IncludeFiles = true)]
         public string FilePath { get; set; }
 
         [Required]

@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
@@ -17,7 +16,6 @@ using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
-using Inedo.Web.Plans.ArgumentEditors;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -56,7 +54,6 @@ ProGet::Push-Package
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
-        [FilePathEditor(IncludeFiles = true)]
         public string FilePath { get; set; }
 
         [ScriptAlias("Group")]

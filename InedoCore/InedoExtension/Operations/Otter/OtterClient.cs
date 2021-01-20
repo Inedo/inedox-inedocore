@@ -186,24 +186,18 @@ namespace Inedo.Extensions.Operations.Otter
             if (string.IsNullOrEmpty(variable.Server) && string.IsNullOrEmpty(variable.ServerRole) && string.IsNullOrEmpty(variable.Environment))
                 throw new InvalidOperationException("Specified variable requires at least one scope (server, role, or environment).");
 
-            using (var client = this.CreateClient())
-            {
-                string url = "api/variables/scoped/single";
-                this.LogRequest(url);
-                using (var stream = new SlimMemoryStream())
-                using (var writer = new StreamWriter(stream))
-                {
-                    JsonSerializer.CreateDefault().Serialize(writer, variable);
-                    await writer.FlushAsync().ConfigureAwait(false);
-                    stream.Position = 0;
+            using var client = this.CreateClient();
+            string url = "api/variables/scoped/single";
+            this.LogRequest(url);
+            using var stream = new TemporaryStream();
+            using var writer = new StreamWriter(stream);
+            JsonSerializer.CreateDefault().Serialize(writer, variable);
+            await writer.FlushAsync().ConfigureAwait(false);
+            stream.Position = 0;
 
-                    using (var content = new StreamContent(stream))
-                    using (var response = await client.PostAsync(url, content).ConfigureAwait(false))
-                    {
-                        await HandleError(response).ConfigureAwait(false);
-                    }
-                }
-            }
+            using var content = new StreamContent(stream);
+            using var response = await client.PostAsync(url, content).ConfigureAwait(false);
+            await HandleError(response).ConfigureAwait(false);
         }
 
         private void LogRequest(string relativeUrl)

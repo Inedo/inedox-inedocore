@@ -9,7 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.10.0-ci.10" />
+    <PackageReference Include="Inedo.SDK" Version="1.10.0" />
     <PackageReference Include="Inedo.UPack" Version="1.0.9" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net452'">
