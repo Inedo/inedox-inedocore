@@ -41,12 +41,12 @@
             this.txtDomainControllerHost = new System.Windows.Forms.TextBox();
             this.txtNetbiosNames = new System.Windows.Forms.TextBox();
             this.cblOptions = new System.Windows.Forms.CheckedListBox();
-            this.label11 = new System.Windows.Forms.Label();
+            this.labelCreds = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
             this.txtDomainPassword = new System.Windows.Forms.TextBox();
             this.txtDomainUserName = new System.Windows.Forms.TextBox();
-            this.label13 = new System.Windows.Forms.Label();
-            this.label12 = new System.Windows.Forms.Label();
+            this.labelUserName = new System.Windows.Forms.Label();
+            this.labelPassword = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -130,7 +130,7 @@
             this.tableLayoutPanel1.Controls.Add(this.txtDomainControllerHost, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.txtNetbiosNames, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.cblOptions, 1, 4);
-            this.tableLayoutPanel1.Controls.Add(this.label11, 0, 5);
+            this.tableLayoutPanel1.Controls.Add(this.labelCreds, 0, 5);
             this.tableLayoutPanel1.Controls.Add(this.panel1, 1, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 15);
@@ -287,19 +287,19 @@
             this.cblOptions.Size = new System.Drawing.Size(296, 45);
             this.cblOptions.TabIndex = 9;
             // 
-            // label11
+            // labelCreds
             // 
-            this.label11.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.labelCreds.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(3, 213);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(155, 56);
-            this.label11.TabIndex = 10;
-            this.label11.Text = "Domain Credentials: (append \",AdCreds\" to end of domains to search)";
-            this.label11.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.label11.Click += new System.EventHandler(this.label11_Click);
+            this.labelCreds.AutoSize = true;
+            this.labelCreds.Location = new System.Drawing.Point(3, 213);
+            this.labelCreds.Name = "label11";
+            this.labelCreds.Size = new System.Drawing.Size(155, 56);
+            this.labelCreds.TabIndex = 10;
+            this.labelCreds.Text = "Domain Credentials: (append \",AdCreds\" to end of domains to search)";
+            this.labelCreds.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.labelCreds.Click += new System.EventHandler(this.label11_Click);
             // 
             // panel1
             // 
@@ -308,8 +308,8 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.panel1.Controls.Add(this.txtDomainPassword);
             this.panel1.Controls.Add(this.txtDomainUserName);
-            this.panel1.Controls.Add(this.label13);
-            this.panel1.Controls.Add(this.label12);
+            this.panel1.Controls.Add(this.labelUserName);
+            this.panel1.Controls.Add(this.labelPassword);
             this.panel1.Location = new System.Drawing.Point(164, 216);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(294, 50);
@@ -330,23 +330,23 @@
             this.txtDomainUserName.Size = new System.Drawing.Size(216, 20);
             this.txtDomainUserName.TabIndex = 2;
             // 
-            // label13
+            // labelPassword
             // 
-            this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(3, 29);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(56, 13);
-            this.label13.TabIndex = 1;
-            this.label13.Text = "Password:";
+            this.labelPassword.AutoSize = true;
+            this.labelPassword.Location = new System.Drawing.Point(3, 29);
+            this.labelPassword.Name = "label13";
+            this.labelPassword.Size = new System.Drawing.Size(56, 13);
+            this.labelPassword.TabIndex = 1;
+            this.labelPassword.Text = "Password:";
             // 
-            // label12
+            // labelUserName
             // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(3, 6);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(63, 13);
-            this.label12.TabIndex = 0;
-            this.label12.Text = "User Name:";
+            this.labelUserName.AutoSize = true;
+            this.labelUserName.Location = new System.Drawing.Point(3, 6);
+            this.labelUserName.Name = "label12";
+            this.labelUserName.Size = new System.Drawing.Size(63, 13);
+            this.labelUserName.TabIndex = 0;
+            this.labelUserName.Text = "User Name:";
             // 
             // groupBox2
             // 
