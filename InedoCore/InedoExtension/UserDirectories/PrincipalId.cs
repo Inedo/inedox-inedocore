@@ -45,6 +45,7 @@ namespace Inedo.Extensions.UserDirectories
                 return null;
 
             var isUser = objectCategory.IndexOf("CN=Person", StringComparison.OrdinalIgnoreCase) >= 0;
+            var isGmsa = objectCategory.IndexOf("CN=ms-DS-Group-Managed-Service-Account", StringComparison.OrdinalIgnoreCase) >= 0;
 
             var principalName = result.GetPropertyValue("sAMAccountName");
 
@@ -68,7 +69,7 @@ namespace Inedo.Extensions.UserDirectories
             {
             }
 
-            if (isUser)
+            if (isUser || isGmsa)
                 return new UserId(principalName, domain);
             else
                 return new GroupId(principalName, domain);
