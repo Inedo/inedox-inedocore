@@ -59,31 +59,43 @@ namespace Inedo.Extensions.UserDirectories
             public override ISet<string> ExtractGroupNames()
             {
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var memberOfObj in this.result.Attributes["memberof"])
+                try
                 {
-                    string memberOf = null;
-                    switch(memberOfObj)
-                    {
-                        case byte[] memberOfBytes:
-                            memberOf = InedoLib.UTF8Encoding.GetString(memberOfBytes, 0, memberOfBytes.Length);
-                            break;
-                        case string memberOfStr:
-                            memberOf = memberOfStr;
-                            break;
-                        default:
-                            break;
-                    }
+                    var memberOfAttr = this.result.Attributes["memberof"];
+                    if (memberOfAttr == null)
+                        return groups;
 
-                    if (!string.IsNullOrWhiteSpace(memberOf))
+                    foreach (var memberOfObj in memberOfAttr)
                     {
-                        var groupNames = from part in memberOf.Split(',')
-                                         where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                         let name = part.Substring("CN=".Length)
-                                         where !string.IsNullOrWhiteSpace(name)
-                                         select name;
+                        if (memberOfObj == null)
+                            continue;
+                        string memberOf = null;
+                        switch (memberOfObj)
+                        {
+                            case byte[] memberOfBytes:
+                                memberOf = InedoLib.UTF8Encoding.GetString(memberOfBytes, 0, memberOfBytes.Length);
+                                break;
+                            case string memberOfStr:
+                                memberOf = memberOfStr;
+                                break;
+                            default:
+                                break;
+                        }
 
-                        groups.UnionWith(groupNames);
+                        if (!string.IsNullOrWhiteSpace(memberOf))
+                        {
+                            var groupNames = from part in memberOf.Split(',')
+                                             where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
+                                             let name = part.Substring("CN=".Length)
+                                             where !string.IsNullOrWhiteSpace(name)
+                                             select name;
+
+                            groups.UnionWith(groupNames);
+                        }
                     }
+                }
+                catch 
+                {
                 }
 
                 return groups;
