@@ -41,6 +41,12 @@
             this.txtDomainControllerHost = new System.Windows.Forms.TextBox();
             this.txtNetbiosNames = new System.Windows.Forms.TextBox();
             this.cblOptions = new System.Windows.Forms.CheckedListBox();
+            this.label11 = new System.Windows.Forms.Label();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.txtDomainPassword = new System.Windows.Forms.TextBox();
+            this.txtDomainUserName = new System.Windows.Forms.TextBox();
+            this.label13 = new System.Windows.Forms.Label();
+            this.label12 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -74,6 +80,7 @@
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -116,11 +123,14 @@
             this.tableLayoutPanel1.Controls.Add(this.txtDomainControllerHost, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.txtNetbiosNames, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.cblOptions, 1, 4);
+            this.tableLayoutPanel1.Controls.Add(this.label11, 0, 5);
+            this.tableLayoutPanel1.Controls.Add(this.panel1, 1, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 15);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 5;
+            this.tableLayoutPanel1.RowCount = 6;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -135,10 +145,10 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(2, 209);
+            this.label5.Location = new System.Drawing.Point(2, 164);
             this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(157, 64);
+            this.label5.Size = new System.Drawing.Size(157, 49);
             this.label5.TabIndex = 4;
             this.label5.Text = "Options:";
             this.label5.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -149,10 +159,10 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(2, 135);
+            this.label4.Location = new System.Drawing.Point(2, 106);
             this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(157, 74);
+            this.label4.Size = new System.Drawing.Size(157, 58);
             this.label4.TabIndex = 3;
             this.label4.Text = "NETBIOS name mapping: (one per line)";
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -163,7 +173,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(2, 111);
+            this.label3.Location = new System.Drawing.Point(2, 82);
             this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(157, 24);
@@ -180,7 +190,7 @@
             this.label2.Location = new System.Drawing.Point(2, 25);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(157, 86);
+            this.label2.Size = new System.Drawing.Size(157, 57);
             this.label2.TabIndex = 1;
             this.label2.Text = "Domains to search (one per line):";
             this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -225,7 +235,7 @@
             this.txtDomains.Margin = new System.Windows.Forms.Padding(2);
             this.txtDomains.Multiline = true;
             this.txtDomains.Name = "txtDomains";
-            this.txtDomains.Size = new System.Drawing.Size(296, 82);
+            this.txtDomains.Size = new System.Drawing.Size(296, 53);
             this.txtDomains.TabIndex = 6;
             // 
             // txtDomainControllerHost
@@ -233,7 +243,7 @@
             this.txtDomainControllerHost.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtDomainControllerHost.Location = new System.Drawing.Point(163, 113);
+            this.txtDomainControllerHost.Location = new System.Drawing.Point(163, 84);
             this.txtDomainControllerHost.Margin = new System.Windows.Forms.Padding(2);
             this.txtDomainControllerHost.Name = "txtDomainControllerHost";
             this.txtDomainControllerHost.Size = new System.Drawing.Size(296, 20);
@@ -244,11 +254,11 @@
             this.txtNetbiosNames.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtNetbiosNames.Location = new System.Drawing.Point(163, 137);
+            this.txtNetbiosNames.Location = new System.Drawing.Point(163, 108);
             this.txtNetbiosNames.Margin = new System.Windows.Forms.Padding(2);
             this.txtNetbiosNames.Multiline = true;
             this.txtNetbiosNames.Name = "txtNetbiosNames";
-            this.txtNetbiosNames.Size = new System.Drawing.Size(296, 70);
+            this.txtNetbiosNames.Size = new System.Drawing.Size(296, 54);
             this.txtNetbiosNames.TabIndex = 8;
             // 
             // cblOptions
@@ -264,11 +274,72 @@
             "Search recursively",
             "Include gMSA",
             "Use LDAPS"});
-            this.cblOptions.Location = new System.Drawing.Point(163, 211);
+            this.cblOptions.Location = new System.Drawing.Point(163, 166);
             this.cblOptions.Margin = new System.Windows.Forms.Padding(2);
             this.cblOptions.Name = "cblOptions";
-            this.cblOptions.Size = new System.Drawing.Size(296, 60);
+            this.cblOptions.Size = new System.Drawing.Size(296, 45);
             this.cblOptions.TabIndex = 9;
+            // 
+            // label11
+            // 
+            this.label11.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(3, 213);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(155, 56);
+            this.label11.TabIndex = 10;
+            this.label11.Text = "Domain Credentials: (append \",AdCreds\" to end of domains to search)";
+            this.label11.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.label11.Click += new System.EventHandler(this.label11_Click);
+            // 
+            // panel1
+            // 
+            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panel1.Controls.Add(this.txtDomainPassword);
+            this.panel1.Controls.Add(this.txtDomainUserName);
+            this.panel1.Controls.Add(this.label13);
+            this.panel1.Controls.Add(this.label12);
+            this.panel1.Location = new System.Drawing.Point(164, 216);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(294, 50);
+            this.panel1.TabIndex = 11;
+            // 
+            // txtDomainPassword
+            // 
+            this.txtDomainPassword.Location = new System.Drawing.Point(73, 29);
+            this.txtDomainPassword.Name = "txtDomainPassword";
+            this.txtDomainPassword.PasswordChar = '*';
+            this.txtDomainPassword.Size = new System.Drawing.Size(216, 20);
+            this.txtDomainPassword.TabIndex = 3;
+            // 
+            // txtDomainUserName
+            // 
+            this.txtDomainUserName.Location = new System.Drawing.Point(73, 6);
+            this.txtDomainUserName.Name = "txtDomainUserName";
+            this.txtDomainUserName.Size = new System.Drawing.Size(216, 20);
+            this.txtDomainUserName.TabIndex = 2;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(3, 29);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(56, 13);
+            this.label13.TabIndex = 1;
+            this.label13.Text = "Password:";
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(3, 6);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(63, 13);
+            this.label12.TabIndex = 0;
+            this.label12.Text = "User Name:";
             // 
             // groupBox2
             // 
@@ -655,6 +726,8 @@
             this.groupBox1.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
@@ -721,6 +794,12 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Button btnGetUsersForGroup;
         private System.Windows.Forms.TextBox tbGroupUsersSearch;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.TextBox txtDomainPassword;
+        private System.Windows.Forms.TextBox txtDomainUserName;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Label label12;
     }
 }
 
