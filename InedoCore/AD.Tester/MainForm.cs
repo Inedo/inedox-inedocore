@@ -208,7 +208,7 @@ namespace AD.Tester
                 return null;
             var adCreds = new UsernamePasswordCredentials();
             adCreds.UserName = txtDomainUserName.Text;
-            adCreds.Password = new NetworkCredential("", txtDomainPassword.Text).SecurePassword;
+            adCreds.Password = AH.CreateSecureString(txtDomainPassword.Text);
 
             return adCreds;
         }
