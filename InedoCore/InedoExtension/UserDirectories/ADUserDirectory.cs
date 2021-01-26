@@ -82,6 +82,13 @@ namespace Inedo.Extensions.UserDirectories
         }
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
+            if (userName.Contains("\\"))
+            {
+                userName = this.TryParseLoginUserName(userName);
+                if (userName == null)
+                    return null;
+            }
+
             var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
             if (result == null)
                 return null;
@@ -107,12 +114,24 @@ namespace Inedo.Extensions.UserDirectories
             if (string.IsNullOrEmpty(logonUser))
                 throw new ArgumentNullException(nameof(logonUser));
 
-            var parts = logonUser.Split(new[] { '\\' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2)
+            var domainLogin = this.TryParseLoginUserName(logonUser);
+            if (domainLogin == null)
                 return null;
+            return this.TryGetUser(domainLogin);
+        }
 
-            var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value, this.UseLdaps);
-            return this.TryGetUser($"{parts[1]}@{domain}");
+        private string TryParseLoginUserName(string logonUser)
+        {
+            if (logonUser.Contains("\\"))
+            {
+                var parts = logonUser.Split(new[] { '\\' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length != 2)
+                    return null;
+
+                var domain = LDAP.GetDomainNameFromNetbiosName(parts[0], this.netBiosNameMaps.Value, this.UseLdaps);
+                return $"{parts[1]}@{domain}";
+            }
+            return null;
         }
 
         private HashSet<CredentialedDomain> BuildDomainsToSearch()
