@@ -21,6 +21,6 @@
     </PackageReference>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="powershell -Command &quot;if ((Test-Path C:\LocalDev\Tools\inedoxpack\inedoxpack.exe) -And (Test-Path C:\LocalDev\ProGet\Extensions -PathType Container)) { C:\LocalDev\Tools\inedoxpack\inedoxpack.exe '$(TargetPath)' 'C:\LocalDev\ProGet\Extensions\$(TargetName).upack' 0.0.0 }&quot;" />
+    <Exec Command="powershell -Command &quot;if ((Test-Path C:\LocalDev\Tools\inedoxpack\inedoxpack.exe) -And (Test-Path C:\LocalDev\BuildMaster\Extensions -PathType Container)) { C:\LocalDev\Tools\inedoxpack\inedoxpack.exe '$(TargetPath)' 'C:\LocalDev\BuildMaster\Extensions\$(TargetName).upack' 0.0.0 }&quot;" />
   </Target>
 </Project>

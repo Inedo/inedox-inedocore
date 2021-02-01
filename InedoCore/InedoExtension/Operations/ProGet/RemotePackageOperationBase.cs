@@ -116,7 +116,12 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private protected void ResolvePackageSource(IOperationExecutionContext context, string name, out string userName, out SecureString password, out string feedUrl)
         {
-            var packageSource = SecureResource.TryCreate(name, new ResourceResolutionContext(null));
+            if (context is not IResourceResolutionContext resolutionContext)
+                throw new InvalidOperationException("Cannot find resource resolution context");
+            if (context is not ICredentialResolutionContext credentialResolutionContext)
+                throw new InvalidOperationException("Cannot find credential resolution context");
+
+            var packageSource = SecureResource.TryCreate(name, resolutionContext);
             if (packageSource == null)
                 throw new ExecutionFailureException($"Package source \"{name}\" not found.");
             else if (packageSource is NuGetPackageSource nps)
@@ -135,7 +140,7 @@ namespace Inedo.Extensions.Operations.ProGet
             userName = null;
             password = null;
 
-            var creds = packageSource.GetCredentials(new CredentialResolutionContext(null, null));
+            var creds = packageSource.GetCredentials(credentialResolutionContext);
             if (creds != null)
             {
                 this.LogDebug($"Looking up credentials ({packageSource.CredentialName})...");
