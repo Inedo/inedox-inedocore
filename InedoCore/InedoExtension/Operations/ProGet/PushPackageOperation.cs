@@ -127,7 +127,7 @@ ProGet::Push-Package
         [Category("Connection/Identity")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public string PackageSource { get; set; }
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
