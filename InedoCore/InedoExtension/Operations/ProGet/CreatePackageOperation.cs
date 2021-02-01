@@ -68,7 +68,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
         [Category("Package Source (Preview)")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         [Description("When specified, the package will be uploaded to this package source and attached to the current build.")]
         public override string PackageSource { get; set; }
 

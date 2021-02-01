@@ -42,7 +42,7 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         [Required]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public override string PackageSource { get; set; }
 
         public override string PackageName { get => null; set => throw new InvalidOperationException(); }
