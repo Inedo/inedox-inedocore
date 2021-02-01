@@ -7,12 +7,11 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
-    internal sealed class UniversalPackageSourceSuggestionProvider : ISuggestionProvider
+    internal sealed class PackageSourceSuggestionProvider : ISuggestionProvider
     {
         public Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
             var result = SDK.GetPackageSources()
-                .Where(s => s.PackageType == AttachedPackageType.Universal)
                 .OrderBy(s => s.ResourceInfo.Name)
                 .Select(s => s.ResourceInfo.Name);
 

@@ -32,7 +32,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
         [PlaceholderText("Infer from package name")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public override string PackageSource { get; set; }
 
         [Required]
