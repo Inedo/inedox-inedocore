@@ -4,6 +4,7 @@ using System.DirectoryServices.Protocols;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Inedo.Diagnostics;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -58,6 +59,8 @@ namespace Inedo.Extensions.UserDirectories
             }
             public override ISet<string> ExtractGroupNames()
             {
+
+                Logger.Log(MessageLevel.Debug, "Begin ExtractGroupNames", "AD User Directory");
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
@@ -94,9 +97,11 @@ namespace Inedo.Extensions.UserDirectories
                         }
                     }
                 }
-                catch 
+                catch(Exception ex)
                 {
+                    Logger.Log(MessageLevel.Error, "Error extracting Group Names", "AD User Directory", null, ex);
                 }
+                Logger.Log(MessageLevel.Debug, "End ExtractGroupNames", "AD User Directory");
 
                 return groups;
             }

@@ -259,7 +259,7 @@ namespace Inedo.Extensions.UserDirectories
             foreach (var domain in domains)
             {
                 this.LogDebug($"Searching domain {domain}...");
-
+#warning BASE DN
                 var result = this.Search("DC=" + domain.Name.Replace(".", ",DC="), searchString.ToString(), userName: domain.DomainQualifiedName, password: domain.Password).FirstOrDefault();
                 if (result != null)
                     return result;
@@ -301,7 +301,7 @@ namespace Inedo.Extensions.UserDirectories
             foreach (var domain in this.domainsToSearch.Value)
             {
                 this.LogDebug("Searching domain: " + domain);
-
+#warning BASE DN
                 foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, scope: scope, userName: domain.DomainQualifiedName, password: domain.Password))
                 {
                     var principal = this.CreatePrincipal(result);
@@ -379,17 +379,24 @@ namespace Inedo.Extensions.UserDirectories
 
             public bool IsMemberOfGroup(string groupName)
             {
+                Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                 if (groupName == null)
                     throw new ArgumentNullException(nameof(groupName));
 
                 var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
                 if (userSearchResult == null)
+                {
+                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory"); ;
                     return false;
+                }
 
                 var groupSet = userSearchResult.ExtractGroupNames();
                 var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
                 if (groupSet.Contains(compareName))
+                {
+                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                     return true;
+                }
 
                 if (this.directory.SearchGroupsRecursively)
                 {
@@ -400,7 +407,10 @@ namespace Inedo.Extensions.UserDirectories
                     {
                         var nextGroup = groupsToSearch.Dequeue();
                         if (StringComparer.OrdinalIgnoreCase.Equals(nextGroup, compareName))
+                        {
+                            Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                             return true;
+                        }
 
                         if (groupsSearched.Add(nextGroup))
                         {
@@ -414,6 +424,7 @@ namespace Inedo.Extensions.UserDirectories
                         }
                     }
                 }
+                Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
 
                 return false;
             }
@@ -441,17 +452,25 @@ namespace Inedo.Extensions.UserDirectories
 
             public bool IsMemberOfGroup(string groupName)
             {
+                Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
+
                 if (groupName == null)
                     throw new ArgumentNullException(nameof(groupName));
 
                 var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
                 if (rootGroupSearchResult == null)
+                {
+                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
                     return false;
+                }
 
                 var groupSet = rootGroupSearchResult.ExtractGroupNames();
                 var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
                 if (groupSet.Contains(compareName))
+                {
+                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
                     return true;
+                }
 
                 if (this.directory.SearchGroupsRecursively)
                 {
@@ -472,15 +491,18 @@ namespace Inedo.Extensions.UserDirectories
                             }
                         }
                     }
+                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
                     return groupsSearched.Contains(compareName);
                 }
+                Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
                 return false;
             }
 
             internal IEnumerable<IUserDirectoryUser> GetMembers()
             {
+                Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup GetMembers", "AD User Directory");
                 var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
                 var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
 
@@ -490,6 +512,7 @@ namespace Inedo.Extensions.UserDirectories
                         yield return userId;
                     continue;
                 }
+                Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup GetMembers", "AD User Directory");
             }
 
             public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other?.groupId);
