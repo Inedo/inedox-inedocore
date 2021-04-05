@@ -336,7 +336,20 @@ namespace Inedo.Extensions.UserDirectories
         {
             using var conn = GetClient();
             conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), null, this.UseLdaps);
-            conn.Bind(new NetworkCredential(userName, password));
+            if (userName.Contains("@"))
+            {
+                var userNameSplit = userName.Split('@');
+                conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
+            }
+            else if(userName.Contains("\\"))
+            {
+                var userNameSplit = userName.Split('\\');
+                conn.Bind(new NetworkCredential(userNameSplit[1], password, userNameSplit[0]));
+            }
+            else
+            {
+                conn.Bind(new NetworkCredential(userName, password));
+            }
             return conn.Search(dn, filter, scope).ToList();
         }
         private static LdapClient GetClient()
