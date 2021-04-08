@@ -6,7 +6,6 @@
     <TargetFrameworks>net452;net5.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <NoWarn>SYSLIB0011</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Inedo.SDK" Version="1.10.0">

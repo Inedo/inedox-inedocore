@@ -10,6 +10,7 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Serialization;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.HTTP
@@ -34,27 +35,32 @@ Post-Http http://httpbin.org/post
     [Serializable]
     public sealed class HttpPostOperation : HttpOperationBase
     {
+        [SlimSerializable]
         [ScriptAlias("Method")]
         [DefaultValue(PostHttpMethod.POST)]
         public PostHttpMethod Method { get; set; } = PostHttpMethod.POST;
         private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
         [Category("Data")]
+        [SlimSerializable]
         [ScriptAlias("ContentType")]
         [DisplayName("Content type")]
         [DefaultValue("application/x-www-form-urlencoded")]
         public string ContentType { get; set; }
         [Category("Data")]
+        [SlimSerializable]
         [ScriptAlias("TextData")]
         [DisplayName("Request text content")]
         [Description("Direct text input that will be written to the request content body. This will override any form data if both are supplied.")]
         [FieldEditMode(FieldEditMode.Multiline)]
         public string PostData { get; set; }
         [Category("Data")]
+        [SlimSerializable]
         [ScriptAlias("FormData")]
         [DisplayName("Form data")]
         [Description("A map of form data key/value pairs to send. If TextData is supplied, this value is ignored.")]
         [FieldEditMode(FieldEditMode.Multiline)]
         public IDictionary<string, RuntimeValue> FormData { get; set; }
+        [SlimSerializable]
         [Category("Options")]
         [ScriptAlias("LogRequestData")]
         [DisplayName("Log request data")]
@@ -85,17 +91,14 @@ Post-Http http://httpbin.org/post
             await this.CallRemoteAsync(context).ConfigureAwait(false);
         }
 
-        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        internal override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
-            using (var client = this.CreateClient())
-            using (var content = this.GetContent())
-            {
-                using (var request = new HttpRequestMessage(this.HttpMethod, this.Url) { Content = content })
-                using (var response = await client.SendAsync(request, cancellationToken))
-                {
-                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                }
-            }
+            using var client = this.CreateClient();
+            using var content = this.GetContent();
+
+            using var request = new HttpRequestMessage(this.HttpMethod, this.Url) { Content = content };
+            using var response = await client.SendAsync(request, cancellationToken);
+            await this.ProcessResponseAsync(response).ConfigureAwait(false);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

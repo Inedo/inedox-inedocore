@@ -11,6 +11,7 @@ using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.IO;
+using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
@@ -28,16 +29,19 @@ Upload-Http ReleaseNotes.xml (
     [Serializable]
     public sealed class HttpFileUploadOperation : HttpOperationBase
     {
+        [SlimSerializable]
         [ScriptAlias("Method")]
         [DefaultValue(PostHttpMethod.POST)]
         public PostHttpMethod Method { get; set; }
         private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
         [Required]
+        [SlimSerializable]
         [DisplayName("File name")]
         [ScriptAlias("FileName")]
         [Description("The path of the file to upload.")]
         public string FileName { get; set; }
 
+        [SlimSerializable]
         public string ResolvedFilePath { get; set; }
 
         protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
@@ -71,7 +75,7 @@ Upload-Http ReleaseNotes.xml (
             this.LogInformation("HTTP file upload completed.");
         }
 
-        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        internal override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
             if (!FileEx.Exists(this.ResolvedFilePath))
             {
@@ -79,10 +83,8 @@ Upload-Http ReleaseNotes.xml (
                 return;
             }
 
-            using (var fileStream = new FileStream(this.ResolvedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
-            {
-                await this.PerformRequestAsync(fileStream, cancellationToken);
-            }
+            using var fileStream = new FileStream(this.ResolvedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+            await this.PerformRequestAsync(fileStream, cancellationToken);
         }
 
         private async Task PerformRequestAsync(Stream fileStream, CancellationToken cancellationToken)

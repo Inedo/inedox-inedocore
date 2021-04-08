@@ -5,8 +5,9 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,19 +18,19 @@ using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensions.Credentials;
+using Inedo.Serialization;
 using Inedo.Web;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
-using LegacyUsernamePasswordCredentials = Inedo.Extensibility.Credentials.UsernamePasswordCredentials;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Net.Security;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
     [Serializable]
+    [SlimSerializable]
     public abstract class HttpOperationBase : ExecuteOperation
     {
+        protected long totalSize;
+        protected long currentPosition;
+
         protected HttpOperationBase()
         {
         }
@@ -37,11 +38,14 @@ namespace Inedo.Extensions.Operations.HTTP
         [Required]
         [ScriptAlias("Url")]
         [DisplayName("URL")]
+        [SlimSerializable]
         public string Url { get; set; }
+        [SlimSerializable]
         [Category("Options")]
         [ScriptAlias("LogResponseBody")]
         [DisplayName("Log response body")]
         public bool LogResponseBody { get; set; }
+        [SlimSerializable]
         [Category("Options")]
         [PlaceholderText("400:599")]
         [ScriptAlias("ErrorStatusCodes")]
@@ -50,22 +54,25 @@ namespace Inedo.Extensions.Operations.HTTP
                     + "For example, a value of \"401,500:599\" will fail on all server errors and also when \"HTTP Unauthorized\" is returned. "
                     + "The default is 400:599.")]
         public string ErrorStatusCodes { get; set; }
-        [Category("Options")]
         [Output]
+        [Category("Options")]
         [ScriptAlias("ResponseBody")]
         [DisplayName("Store response as")]
         [PlaceholderText("Do not store response body as variable")]
         public string ResponseBodyVariable { get; set; }
+        [SlimSerializable]
         [Category("Options")]
         [ScriptAlias("RequestHeaders")]
         [DisplayName("Request headers")]
         [FieldEditMode(FieldEditMode.Multiline)]
         public IDictionary<string, RuntimeValue> RequestHeaders { get; set; }
+        [SlimSerializable]
         [Category("Options")]
         [ScriptAlias("MaxResponseLength")]
         [DisplayName("Max response length")]
         [DefaultValue(1000)]
         public int MaxResponseLength { get; set; } = 1000;
+        [SlimSerializable]
         [Category("Options")]
         [ScriptAlias("ProxyRequest")]
         [DisplayName("Use server in context")]
@@ -78,35 +85,34 @@ namespace Inedo.Extensions.Operations.HTTP
         [ScriptAlias("Credentials")]
         [SuggestableValue(typeof(SecureCredentialsSuggestionProvider<UsernamePasswordCredentials>))]
         public string CredentialName { get; set; }
+        [SlimSerializable]
         [Category("Authentication")]
         [ScriptAlias("UserName")]
         [DisplayName("User name")]
         [PlaceholderText("Use user name from credential")]
         public string UserName { get; set; }
+        [SlimSerializable]
         [Category("Authentication")]
         [ScriptAlias("Password")]
         [DisplayName("Password")]
         [PlaceholderText("Use password from credential")]
         public string Password { get; set; }
+        [SlimSerializable]
         [Category("Options")]
         [ScriptAlias("IgnoreSslErrors")]
         [DisplayName("Ignore SSL Errors")]
         [DefaultValue(false)]
         public bool IgnoreSslErrors { get; set; }
 
-
-
-        protected long TotalSize = 0;
-        protected long CurrentPosition = 0;
-
         public override sealed Task ExecuteAsync(IOperationExecutionContext context)
         {
             if (!string.IsNullOrEmpty(this.CredentialName))
             {
                 var cred = SecureCredentials.TryCreate(this.CredentialName, (ICredentialResolutionContext)context);
-                var usernameCred = (cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) as UsernamePasswordCredentials;
-                if (usernameCred == null)
+                if ((cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) is not UsernamePasswordCredentials usernameCred)
+                {
                     this.LogWarning($"A username/password credential named \"{this.CredentialName}\" was not be found, and cannot be applied to the operation.");
+                }
                 else
                 {
                     this.LogDebug($"Applying \"{this.CredentialName}\" credential (UserName=\"{usernameCred.UserName}\") to the operation...");
@@ -114,22 +120,21 @@ namespace Inedo.Extensions.Operations.HTTP
                     this.Password = AH.Unprotect(usernameCred.Password);
                 }
             }
+
             return this.ExecuteAsyncInternal(context);
         }
         protected abstract Task ExecuteAsyncInternal(IOperationExecutionContext context);
 
         public override OperationProgress GetProgress()
         {
-            if (this.TotalSize == 0)
-            {
+            if (this.totalSize == 0)
                 return null;
-            }
-            return new OperationProgress((int)(100 * this.CurrentPosition / this.TotalSize), AH.FormatSize(this.TotalSize - this.CurrentPosition) + " remaining");
+
+            return new OperationProgress((int)(100 * this.currentPosition / this.totalSize), AH.FormatSize(this.totalSize - this.currentPosition) + " remaining");
         }
 
         protected HttpClient CreateClient()
         {
-          
             HttpClient client;
             if (!string.IsNullOrWhiteSpace(this.UserName))
             {
@@ -198,46 +203,42 @@ namespace Inedo.Extensions.Operations.HTTP
                     this.LogError(message);
             }
 
-            using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+            using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            var text = await this.GetTruncatedResponseAsync(responseStream).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(text))
             {
-                var text = await this.GetTruncatedResponseAsync(responseStream).ConfigureAwait(false);
-                if (string.IsNullOrEmpty(text))
+                this.LogDebug("The Content Length of the response was 0.");
+            }
+            else
+            {
+                this.ResponseBodyVariable = text;
+                if (this.LogResponseBody)
                 {
-                    this.LogDebug("The Content Length of the response was 0.");
-                }
-                else
-                {
-                    this.ResponseBodyVariable = text;
-                    if (this.LogResponseBody)
-                    {
-                        if (text.Length >= this.MaxResponseLength)
-                            this.LogDebug($"The following response Content Body is truncated to {this.MaxResponseLength} characters.");
+                    if (text.Length >= this.MaxResponseLength)
+                        this.LogDebug($"The following response Content Body is truncated to {this.MaxResponseLength} characters.");
 
-                        this.LogInformation("Response Content Body: " + text);
-                    }
+                    this.LogInformation("Response Content Body: " + text);
                 }
             }
         }
 
         private async Task<string> GetTruncatedResponseAsync(Stream stream)
         {
-            using (var reader = new StreamReader(stream, InedoLib.UTF8Encoding))
+            using var reader = new StreamReader(stream, InedoLib.UTF8Encoding);
+            var text = new StringBuilder();
+            var buffer = new char[1024];
+            int remaining = this.MaxResponseLength;
+
+            int read = await reader.ReadAsync(buffer, 0, Math.Min(remaining, 1024)).ConfigureAwait(false);
+            while (read > 0 && remaining > 0)
             {
-                var text = new StringBuilder();
-                var buffer = new char[1024];
-                int remaining = this.MaxResponseLength;
-
-                int read = await reader.ReadAsync(buffer, 0, Math.Min(remaining, 1024)).ConfigureAwait(false);
-                while (read > 0 && remaining > 0)
-                {
-                    text.Append(buffer, 0, read);
-                    remaining -= read;
-                    if (remaining > 0)
-                        read = await reader.ReadAsync(buffer, 0, Math.Min(remaining, 1024)).ConfigureAwait(false);
-                }
-
-                return text.ToString();
+                text.Append(buffer, 0, read);
+                remaining -= read;
+                if (remaining > 0)
+                    read = await reader.ReadAsync(buffer, 0, Math.Min(remaining, 1024)).ConfigureAwait(false);
             }
+
+            return text.ToString();
         }
 
         protected async Task CallRemoteAsync(IOperationExecutionContext context)
@@ -255,50 +256,14 @@ namespace Inedo.Extensions.Operations.HTTP
                 return;
             }
 
-            var job = new RemoteHttpJob
-            {
-                Operation = this
-            };
+            var job = new RemoteHttpJob { Operation = this };
             job.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
             context.CancellationToken.Register(() => job.Cancel());
-            var response = (HttpOperationBase)await executer.ExecuteJobAsync(job).ConfigureAwait(false);
+            var response = (string)await executer.ExecuteJobAsync(job).ConfigureAwait(false);
 
-            this.ResponseBodyVariable = response.ResponseBodyVariable;
-
+            this.ResponseBodyVariable = response;
         }
 
-        protected abstract Task PerformRequestAsync(CancellationToken cancellationToken);
-
-        private class RemoteHttpJob : RemoteJob
-        {
-            public HttpOperationBase Operation { get; set; }
-
-            public override void Serialize(Stream stream)
-            {
-                new BinaryFormatter().Serialize(stream, this.Operation);
-            }
-
-            public override void Deserialize(Stream stream)
-            {
-                this.Operation = (HttpOperationBase)new BinaryFormatter().Deserialize(stream);
-            }
-
-            public override void SerializeResponse(Stream stream, object result)
-            {
-                new BinaryFormatter().Serialize(stream, this.Operation);
-            }
-
-            public override object DeserializeResponse(Stream stream)
-            {
-                return (HttpOperationBase)new BinaryFormatter().Deserialize(stream);
-            }
-
-            public override async Task<object> ExecuteAsync(CancellationToken cancellationToken)
-            {
-                this.Operation.MessageLogged += (s, e) => this.Log(e.Level, e.Message);
-                await this.Operation.PerformRequestAsync(cancellationToken).ConfigureAwait(false);
-                return null;
-            }
-        }
+        internal abstract Task PerformRequestAsync(CancellationToken cancellationToken);
     }
 }

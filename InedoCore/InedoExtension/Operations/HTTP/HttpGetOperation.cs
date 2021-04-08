@@ -7,6 +7,7 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
@@ -28,9 +29,11 @@ Get-Http http://httpbin.org/get
     [Serializable]
     public sealed class HttpGetOperation : HttpOperationBase
     {
+        [SlimSerializable]
         [ScriptAlias("Method")]
         [DefaultValue(GetHttpMethod.GET)]
         public GetHttpMethod Method { get; set; } = GetHttpMethod.GET;
+
         private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
 
         protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
@@ -50,14 +53,12 @@ Get-Http http://httpbin.org/get
             await this.CallRemoteAsync(context).ConfigureAwait(false);
         }
 
-        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        internal override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
-            using (var client = this.CreateClient())
-            using (var request = new HttpRequestMessage(this.HttpMethod, this.Url))
-            using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-            {
-                await this.ProcessResponseAsync(response).ConfigureAwait(false);
-            }
+            using var client = this.CreateClient();
+            using var request = new HttpRequestMessage(this.HttpMethod, this.Url);
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            await this.ProcessResponseAsync(response).ConfigureAwait(false);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

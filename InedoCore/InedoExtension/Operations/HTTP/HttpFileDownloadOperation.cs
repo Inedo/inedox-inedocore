@@ -10,6 +10,7 @@ using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.IO;
+using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
@@ -28,11 +29,13 @@ Download-Http http://example.org/upload-service/v3/hdars (
     public sealed class HttpFileDownloadOperation : HttpOperationBase
     {
         [Required]
+        [SlimSerializable]
         [DisplayName("File name")]
         [ScriptAlias("FileName")]
         [Description("The destination path for the downloaded file.")]
         public string FileName { get; set; }
 
+        [SlimSerializable]
         public string ResolvedFilePath { get; set; }
 
         protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
@@ -53,13 +56,12 @@ Download-Http http://example.org/upload-service/v3/hdars (
             {
                 var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
                 await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(this.ResolvedFilePath)).ConfigureAwait(false);
-                using (var fileStream = await fileOps.OpenFileAsync(this.ResolvedFilePath, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
-                {
-                    this.LogInformation($"Downloading {this.Url} to {this.FileName}...");
-                    await this.PerformRequestAsync(fileStream, context.CancellationToken).ConfigureAwait(false);
-                    this.LogInformation("HTTP file download completed.");
-                    return;
-                }
+                
+                using var fileStream = await fileOps.OpenFileAsync(this.ResolvedFilePath, FileMode.Create, FileAccess.Write).ConfigureAwait(false);
+                this.LogInformation($"Downloading {this.Url} to {this.FileName}...");
+                await this.PerformRequestAsync(fileStream, context.CancellationToken).ConfigureAwait(false);
+                this.LogInformation("HTTP file download completed.");
+                return;
             }
 
             this.LogInformation($"Downloading {this.Url} to {this.FileName}...");
@@ -67,47 +69,39 @@ Download-Http http://example.org/upload-service/v3/hdars (
             this.LogInformation("HTTP file download completed.");
         }
 
-        protected override async Task PerformRequestAsync(CancellationToken cancellationToken)
+        internal override async Task PerformRequestAsync(CancellationToken cancellationToken)
         {
             DirectoryEx.Create(PathEx.GetDirectoryName(this.ResolvedFilePath));
 
-            using (var fileStream = new FileStream(this.ResolvedFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true))
-            {
-                await this.PerformRequestAsync(fileStream, cancellationToken);
-            }
+            using var fileStream = new FileStream(this.ResolvedFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+            await this.PerformRequestAsync(fileStream, cancellationToken);
         }
 
         private async Task PerformRequestAsync(Stream fileStream, CancellationToken cancellationToken)
         {
-            using (var client = this.CreateClient())
+            using var client = this.CreateClient();
+            using var response = await client.GetAsync(this.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            var message = $"Server responded with status code {(int)response.StatusCode} - {response.ReasonPhrase}";
+            if (!string.IsNullOrWhiteSpace(this.ErrorStatusCodes))
             {
-                using (var response = await client.GetAsync(this.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                {
-                    var message = $"Server responded with status code {(int)response.StatusCode} - {response.ReasonPhrase}";
-                    if (!string.IsNullOrWhiteSpace(this.ErrorStatusCodes))
-                    {
-                        var errorCodeRanges = StatusCodeRangeList.Parse(this.ErrorStatusCodes);
-                        if (errorCodeRanges.IsInAnyRange((int)response.StatusCode))
-                            this.LogError(message);
-                        else
-                            this.LogInformation(message);
-                    }
-                    else
-                    {
-                        if (response.IsSuccessStatusCode)
-                            this.LogInformation(message);
-                        else
-                            this.LogError(message);
-                    }
-
-                    this.TotalSize = response.Content.Headers.ContentLength ?? 0;
-
-                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    {
-                        await responseStream.CopyToAsync(fileStream, 4096, cancellationToken, pos => this.CurrentPosition = pos).ConfigureAwait(false);
-                    }
-                }
+                var errorCodeRanges = StatusCodeRangeList.Parse(this.ErrorStatusCodes);
+                if (errorCodeRanges.IsInAnyRange((int)response.StatusCode))
+                    this.LogError(message);
+                else
+                    this.LogInformation(message);
             }
+            else
+            {
+                if (response.IsSuccessStatusCode)
+                    this.LogInformation(message);
+                else
+                    this.LogError(message);
+            }
+
+            this.totalSize = response.Content.Headers.ContentLength ?? 0;
+
+            using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            await responseStream.CopyToAsync(fileStream, 4096, cancellationToken, pos => this.currentPosition = pos).ConfigureAwait(false);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
