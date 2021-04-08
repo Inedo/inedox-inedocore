@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
@@ -13,7 +12,7 @@ namespace Inedo.Extensions.Operations.HTTP
 
         public override void Serialize(Stream stream)
         {
-            new BinaryFormatter().Serialize(stream, this.Operation);
+            SlimBinaryFormatter.Serialize(this.Operation, stream);
         }
 
         public override void Deserialize(Stream stream)
