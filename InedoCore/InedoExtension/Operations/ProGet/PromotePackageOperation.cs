@@ -12,6 +12,7 @@ using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Serialization;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -25,11 +26,6 @@ namespace Inedo.Extensions.Operations.ProGet
     public sealed class PromotePackageOperation : RemotePackageOperationBase
     {
         protected override bool ResolveNuGetPackageSources => true;
-
-        private string hostName;
-        private string fromFeed;
-        private string toFeed;
-        private string apiKey;
 
         [DisplayName("From source")]
         [ScriptAlias("From")]
@@ -58,6 +54,15 @@ namespace Inedo.Extensions.Operations.ProGet
         [PlaceholderText("Unspecified")]
         public string Reason { get; set; }
 
+        [SlimSerializable]
+        private string HostName { get; set; }
+        [SlimSerializable]
+        private string FromFeed { get; set; }
+        [SlimSerializable]
+        private string ToFeed { get; set; }
+        [SlimSerializable]
+        private string ApiKey { get; set; }
+
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             if (string.IsNullOrWhiteSpace(this.PackageName))
@@ -73,28 +78,28 @@ namespace Inedo.Extensions.Operations.ProGet
             this.ResolvePackageSource(context, this.TargetPackageSource, out var toUserName, out var toPassword, out var toFeedUrl);
 
             if (toPassword?.Length > 0)
-                this.apiKey = AH.Unprotect(toPassword);
-            else if (string.IsNullOrEmpty(this.apiKey))
+                this.ApiKey = AH.Unprotect(toPassword);
+            else if (string.IsNullOrEmpty(this.ApiKey))
                 throw new ExecutionFailureException("This operation requires a ProGet API key. This can be specified either with Inedo Product credentials or with Username & Password credentials (with a UserName of \"api\").");
 
             var match = Regex.Match(toFeedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
             if (!match.Success)
                 throw new ExecutionFailureException($"Could not feed name from feedUrl: " + toFeedUrl);
 
-            this.toFeed = match.Groups[2].Value;
+            this.ToFeed = match.Groups[2].Value;
         }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            this.LogInformation($"Promoting {GetFullPackageName(this.PackageGroup, this.PackageName)} {this.PackageVersion} from {this.fromFeed} to {this.toFeed} on {this.hostName}...");
+            this.LogInformation($"Promoting {GetFullPackageName(this.PackageGroup, this.PackageName)} {this.PackageVersion} from {this.FromFeed} to {this.ToFeed} on {this.HostName}...");
 
-            if (string.Equals(this.fromFeed, this.toFeed, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(this.FromFeed, this.ToFeed, StringComparison.OrdinalIgnoreCase))
             {
                 this.LogWarning("Source and target feeds are the same; nothing to do.");
                 return null;
             }
 
-            var url = this.hostName;
+            var url = this.HostName;
             if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 url = "http://" + url;
 
@@ -107,7 +112,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var request = WebRequest.CreateHttp(url);
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
-            request.Headers.Add("X-ApiKey", this.apiKey);
+            request.Headers.Add("X-ApiKey", this.ApiKey);
             request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
             request.UseDefaultCredentials = true;
 
@@ -117,8 +122,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 {
                     var data = new Dictionary<string, string>
                     {
-                        ["fromFeed"] = this.fromFeed,
-                        ["toFeed"] = this.toFeed,
+                        ["fromFeed"] = this.FromFeed,
+                        ["toFeed"] = this.ToFeed,
                         ["packageName"] = this.PackageName,
                         ["version"] = this.PackageVersion
                     };
@@ -204,14 +209,14 @@ namespace Inedo.Extensions.Operations.ProGet
         private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
         {
             if (string.Equals(userName, "api", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(password))
-                this.apiKey = password;
+                this.ApiKey = password;
 
             var match = Regex.Match(feedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
             if (!match.Success)
                 throw new ExecutionFailureException($"This operation requires a ProGet feed endpoint URL to be specified in the \"{this.PackageSource}\" package source.");
 
-            this.hostName = match.Groups[1].Value;
-            this.fromFeed = match.Groups[2].Value;
+            this.HostName = match.Groups[1].Value;
+            this.FromFeed = match.Groups[2].Value;
         }
     }
 }

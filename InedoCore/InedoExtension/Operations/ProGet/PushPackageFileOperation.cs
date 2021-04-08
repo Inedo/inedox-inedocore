@@ -9,6 +9,7 @@ using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
+using Inedo.Serialization;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 using Newtonsoft.Json;
@@ -30,10 +31,6 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 );")]
     public sealed class PushPackageFileOperation : RemotePackageOperationBase
     {
-        private string userName;
-        private string password;
-        private string feedUrl;
-
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
@@ -47,6 +44,13 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 
         public override string PackageName { get => null; set => throw new InvalidOperationException(); }
 
+        [SlimSerializable]
+        private string UserName { get; set; }
+        [SlimSerializable]
+        private string Password { get; set; }
+        [SlimSerializable]
+        private string FeedUrl { get; set; }
+
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
             var fullPath = context.ResolvePath(this.FilePath);
@@ -59,9 +63,9 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 
             byte[] hash;
             if (!vpack)
-                hash = await this.UploadAndComputeHashAsync(fullPath, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
+                hash = await this.UploadAndComputeHashAsync(fullPath, this.FeedUrl, this.UserName, AH.CreateSecureString(this.Password), context.CancellationToken);
             else
-                hash = await this.UploadVirtualAndComputeHashAsync(fullPath, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
+                hash = await this.UploadVirtualAndComputeHashAsync(fullPath, this.FeedUrl, this.UserName, AH.CreateSecureString(this.Password), context.CancellationToken);
 
             return new PackageInfo(fullName, version, hash);
         }
@@ -97,36 +101,32 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 
         private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
         {
-            this.userName = userName;
-            this.password = password;
-            this.feedUrl = feedUrl;
+            this.UserName = userName;
+            this.Password = password;
+            this.FeedUrl = feedUrl;
         }
 
         private static (string fullName, string version, bool vpack) GetPackageInfo(string path)
         {
             if (path.EndsWith(".vpack", StringComparison.OrdinalIgnoreCase))
             {
-                using (var reader = new JsonTextReader(File.OpenText(path)))
-                {
-                    var obj = JObject.Load(reader);
-                    var group = (string)obj.Property("group");
-                    var name = (string)obj.Property("name");
-                    var version = (string)obj.Property("version");
-                    if (string.IsNullOrWhiteSpace(name))
-                        throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"name\" property.");
-                    if (string.IsNullOrWhiteSpace(version))
-                        throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"version\" property.");
+                using var reader = new JsonTextReader(File.OpenText(path));
+                var obj = JObject.Load(reader);
+                var group = (string)obj.Property("group");
+                var name = (string)obj.Property("name");
+                var version = (string)obj.Property("version");
+                if (string.IsNullOrWhiteSpace(name))
+                    throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"name\" property.");
+                if (string.IsNullOrWhiteSpace(version))
+                    throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"version\" property.");
 
-                    return (GetFullPackageName(group, name), version, true);
-                }
+                return (GetFullPackageName(group, name), version, true);
             }
 
             try
             {
-                using (var package = new UniversalPackage(path))
-                {
-                    return (GetFullPackageName(package.Group, package.Name), package.Version.ToString(), false);
-                }
+                using var package = new UniversalPackage(path);
+                return (GetFullPackageName(package.Group, package.Name), package.Version.ToString(), false);
             }
             catch (Exception ex)
             {
@@ -135,8 +135,12 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         }
 
         [Serializable]
+        [SlimSerializable]
         private sealed class PackageInfo
         {
+            public PackageInfo()
+            {
+            }
             public PackageInfo(string name, string version, byte[] hash)
             {
                 this.Name = name;
@@ -144,9 +148,12 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
                 this.Hash = hash;
             }
 
-            public string Name { get; }
-            public string Version { get; }
-            public byte[] Hash { get; }
+            [SlimSerializable]
+            public string Name { get; set; }
+            [SlimSerializable]
+            public string Version { get; set; }
+            [SlimSerializable]
+            public byte[] Hash { get; set; }
         }
     }
 }

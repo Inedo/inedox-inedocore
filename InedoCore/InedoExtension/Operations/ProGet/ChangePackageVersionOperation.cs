@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -12,6 +11,7 @@ using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Serialization;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -25,10 +25,6 @@ namespace Inedo.Extensions.Operations.ProGet
     public sealed class ChangePackageVersionOperation : RemotePackageOperationBase
     {
         protected override bool ResolveNuGetPackageSources => true;
-
-        private string apiKey;
-        private string hostName;
-        private string feedName;
 
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
@@ -56,6 +52,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [PlaceholderText("Unspecified")]
         public string Reason { get; set; }
 
+        [SlimSerializable]
+        private string ApiKey { get; set; }
+        [SlimSerializable]
+        private string HostName { get; set; }
+        [SlimSerializable]
+        private string FeedName { get; set; }
+
         protected override Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             if (string.IsNullOrWhiteSpace(this.PackageName))
@@ -71,7 +74,7 @@ namespace Inedo.Extensions.Operations.ProGet
         }
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            this.LogInformation($"Repackaging {GetFullPackageName(this.PackageGroup, this.PackageName)} {this.PackageVersion} to {this.NewVersion} on {this.hostName} ({this.feedName} feed)...");
+            this.LogInformation($"Repackaging {GetFullPackageName(this.PackageGroup, this.PackageName)} {this.PackageVersion} to {this.NewVersion} on {this.HostName} ({this.FeedName} feed)...");
 
             if (string.Equals(this.PackageVersion, this.NewVersion, StringComparison.OrdinalIgnoreCase))
             {
@@ -79,7 +82,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 return null;
             }
 
-            var url = this.hostName;
+            var url = this.HostName;
             if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 url = "http://" + url;
 
@@ -92,7 +95,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var request = WebRequest.CreateHttp(url);
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
-            request.Headers.Add("X-ApiKey", this.apiKey);
+            request.Headers.Add("X-ApiKey", this.ApiKey);
             request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
             request.UseDefaultCredentials = true;
 
@@ -102,7 +105,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 {
                     var data = new Dictionary<string, string>
                     {
-                        ["feed"] = this.feedName,
+                        ["feed"] = this.FeedName,
                         ["packageName"] = this.PackageName,
                         ["version"] = this.PackageVersion,
                         ["newVersion"] = this.NewVersion
@@ -188,7 +191,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.Equals(userName, "api", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(password))
                 throw new ExecutionFailureException("This operation requires a ProGet API key. This can be specified either with Inedo Product credentials or with Username & Password credentials (with a UserName of \"api\").");
 
-            this.apiKey = password;
+            this.ApiKey = password;
 
             Uri uri;
             try
@@ -200,13 +203,13 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw new ExecutionFailureException("Feed URL is invalid: " + ex.Message);
             }
 
-            this.hostName = uri.GetLeftPart(UriPartial.Authority);
+            this.HostName = uri.GetLeftPart(UriPartial.Authority);
 
             var pathParts = uri.AbsolutePath.Trim('/').Split(new[] { '/' });
             if (pathParts.Length < 2)
                 throw new ExecutionFailureException("Could not determine feed name from feed URL " + feedUrl);
 
-            this.feedName = Uri.UnescapeDataString(pathParts[1]);
+            this.FeedName = Uri.UnescapeDataString(pathParts[1]);
         }
 
         [Serializable]

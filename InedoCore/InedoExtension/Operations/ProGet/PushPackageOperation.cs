@@ -14,6 +14,7 @@ using Inedo.Extensions.Credentials;
 using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
+using Inedo.Serialization;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 
@@ -196,18 +197,16 @@ ProGet::Push-Package
                     }
                 }
 
-                using (var file = FileEx.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using var file = FileEx.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var data = new ProGetPackagePushData
                 {
-                    var data = new ProGetPackagePushData
-                    {
-                        Title = this.Title,
-                        Description = this.Description,
-                        Icon = this.Icon,
-                        Dependencies = this.Dependencies?.ToArray()
-                    };
+                    Title = this.Title,
+                    Description = this.Description,
+                    Icon = this.Icon,
+                    Dependencies = this.Dependencies?.ToArray()
+                };
 
-                    await client.PushPackageAsync(this.Group, this.Name, this.Version, data, file);
-                }
+                await client.PushPackageAsync(this.Group, this.Name, this.Version, data, file);
             }
             catch (ProGetException ex)
             {
@@ -241,16 +240,22 @@ ProGet::Push-Package
         }
 
         [Serializable]
+        [SlimSerializable]
         private sealed class PackageInfo
         {
+            public PackageInfo()
+            {
+            }
             public PackageInfo(string packageName, string version)
             {
                 this.PackageName = packageName;
                 this.Version = version;
             }
 
-            public string PackageName { get; }
-            public string Version { get; }
+            [SlimSerializable]
+            public string PackageName { get; set; }
+            [SlimSerializable]
+            public string Version { get; set; }
         }
     }
 }

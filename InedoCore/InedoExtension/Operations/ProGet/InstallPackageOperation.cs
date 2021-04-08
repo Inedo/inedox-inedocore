@@ -9,6 +9,7 @@ using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
+using Inedo.Serialization;
 using Inedo.UPack;
 using Inedo.UPack.Net;
 using Inedo.UPack.Packaging;
@@ -25,10 +26,6 @@ namespace Inedo.Extensions.Operations.ProGet
     [AppliesTo(InedoProduct.BuildMaster)]
     public sealed class InstallPackageOperation : RemotePackageOperationBase
     {
-        private string userName;
-        private string password;
-        private string feedUrl;
-
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
         [PlaceholderText("Infer from package name")]
@@ -50,6 +47,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [DisplayName("To")]
         [PlaceholderText("$WorkingDirectory")]
         public string TargetDirectory { get; set; }
+
+        [SlimSerializable]
+        private string UserName { get; set; }
+        [SlimSerializable]
+        private string Password { get; set; }
+        [SlimSerializable]
+        private string FeedUrl { get; set; }
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
@@ -78,7 +82,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.feedUrl), this.userName, AH.CreateSecureString(this.password)));
+            var client = new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.FeedUrl), this.UserName, AH.CreateSecureString(this.Password)));
 
             var packageVersion = await client.GetPackageVersionAsync(UniversalPackageId.Parse(this.PackageName), UniversalPackageVersion.Parse(this.PackageVersion), false, context.CancellationToken);
             if (packageVersion == null)
@@ -131,9 +135,9 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
         {
-            this.userName = userName;
-            this.password = password;
-            this.feedUrl = feedUrl;
+            this.UserName = userName;
+            this.Password = password;
+            this.FeedUrl = feedUrl;
         }
     }
 }

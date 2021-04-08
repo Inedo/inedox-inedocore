@@ -106,11 +106,9 @@ namespace Inedo.Extensions.Operations.ProGet
 
             byte[] computePackageHash()
             {
-                using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan))
-                using (var sha1 = SHA1.Create())
-                {
-                    return sha1.ComputeHash(fileStream);
-                }
+                using var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan);
+                using var sha1 = SHA1.Create();
+                return sha1.ComputeHash(fileStream);
             }
         }
 

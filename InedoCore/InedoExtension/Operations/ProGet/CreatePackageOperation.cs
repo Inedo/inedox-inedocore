@@ -13,6 +13,7 @@ using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.IO;
+using Inedo.Serialization;
 using Inedo.UPack;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
@@ -27,10 +28,6 @@ namespace Inedo.Extensions.Operations.ProGet
     [Tag("proget")]
     public sealed class CreatePackageOperation : RemotePackageOperationBase
     {
-        private string userName;
-        private string password;
-        private string feedUrl;
-
         [ScriptAlias("From")]
         [PlaceholderText("$WorkingDirectory")]
         [DisplayName("Source directory")]
@@ -78,6 +75,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [FieldEditMode(FieldEditMode.Multiline)]
         [Description("Additional properties may be specified using map syntax. For example: %(description: my package description)")]
         public IReadOnlyDictionary<string, RuntimeValue> Metadata { get; set; }
+
+        [SlimSerializable]
+        private string UserName { get; set; }
+        [SlimSerializable]
+        private string Password { get; set; }
+        [SlimSerializable]
+        private string FeedUrl { get; set; }
 
         protected override Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
@@ -151,7 +155,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             // when package source is specified, upload it
             if (!string.IsNullOrWhiteSpace(this.PackageSource))
-                return await this.UploadAndComputeHashAsync(outputFileName, this.feedUrl, this.userName, AH.CreateSecureString(this.password), context.CancellationToken);
+                return await this.UploadAndComputeHashAsync(outputFileName, this.FeedUrl, this.UserName, AH.CreateSecureString(this.Password), context.CancellationToken);
 
             return null;
 
@@ -215,9 +219,9 @@ namespace Inedo.Extensions.Operations.ProGet
 
         private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
         {
-            this.userName = userName;
-            this.password = password;
-            this.feedUrl = feedUrl;
+            this.UserName = userName;
+            this.Password = password;
+            this.FeedUrl = feedUrl;
         }
 
         private void ValidateArguments()

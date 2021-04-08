@@ -287,23 +287,14 @@ Log-Debug 'Package name is $(%packageData.name).';
         {
             try
             {
-                switch (obj)
+                return obj switch
                 {
-                    case string s:
-                        return s;
-
-                    case IReadOnlyDictionary<string, object> d:
-                        return new RuntimeValue(d.ToDictionary(p => p.Key, p => this.Convert(p.Value)));
-
-                    case IDictionary<string, object> d:
-                        return new RuntimeValue(d.ToDictionary(p => p.Key, p => this.Convert(p.Value)));
-
-                    case IEnumerable e:
-                        return new RuntimeValue(e.Cast<object>().Select(this.Convert).ToList());
-
-                    default:
-                        return obj?.ToString();
-                }
+                    string s => s,
+                    IReadOnlyDictionary<string, object> d => new RuntimeValue(d.ToDictionary(p => p.Key, p => this.Convert(p.Value))),
+                    IDictionary<string, object> d => new RuntimeValue(d.ToDictionary(p => p.Key, p => this.Convert(p.Value))),
+                    IEnumerable e => new RuntimeValue(e.Cast<object>().Select(this.Convert).ToList()),
+                    _ => obj?.ToString()
+                };
             }
             catch (Exception ex)
             {
