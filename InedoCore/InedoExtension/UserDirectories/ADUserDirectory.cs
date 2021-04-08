@@ -336,12 +336,12 @@ namespace Inedo.Extensions.UserDirectories
         {
             using var conn = GetClient();
             conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), null, this.UseLdaps);
-            if (userName.Contains("@"))
+            if (userName?.Contains("@") ?? false)
             {
                 var userNameSplit = userName.Split('@');
                 conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
             }
-            else if(userName.Contains("\\"))
+            else if(userName?.Contains("\\") ?? false)
             {
                 var userNameSplit = userName.Split('\\');
                 conn.Bind(new NetworkCredential(userNameSplit[1], password, userNameSplit[0]));
