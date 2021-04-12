@@ -212,9 +212,12 @@ namespace Inedo.Extensions.Operations.ProGet
             this.FeedName = Uri.UnescapeDataString(pathParts[1]);
         }
 
-        [Serializable]
+        [SlimSerializable]
         private sealed class RepackageInfo
         {
+            public RepackageInfo()
+            {
+            }
             public RepackageInfo(string packageName, string originalVersion, string newVersion)
             {
                 this.PackageName = packageName;
@@ -222,9 +225,12 @@ namespace Inedo.Extensions.Operations.ProGet
                 this.NewVersion = newVersion;
             }
 
-            public string PackageName { get; }
-            public string OriginalVersion { get; }
-            public string NewVersion { get; }
+            [SlimSerializable]
+            public string PackageName { get; set; }
+            [SlimSerializable]
+            public string OriginalVersion { get; set; }
+            [SlimSerializable]
+            public string NewVersion { get; set; }
         }
     }
 }
