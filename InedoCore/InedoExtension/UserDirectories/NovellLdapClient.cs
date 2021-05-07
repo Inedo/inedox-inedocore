@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Inedo.Diagnostics;
 using Novell.Directory.Ldap;
+using Logger = Inedo.Diagnostics.Logger;
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -18,7 +20,8 @@ namespace Inedo.Extensions.UserDirectories
         }
         public override void Bind(NetworkCredential credentials)
         {
-            this.connection.Bind(credentials.UserName, credentials.Password);
+            Logger.Log(MessageLevel.Debug, "Novell", $"User dn: {credentials.UserName}{(string.IsNullOrWhiteSpace(credentials.Domain) ? string.Empty : "@" + credentials.Domain)}");
+            this.connection.Bind($"{credentials.UserName}{(string.IsNullOrWhiteSpace(credentials.Domain) ? string.Empty : "@" + credentials.Domain)}", credentials.Password);
         }
         public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
         {

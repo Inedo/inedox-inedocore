@@ -97,7 +97,17 @@ namespace Inedo.Extensions.UserDirectories
             {
                 using var conn = GetClient();
                 conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), null, this.UseLdaps);
-                conn.Bind(new NetworkCredential(userName, password));
+                if(userName?.Contains("@") ?? false)
+                {
+                    var userNameSplit = userName.Split('@');
+                    conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
+
+                }
+                else
+                {
+                    var domain = result.GetDomainPath();
+                    conn.Bind(new NetworkCredential(userName, password, domain));
+                }
                 return this.CreatePrincipal(result) as IUserDirectoryUser;
             }
             catch
