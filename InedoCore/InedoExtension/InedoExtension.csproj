@@ -11,9 +11,7 @@
     <PackageReference Include="Inedo.SDK" Version="1.10.0">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Inedo.UPack" Version="1.0.9">
-      <ExcludeAssets>runtime</ExcludeAssets>
-    </PackageReference>
+    <PackageReference Include="Inedo.UPack" Version="1.0.9" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net452'">
     <Reference Include="System.DirectoryServices" />
