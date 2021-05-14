@@ -109,9 +109,11 @@ namespace AD.Tester
                 NetBiosNameMaps = ToArray(txtNetbiosNames.Text),
                 DomainControllerAddress = NullIfEmpty(txtDomainControllerHost.Text),
                 DomainsToSearch = ToArray(txtDomains.Text),
-                SearchGroupsRecursively = cblOptions.SelectedIndices.Contains(0),
-                IncludeGroupManagedServiceAccounts = cblOptions.SelectedIndices.Contains(1),
-                UseLdaps = cblOptions.SelectedIndices.Contains(2),
+                SearchGroupsRecursively = cblOptions.CheckedIndices.Contains(0),
+                IncludeGroupManagedServiceAccounts = cblOptions.CheckedIndices.Contains(1),
+                UseLdaps = cblOptions.CheckedIndices.Contains(2),
+                BypassLdapsCertificateValidation = cblOptions.CheckedIndices.Contains(3),
+                Port = string.IsNullOrWhiteSpace(txtPort.Text) ? null : txtPort.Text
             };
 
             dir.MessageLogged += this.MessageLogged;
@@ -257,11 +259,6 @@ namespace AD.Tester
             public override IEnumerable<SDK.ServerInfo> GetServersInEnvironment(int environmentId) => throw new NotImplementedException();
             public override IEnumerable<SDK.ServerInfo> GetServersInRole(int roleId) => throw new NotImplementedException();
             public override IEnumerable<SDK.UserDirectoryInfo> GetUserDirectories() => throw new NotImplementedException();
-        }
-
-        private void label11_Click(object sender, EventArgs e)
-        {
-
         }
 
         private void button1_Click(object sender, EventArgs e)

@@ -12,11 +12,17 @@ namespace Inedo.Extensions.UserDirectories
     {
         private LdapConnection connection;
 
-        public override void Connect(string server, int? port, bool ldaps)
+        public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate)
         {
             this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
             if (ldaps)
+            {
                 this.connection.SessionOptions.SecureSocketLayer = true;
+                if (bypassSslCertificate)
+                {
+                    this.connection.SessionOptions.VerifyServerCertificate = new VerifyServerCertificateCallback((connection, certifacte) => true);
+                }
+            }
         }
         public override void Bind(NetworkCredential credentials)
         {

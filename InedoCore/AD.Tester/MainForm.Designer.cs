@@ -41,12 +41,12 @@
             this.txtDomainControllerHost = new System.Windows.Forms.TextBox();
             this.txtNetbiosNames = new System.Windows.Forms.TextBox();
             this.cblOptions = new System.Windows.Forms.CheckedListBox();
-            this.labelCreds = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
             this.txtDomainPassword = new System.Windows.Forms.TextBox();
             this.txtDomainUserName = new System.Windows.Forms.TextBox();
             this.labelUserName = new System.Windows.Forms.Label();
             this.labelPassword = new System.Windows.Forms.Label();
+            this.labelCreds = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -84,6 +84,9 @@
             this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.txtLogs = new System.Windows.Forms.TextBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.label13 = new System.Windows.Forms.Label();
+            this.txtPort = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -100,6 +103,7 @@
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).BeginInit();
             this.groupBox4.SuspendLayout();
+            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -109,7 +113,7 @@
             this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(465, 286);
+            this.groupBox1.Size = new System.Drawing.Size(465, 400);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "AD User Directory Configuration";
@@ -130,20 +134,22 @@
             this.tableLayoutPanel1.Controls.Add(this.txtDomainControllerHost, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.txtNetbiosNames, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.cblOptions, 1, 4);
-            this.tableLayoutPanel1.Controls.Add(this.labelCreds, 0, 5);
-            this.tableLayoutPanel1.Controls.Add(this.panel1, 1, 5);
+            this.tableLayoutPanel1.Controls.Add(this.panel1, 1, 6);
+            this.tableLayoutPanel1.Controls.Add(this.panel2, 1, 5);
+            this.tableLayoutPanel1.Controls.Add(this.labelCreds, 0, 6);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 15);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 6;
+            this.tableLayoutPanel1.RowCount = 7;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(461, 269);
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(461, 383);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // label5
@@ -155,7 +161,7 @@
             this.label5.Location = new System.Drawing.Point(2, 164);
             this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(157, 49);
+            this.label5.Size = new System.Drawing.Size(157, 94);
             this.label5.TabIndex = 4;
             this.label5.Text = "Options:";
             this.label5.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -280,26 +286,13 @@
             this.cblOptions.Items.AddRange(new object[] {
             "Search recursively",
             "Include gMSA",
-            "Use LDAPS"});
+            "Use LDAPS",
+            "Bypass LDAPS Certificate Validation"});
             this.cblOptions.Location = new System.Drawing.Point(163, 166);
             this.cblOptions.Margin = new System.Windows.Forms.Padding(2);
             this.cblOptions.Name = "cblOptions";
-            this.cblOptions.Size = new System.Drawing.Size(296, 45);
+            this.cblOptions.Size = new System.Drawing.Size(296, 90);
             this.cblOptions.TabIndex = 9;
-            // 
-            // labelCreds
-            // 
-            this.labelCreds.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelCreds.AutoSize = true;
-            this.labelCreds.Location = new System.Drawing.Point(3, 213);
-            this.labelCreds.Name = "label11";
-            this.labelCreds.Size = new System.Drawing.Size(155, 56);
-            this.labelCreds.TabIndex = 10;
-            this.labelCreds.Text = "Domain Credentials: (append \",AdCreds\" to end of domains to search)";
-            this.labelCreds.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.labelCreds.Click += new System.EventHandler(this.label11_Click);
             // 
             // panel1
             // 
@@ -310,9 +303,9 @@
             this.panel1.Controls.Add(this.txtDomainUserName);
             this.panel1.Controls.Add(this.labelUserName);
             this.panel1.Controls.Add(this.labelPassword);
-            this.panel1.Location = new System.Drawing.Point(164, 216);
+            this.panel1.Location = new System.Drawing.Point(164, 296);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(294, 50);
+            this.panel1.Size = new System.Drawing.Size(294, 84);
             this.panel1.TabIndex = 11;
             // 
             // txtDomainPassword
@@ -330,28 +323,41 @@
             this.txtDomainUserName.Size = new System.Drawing.Size(216, 20);
             this.txtDomainUserName.TabIndex = 2;
             // 
-            // labelPassword
-            // 
-            this.labelPassword.AutoSize = true;
-            this.labelPassword.Location = new System.Drawing.Point(3, 29);
-            this.labelPassword.Name = "label13";
-            this.labelPassword.Size = new System.Drawing.Size(56, 13);
-            this.labelPassword.TabIndex = 1;
-            this.labelPassword.Text = "Password:";
-            // 
             // labelUserName
             // 
             this.labelUserName.AutoSize = true;
             this.labelUserName.Location = new System.Drawing.Point(3, 6);
-            this.labelUserName.Name = "label12";
+            this.labelUserName.Name = "labelUserName";
             this.labelUserName.Size = new System.Drawing.Size(63, 13);
             this.labelUserName.TabIndex = 0;
             this.labelUserName.Text = "User Name:";
             // 
+            // labelPassword
+            // 
+            this.labelPassword.AutoSize = true;
+            this.labelPassword.Location = new System.Drawing.Point(3, 29);
+            this.labelPassword.Name = "labelPassword";
+            this.labelPassword.Size = new System.Drawing.Size(56, 13);
+            this.labelPassword.TabIndex = 1;
+            this.labelPassword.Text = "Password:";
+            // 
+            // labelCreds
+            // 
+            this.labelCreds.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelCreds.AutoSize = true;
+            this.labelCreds.Location = new System.Drawing.Point(3, 293);
+            this.labelCreds.Name = "labelCreds";
+            this.labelCreds.Size = new System.Drawing.Size(155, 90);
+            this.labelCreds.TabIndex = 10;
+            this.labelCreds.Text = "Domain Credentials: (append \",AdCreds\" to end of domains to search)";
+            this.labelCreds.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.tabControl1);
-            this.groupBox2.Location = new System.Drawing.Point(29, 319);
+            this.groupBox2.Location = new System.Drawing.Point(25, 419);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Padding = new System.Windows.Forms.Padding(2);
@@ -766,7 +772,7 @@
             this.txtLogs.Multiline = true;
             this.txtLogs.Name = "txtLogs";
             this.txtLogs.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtLogs.Size = new System.Drawing.Size(447, 174);
+            this.txtLogs.Size = new System.Drawing.Size(447, 280);
             this.txtLogs.TabIndex = 1;
             // 
             // groupBox4
@@ -776,10 +782,35 @@
             this.groupBox4.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox4.Size = new System.Drawing.Size(451, 191);
+            this.groupBox4.Size = new System.Drawing.Size(451, 297);
             this.groupBox4.TabIndex = 3;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Logs";
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.txtPort);
+            this.panel2.Controls.Add(this.label13);
+            this.panel2.Location = new System.Drawing.Point(164, 261);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(294, 29);
+            this.panel2.TabIndex = 12;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(6, 4);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(29, 13);
+            this.label13.TabIndex = 0;
+            this.label13.Text = "Port:";
+            // 
+            // txtPort
+            // 
+            this.txtPort.Location = new System.Drawing.Point(73, 4);
+            this.txtPort.Name = "txtPort";
+            this.txtPort.Size = new System.Drawing.Size(216, 20);
+            this.txtPort.TabIndex = 1;
             // 
             // MainForm
             // 
@@ -820,6 +851,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -881,6 +914,9 @@
         private System.Windows.Forms.TextBox txtDomainUserName;
         private System.Windows.Forms.Label labelUserName;
         private System.Windows.Forms.Label labelPassword;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.TextBox txtPort;
+        private System.Windows.Forms.Label label13;
     }
 }
 
