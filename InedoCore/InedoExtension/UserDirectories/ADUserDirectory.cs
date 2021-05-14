@@ -79,7 +79,7 @@ namespace Inedo.Extensions.UserDirectories
         [DisplayName("LDAP Port Override")]
         [Description("This will override the port used to connect to LDAP or LDAPS.  If this is not set, then port 389 is used for LDAP and 636 is used for LDAPS.")]
         [PlaceholderText("Use default")]
-        public int? Port { get; set; }
+        public string Port { get; set; }
 
         public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
@@ -103,7 +103,7 @@ namespace Inedo.Extensions.UserDirectories
             try
             {
                 using var conn = GetClient();
-                conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), this.Port, this.UseLdaps);
+                conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.UseLdaps);
                 if(userName?.Contains("@") ?? false)
                 {
                     var userNameSplit = userName.Split('@');
@@ -352,7 +352,7 @@ namespace Inedo.Extensions.UserDirectories
         private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), this.Port, this.UseLdaps);
+            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.UseLdaps);
             if (userName?.Contains("@") ?? false)
             {
                 var userNameSplit = userName.Split('@');
