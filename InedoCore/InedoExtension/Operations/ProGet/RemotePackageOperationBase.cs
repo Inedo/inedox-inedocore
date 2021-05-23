@@ -20,6 +20,8 @@ using Inedo.UPack.Net;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
+#warning PackageSource
+    
     [Serializable]
     public abstract class RemotePackageOperationBase : RemoteExecuteOperation
     {

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
+using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
@@ -17,12 +18,14 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     internal static class PackageDeployer
     {
-        private static readonly SemaphoreSlim registryLock = new SemaphoreSlim(1, 1);
+        internal static readonly SemaphoreSlim registryLock = new SemaphoreSlim(1, 1);
 
-        public static async Task DeployAsync(IOperationExecutionContext context, IProGetPackageInstallTemplate template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
+
+
+        public static async Task DeployAsync(IOperationExecutionContext context, GetPackageOperation template, ILogSink log, string installationReason, bool recordDeployment, Action<OperationProgress> setProgress = null)
         {
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-            var client = new ProGetClient(template.FeedUrl, template.FeedName, template.UserName, template.Password, log, context.CancellationToken);
+            var client = new ProGetClient_UNINCLUSED(template.FeedUrl, template.FeedName, template.UserName, template.Password, log, context.CancellationToken);
 
             try
             {
@@ -202,7 +205,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
 
                 setProgress?.Invoke(new OperationProgress("recording package installation in machine registry"));
-                using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
+                using (var registry = await RemotePackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
                 {
                     var package = new RegisteredPackage
                     {
@@ -250,7 +253,7 @@ namespace Inedo.Extensions.Operations.ProGet
             log.LogInformation("Package deployed!");
         }
 
-        private sealed class PackageDeploymentJob : RemoteJob
+        internal sealed class PackageDeploymentJob : RemoteJob
         {
             public bool DeleteExtra { get; set; }
             public string TempDirectoryName { get; set; }

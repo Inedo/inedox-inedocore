@@ -12,13 +12,13 @@ using Newtonsoft.Json;
 
 namespace Inedo.Extensions.UniversalPackages
 {
-    internal sealed class PackageRegistry : IDisposable
+    internal sealed class RemotePackageRegistry : IDisposable
     {
         private Agent agent;
         private ILogger logger;
         private bool disposed;
 
-        private PackageRegistry(Agent agent, string registryRoot, ILogger logger = null)
+        private RemotePackageRegistry(Agent agent, string registryRoot, ILogger logger = null)
         {
             this.agent = agent;
             this.RegistryRoot = registryRoot;
@@ -28,10 +28,10 @@ namespace Inedo.Extensions.UniversalPackages
         public string RegistryRoot { get; }
         public string LockToken { get; private set; }
 
-        public static async Task<PackageRegistry> GetRegistryAsync(Agent agent, bool openUserRegistry)
+        public static async Task<RemotePackageRegistry> GetRegistryAsync(Agent agent, bool openUserRegistry)
         {
             var root = await (openUserRegistry ? GetCurrentUserRegistryRootAsync(agent) : GetMachineRegistryRootAsync(agent)).ConfigureAwait(false);
-            return new PackageRegistry(agent, root);
+            return new RemotePackageRegistry(agent, root);
         }
 
         public async Task LockAsync(CancellationToken cancellationToken) => await this.LockRegistryAsync(await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
@@ -229,6 +229,12 @@ namespace Inedo.Extensions.UniversalPackages
             {
                 new JsonSerializer { Formatting = Formatting.Indented }.Serialize(jsonWriter, packages.ToArray());
             }
+        }
+
+        internal static class Remote
+        {
+            public static string GetMachineRegistryRoot() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "upack");
+            public static string GetCurrentUserRegistryRoot() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".upack");
         }
     }
 }

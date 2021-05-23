@@ -20,11 +20,11 @@ using Newtonsoft.Json;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-    internal sealed class ProGetClient
+    internal sealed class ProGetClient_UNINCLUSED
     {
         private static readonly LazyRegex FeedNameRegex = new LazyRegex(@"(?<1>(https?://)?[^/]+)/upack(/?(?<2>.+))", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
-        public ProGetClient(string serverUrl, string feedName, string userName, string password, ILogSink log = null, CancellationToken cancellationToken = default(CancellationToken))
+        public ProGetClient_UNINCLUSED(string serverUrl, string feedName, string userName, string password, ILogSink log = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(serverUrl))
                 throw new ProGetException(400, "A ProGet server URL must be specified for this operation either in the operation itself or in the credential.");
@@ -47,46 +47,7 @@ namespace Inedo.Extensions.Operations.ProGet
         public ILogSink Log { get; }
         private CancellationToken CancellationToken { get; }
 
-        public string GetViewPackageUrl(PackageName id, string version)
-        {
-            if (string.IsNullOrWhiteSpace(id?.Name))
-                throw new ArgumentNullException(nameof(id));
 
-            return $"{this.ServerUrl }feeds/{Uri.EscapeDataString(this.FeedName)}/{id.ToString()}/{version}";
-        }
-
-        public async Task<string[]> GetFeedNamesAsync()
-        {
-            using (var client = this.CreateClient())
-            using (var response = await client.GetAsync(this.FeedUrl + "?list-feeds", HttpCompletionOption.ResponseHeadersRead, this.CancellationToken).ConfigureAwait(false))
-            {
-                await HandleError(response).ConfigureAwait(false);
-
-                using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
-                using (var jsonReader = new JsonTextReader(streamReader))
-                {
-                    var serializer = JsonSerializer.Create();
-                    return serializer.Deserialize<string[]>(jsonReader);
-                }
-            }
-        }
-        public async Task<ProGetPackageInfo[]> GetPackagesAsync()
-        {
-            using (var client = this.CreateClient())
-            using (var response = await client.GetAsync(this.FeedUrl + "packages", HttpCompletionOption.ResponseHeadersRead, this.CancellationToken).ConfigureAwait(false))
-            {
-                await HandleError(response).ConfigureAwait(false);
-
-                using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
-                using (var jsonReader = new JsonTextReader(streamReader))
-                {
-                    var serializer = JsonSerializer.Create();
-                    return serializer.Deserialize<ProGetPackageInfo[]>(jsonReader);
-                }
-            }
-        }
         public async Task<ProGetPackageInfo> GetPackageInfoAsync(PackageName id)
         {
             if (string.IsNullOrWhiteSpace(id?.Name))
@@ -103,25 +64,6 @@ namespace Inedo.Extensions.Operations.ProGet
                 {
                     var serializer = JsonSerializer.Create();
                     return serializer.Deserialize<ProGetPackageInfo>(jsonReader);
-                }
-            }
-        }
-        public async Task<ProGetPackageVersionInfo> GetPackageVersionInfoAsync(PackageName id, string version)
-        {
-            if (string.IsNullOrWhiteSpace(id?.Name))
-                throw new ArgumentNullException(nameof(id));
-
-            using (var client = this.CreateClient())
-            using (var response = await client.GetAsync(this.FeedUrl + $"versions?group={Uri.EscapeDataString(id.Group)}&name={Uri.EscapeDataString(id.Name)}&version={Uri.EscapeDataString(version)}&includeFileList=true", HttpCompletionOption.ResponseHeadersRead, this.CancellationToken).ConfigureAwait(false))
-            {
-                await HandleError(response).ConfigureAwait(false);
-
-                using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding))
-                using (var jsonReader = new JsonTextReader(streamReader))
-                {
-                    var serializer = JsonSerializer.Create();
-                    return serializer.Deserialize<ProGetPackageVersionInfo>(jsonReader);
                 }
             }
         }
@@ -153,11 +95,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
             }
         }
-        public async Task<ZipArchive> DownloadPackageAsync(PackageName id, string version, PackageDeploymentData deployInfo)
-        {
-            var stream = await this.DownloadPackageContentAsync(id, version, deployInfo).ConfigureAwait(false);
-            return new ZipArchive(stream, ZipArchiveMode.Read);
-        }
+        
         public async Task PushPackageAsync(string group, string name, string version, ProGetPackagePushData packageData, Stream content)
         {
             if (packageData == null)
@@ -210,42 +148,6 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
             }
         }
-        public async Task PromotePackageAsync(SecureString apiKey, PackageName id, string version, string fromFeed, string toFeed, string comments = null)
-        {
-            if (string.IsNullOrWhiteSpace(id?.Name))
-                throw new ArgumentNullException(nameof(id));
-            if (string.IsNullOrWhiteSpace(version))
-                throw new ArgumentNullException(nameof(version));
-            if (string.IsNullOrWhiteSpace(fromFeed))
-                throw new ArgumentNullException(nameof(fromFeed));
-            if (string.IsNullOrWhiteSpace(toFeed))
-                throw new ArgumentNullException(nameof(toFeed));
-
-            using (var client = this.CreateClient(apiKey: apiKey))
-            {
-                string json = JsonConvert.SerializeObject(
-                    new
-                    {
-                        packageName = id.Name,
-                        groupName = id.Group,
-                        version = version,
-                        fromFeed = fromFeed,
-                        toFeed = toFeed,
-                        comments = comments
-                    }
-                );
-
-                using (var streamContent = new StringContent(json))
-                {
-                    streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-                    using (var response = await client.PostAsync(this.ServerUrl + "api/promotions/promote", streamContent, this.CancellationToken).ConfigureAwait(false))
-                    {
-                        await HandleError(response).ConfigureAwait(false);
-                    }
-                }
-            }
-        }
 
         private HttpWebRequest CreateWebRequest(string url, PackageDeploymentData deployInfo = null, SecureString apiKey = null)
         {
@@ -255,7 +157,7 @@ namespace Inedo.Extensions.Operations.ProGet
             request.AllowWriteStreamBuffering = true;
             request.PreAuthenticate = true;
             request.Timeout = Timeout.Infinite;
-            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
+            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient_UNINCLUSED).Assembly.GetName().Version}";
             if (apiKey != null)
                 request.Headers.Add("X-ApiKey", AH.Unprotect(apiKey));
 
@@ -297,7 +199,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetClient).Assembly.GetName().Version.ToString()));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetClient_UNINCLUSED).Assembly.GetName().Version.ToString()));
 
             if (apiKey != null)
                 client.DefaultRequestHeaders.Add("X-ApiKey", AH.Unprotect(apiKey));
@@ -493,6 +395,13 @@ namespace Inedo.Extensions.Operations.ProGet
 
             this.Application = application ?? throw new ArgumentNullException(nameof(application));
             this.Url = baseUrl.TrimEnd('/') + '/' + relativeUrl.TrimStart('/');
+            this.Target = target ?? throw new ArgumentNullException(nameof(target));
+            this.Description = description ?? "";
+        }
+        public PackageDeploymentData(string application, string url, string target, string description)
+        {
+            this.Application = application ?? throw new ArgumentNullException(nameof(application));
+            this.Url = url ?? throw new ArgumentException(nameof(url));
             this.Target = target ?? throw new ArgumentNullException(nameof(target));
             this.Description = description ?? "";
         }

@@ -161,7 +161,7 @@ ProGet::Push-Package
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            var client = new ProGetClient(this.Server, this.FeedName, this.UserName, this.Password, this, context.CancellationToken);
+            var client = new ProGetClient_UNINCLUSED(this.Server, this.FeedName, this.UserName, this.Password, this, context.CancellationToken);
 
             try
             {

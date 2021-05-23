@@ -25,6 +25,8 @@ using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswor
 
 namespace Inedo.Extensions.Operations.ProGet
 {
+#warning PackageSource
+
     [DisplayName("Query Package")]
     [ScriptAlias("Query-Package")]
     [ScriptNamespace(Namespaces.UPack, PreferUnqualified = false)]

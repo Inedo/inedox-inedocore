@@ -17,6 +17,7 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
+#warning PackageSource
     [Serializable]
     [Tag("proget")]
     [ScriptAlias("Promote-Package")]
@@ -113,7 +114,7 @@ namespace Inedo.Extensions.Operations.ProGet
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             request.Headers.Add("X-ApiKey", this.ApiKey);
-            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
+            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient_UNINCLUSED).Assembly.GetName().Version}";
             request.UseDefaultCredentials = true;
 
             try

@@ -20,6 +20,7 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
+#warning PackageSource
     [Serializable]
     [ScriptAlias("Create-Package")]
     [DisplayName("Create Package")]

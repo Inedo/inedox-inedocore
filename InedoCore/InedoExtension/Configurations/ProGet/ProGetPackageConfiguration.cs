@@ -9,28 +9,34 @@ using Inedo.Extensibility.Configurations;
 using Inedo.Extensibility.Credentials;
 using Inedo.Web;
 using System.Collections.Generic;
+using Inedo.Extensions.SecureResources;
 
 namespace Inedo.Extensions.Configurations.ProGet
 {
     [Serializable]
     [DisplayName("ProGet Package")]
     [PersistFrom("Inedo.Otter.Extensions.Configurations.ProGet.ProGetPackageConfiguration,OtterCoreEx")]
-#pragma warning disable CS0618 // Type or member is obsolete
-    public sealed class ProGetPackageConfiguration : PersistedConfiguration, IHasCredentials<ProGetCredentials>, IProGetPackageInstallTemplate
-#pragma warning restore CS0618 // Type or member is obsolete
-        , IHasCredentials<InedoProductCredentials>
+    public sealed class ProGetPackageConfiguration : PersistedConfiguration, IFeedPackageConfiguration, IExistential
     {
-        [Persistent]
-        [ScriptAlias("Credentials")]
-        [DisplayName("Credentials")]
-        public string CredentialName { get; set; }
+        public override string ConfigurationKey
+        {
+            get
+            {
+                if (this.LocalRegistry == "Machine")
+                    return this.PackageName;
+                else if (this.LocalRegistry == "User")
+                    return $"User::{this.PackageName}";
+                
+                
+                return $"{this.PackageName}::{this.TargetDirectory}";
+            }
+        }
 
-        [Required]
-        [Persistent]
-        [ScriptAlias("Feed")]
-        [DisplayName("Feed name")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
-        public string FeedName { get; set; }
+        [ScriptAlias("From")]
+        [ScriptAlias("Credentials")]
+        [DisplayName("Package source")]
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSourceName { get; set; }
 
         [Required]
         [Persistent]
@@ -46,61 +52,99 @@ namespace Inedo.Extensions.Configurations.ProGet
         [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
+        [Required]
         [Persistent]
+        [ScriptAlias("To")]
+        [ScriptAlias("Directory")]
+        [DisplayName("Target directory")]
+        [Description("The directory path on disk of the package contents.")]
+        [PlaceholderText("$WorkingDirectory")]
+        public string TargetDirectory { get; set; }
+
+        [Required]
+        [Persistent]
+        [ScriptAlias("Exists")]
+        [DefaultValue(true)]
+        [PlaceholderText("true")]
+        public bool Exists { get; set; } = true;
+
+        [Category("Local registry")]
+        [ScriptAlias("LocalRegistry")]
+        [DisplayName("Use Local Registry")]
+        [Description("See https://docs.inedo.com/docs/upack-universal-package-registry-what-is")]
+        [DefaultValue("None")]
+        [SuggestableValue("Machine", "User", /*"Custom", */ "None")]
+        [Persistent]
+        public string LocalRegistry { get; set; }
+
+        [Category("Local registry")]
+        [Description("Cache Package")]
+        [ScriptAlias("LocalCache")]
+        [DefaultValue(false)]
+        [PlaceholderText("package is not cached locally")]
+        public bool LocalCache { get; set; }
+
+        [Category("File options")]
         [ScriptAlias("DeleteExtra")]
         [DisplayName("Delete files not in Package")]
         public bool DeleteExtra { get; set; }
 
-        [Required]
-        [Persistent]
-        [ConfigurationKey]
-        [ScriptAlias("Directory")]
-        [DisplayName("Target directory")]
-        [Description("The directory path on disk of the package contents.")]
-        public string TargetDirectory { get; set; }
-
+        [Category("File options")]
         [ScriptAlias("Include")]
         [PlaceholderText("** (all items)")]
         [DefaultValue("@(**)")]
         [MaskingDescription]
         public IEnumerable<string> Includes { get; set; } = new[] { "**" };
+
+        [Category("File options")]
         [ScriptAlias("Exclude")]
         [MaskingDescription]
         public IEnumerable<string> Excludes { get; set; }
 
         [Category("Connection/Identity")]
-        [Persistent]
+        [ScriptAlias("DirectDownload")]
+        [DisplayName("Direct download")]
+        [PlaceholderText("download package file on remote server")]
+        [Description("Set this to value to false if your remote server doesn't have direct access to the ProGet feed.")]
+        [DefaultValue(true)]
+        public bool DirectDownload { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [PlaceholderText("Use Feed from package source")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
+
+        [Category("Connection/Identity")]
         [ScriptAlias("FeedUrl")]
         [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from credential")]
-#pragma warning disable CS0618 // Type or member is obsolete
-        [MappedCredential(nameof(ProGetCredentials.Url))]
-#pragma warning restore CS0618 // Type or member is obsolete
+        [PlaceholderText("Use server URL from package source")]
         public string FeedUrl { get; set; }
 
         [Category("Connection/Identity")]
-        [Persistent]
         [ScriptAlias("UserName")]
         [DisplayName("ProGet user name")]
         [Description("The name of a user in ProGet that can access this feed.")]
-        [PlaceholderText("Use user name from credential")]
-#pragma warning disable CS0618 // Type or member is obsolete
-        [MappedCredential(nameof(ProGetCredentials.UserName))]
-#pragma warning restore CS0618 // Type or member is obsolete
+        [PlaceholderText("Use user name from package source")]
         public string UserName { get; set; }
 
         [Category("Connection/Identity")]
-        [Persistent]
         [ScriptAlias("Password")]
         [DisplayName("ProGet password")]
-        [PlaceholderText("Use password from credential")]
+        [PlaceholderText("Use password from package source")]
         [Description("The password of a user in ProGet that can access this feed.")]
-#pragma warning disable CS0618 // Type or member is obsolete
-        [MappedCredential(nameof(ProGetCredentials.Password))]
-#pragma warning restore CS0618 // Type or member is obsolete
         public string Password { get; set; }
 
+        [Category("Connection/Identity")]
+        [ScriptAlias("ApiKey")]
+        [DisplayName("ProGet API Key")]
+        [PlaceholderText("Use API Key from package source")]
+        [Description("An API Key that can access this feed.")]
+        public string ApiKey { get; set; }
+
         [Persistent]
-        public bool Current { get; set; }
+        public bool DriftedFiles { get; set; }
+
     }
 }

@@ -7,6 +7,7 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
+#warning unincluse
     internal sealed class UniversalPackageSourceSuggestionProvider : ISuggestionProvider
     {
         public Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)

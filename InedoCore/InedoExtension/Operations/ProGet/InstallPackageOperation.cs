@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,7 +8,9 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using Inedo.Serialization;
 using Inedo.UPack;
@@ -20,17 +23,18 @@ namespace Inedo.Extensions.Operations.ProGet
     [Serializable]
     [Tag("proget")]
     [ScriptAlias("Install-Package")]
-    [DisplayName("Install Universal Package (Preview)")]
+    [DisplayName("Install Universal Package")]
     [Description("Installs a universal package to the specified location using a Package Source.")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [AppliesTo(InedoProduct.BuildMaster)]
-    public sealed class InstallPackageOperation : RemotePackageOperationBase
+    public sealed class InstallPackageOperation : RemotePackageOperationBase, IFeedPackageConfiguration
     {
+        [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
         [PlaceholderText("Infer from package name")]
-        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
         public override string PackageSource { get; set; }
+        string IFeedPackageConfiguration.PackageSourceName => this.PackageSource;
 
         [Required]
         [ScriptAlias("Name")]
@@ -40,21 +44,77 @@ namespace Inedo.Extensions.Operations.ProGet
 
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
+#warning conditional placeholder text?
         [PlaceholderText("attached version")]
+        [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
         [ScriptAlias("To")]
-        [DisplayName("To")]
+        [DisplayName("Target directory")]
         [PlaceholderText("$WorkingDirectory")]
         public string TargetDirectory { get; set; }
 
-        [SlimSerializable]
-        private string UserName { get; set; }
-        [SlimSerializable]
-        private string Password { get; set; }
-        [SlimSerializable]
-        private string FeedUrl { get; set; }
+        [Category("Local registry")]
+        [ScriptAlias("LocalRegistry")]
+        [DisplayName("Use Local Registry")]
+        [Description("See https://docs.inedo.com/docs/upack-universal-package-registry-what-is")]
+        [DefaultValue("None")]
+        [SuggestableValue("Machine", "User", /*"Custom", */ "None")]
+        [Persistent]
+        public string LocalRegistry { get; set; }
 
+        [Category("Local registry")]
+        [Description("Cache Package")]
+        [ScriptAlias("LocalCache")]
+        [DefaultValue(false)]
+        [PlaceholderText("package is not cached locally")]
+        public bool LocalCache { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("DirectDownload")]
+        [DisplayName("Direct download")]
+        [PlaceholderText("download package file on remote server")]
+        [Description("Set this to value to false if your remote server doesn't have direct access to the ProGet feed.")]
+        [DefaultValue(true)]
+        public bool DirectDownload { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [PlaceholderText("Use Feed from package source")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("FeedUrl")]
+        [DisplayName("ProGet server URL")]
+        [PlaceholderText("Use server URL from package source")]
+        [SlimSerializable]
+        public string FeedUrl { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("UserName")]
+        [DisplayName("ProGet user name")]
+        [Description("The name of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use user name from package source")]
+        [SlimSerializable] 
+        public string UserName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Password")]
+        [DisplayName("ProGet password")]
+        [PlaceholderText("Use password from package source")]
+        [Description("The password of a user in ProGet that can access this feed.")]
+        [SlimSerializable] 
+        public string Password { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("ApiKey")]
+        [DisplayName("ProGet API Key")]
+        [PlaceholderText("Use API Key from package source")]
+        [Description("An API Key that can access this feed.")]
+        public string ApiKey { get; set; }
+        
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             if (string.IsNullOrWhiteSpace(this.PackageSource))

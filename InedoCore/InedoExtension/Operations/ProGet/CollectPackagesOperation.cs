@@ -24,7 +24,7 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             IList<RegisteredPackage> packages;
             this.LogDebug("Connecting to machine package registry...");
-            using (var registry = await PackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
+            using (var registry = await RemotePackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
             {
                 this.LogDebug("Acquiring package registry lock...");
                 await registry.LockAsync(context.CancellationToken).ConfigureAwait(false);
