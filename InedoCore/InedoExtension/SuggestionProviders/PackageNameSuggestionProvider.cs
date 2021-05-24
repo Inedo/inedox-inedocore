@@ -13,7 +13,7 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-            var client = ProGetFeedClient.TryCreate(config.AsFeedPackageConfiguration(), config.EditorContext as ICredentialResolutionContext ?? CredentialResolutionContext.None);
+            var client = config.TryCreateProGetFeedClient();
             if (client == null)
                 return Enumerable.Empty<string>();
 

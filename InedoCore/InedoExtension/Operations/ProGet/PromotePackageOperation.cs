@@ -10,214 +10,201 @@ using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
+using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.SecureResources;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
 using Inedo.Serialization;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-#warning PackageSource
     [Serializable]
     [Tag("proget")]
     [ScriptAlias("Promote-Package")]
     [DisplayName("Promote Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Description("Promotes a package from one feed to another in a ProGet instance.")]
-    public sealed class PromotePackageOperation : RemotePackageOperationBase
+    public sealed class PromotePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
     {
-        protected override bool ResolveNuGetPackageSources => true;
-
-        [DisplayName("From source")]
         [ScriptAlias("From")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
-        [PlaceholderText("Infer from package name")]
-        public override string PackageSource { get; set; }
-        [DisplayName("To source")]
-        [ScriptAlias("To")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
-        [PlaceholderText("Same as From")]
-        public string TargetPackageSource { get; set; }
+        [ScriptAlias("PackageSource")]
+        [DisplayName("Package source")]
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSourceName { get; set; }
 
-        [ScriptAlias("Group")]
-        [DisplayName("Group")]
-        public string PackageGroup { get; set; }
         [Required]
         [ScriptAlias("Name")]
-        [DisplayName("Name")]
-        public override string PackageName { get; set; }
+        [DisplayName("Package name")]
+        [SuggestableValue(typeof(PackageNameFromSourceSuggestionProvider))]
+        public string PackageName { get; set; }
+
         [Required]
         [ScriptAlias("Version")]
-        [DisplayName("Version")]
+        [DisplayName("Package version")]
+        [PlaceholderText("latest")]
+        [DefaultValue("latest")]
+        [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
+
+        [ScriptAlias("ToFeed")]
+        [DisplayName("Promote to Feed")]
+        [PlaceholderText("required if not set in Connection/Identity")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string TargetFeedName { get; set; }
+
         [ScriptAlias("Reason")]
         [DisplayName("Reason")]
         [PlaceholderText("Unspecified")]
         public string Reason { get; set; }
 
-        [SlimSerializable]
-        private string HostName { get; set; }
-        [SlimSerializable]
-        private string FromFeed { get; set; }
-        [SlimSerializable]
-        private string ToFeed { get; set; }
-        [SlimSerializable]
-        private string ApiKey { get; set; }
+
+        [Category("Connection/Identity")]
+        [DisplayName("To source")]
+        [ScriptAlias("To")]
+        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
+        [PlaceholderText("Same as From package source")]
+        public string TargetPackageSourceName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [PlaceholderText("Use Feed from package source")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("FeedUrl")]
+        [DisplayName("ProGet server URL")]
+        [PlaceholderText("Use server URL from package source")]
+        public string FeedUrl { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("UserName")]
+        [DisplayName("ProGet user name")]
+        [Description("The name of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use user name from package source")]
+        public string UserName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Password")]
+        [DisplayName("ProGet password")]
+        [PlaceholderText("Use password from package source")]
+        [Description("The password of a user in ProGet that can access this feed.")]
+        public string Password { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("ApiKey")]
+        [DisplayName("ProGet API Key")]
+        [PlaceholderText("Use API Key from package source")]
+        [Description("An API Key that can access this feed.")]
+        public string ApiKey { get; set; }
+
+        [Undisclosed]
+        [ScriptAlias("Group")]
+        public string PackageGroup { get; set; }
+
+        [NonSerialized]
+        private IPackageManager packageManager;
+        [NonSerialized]
+        private string originalPackageSourceName;
+        [NonSerialized]
+        private string originalTargetPackageSourceName;
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
-            if (string.IsNullOrWhiteSpace(this.PackageName))
-                throw new ExecutionFailureException("\"Name\" is required.");
+            this.originalPackageSourceName = this.PackageSourceName;
+            this.originalTargetPackageSourceName = this.TargetPackageSourceName;
 
-            if (string.IsNullOrWhiteSpace(this.PackageVersion))
-                throw new ExecutionFailureException("\"Version\" is required.");
+            if (!string.IsNullOrEmpty(this.PackageGroup))
+                this.PackageName = this.PackageGroup + "/" + this.PackageName;
+            
+            if (!string.IsNullOrEmpty(this.TargetPackageSourceName))
+            {
+                string targetApiEndpointUrl;
+                var targetPackageSource = SecureResource.TryCreate(this.TargetPackageSourceName, context as ICredentialResolutionContext ?? CredentialResolutionContext.None);
+                if (targetPackageSource is UniversalPackageSource utargetPackageSource)
+                    targetApiEndpointUrl = utargetPackageSource.ApiEndpointUrl;
+                else if (targetPackageSource is NuGetPackageSource ntargetPackageSource)
+                    targetApiEndpointUrl = ntargetPackageSource.ApiEndpointUrl;
+                else
+                    throw new ExecutionFailureException($"No {nameof(UniversalPackageSource)} or {nameof(NuGetPackageSource)} with the name {this.TargetPackageSourceName} was found.");
 
-            await base.BeforeRemoteExecuteAsync(context);
+                var client = this.TryCreateProGetFeedClient(context);
+                var targetClient = new ProGetFeedClient(targetApiEndpointUrl);
+                if (targetClient.ProGetBaseUrl != client?.ProGetBaseUrl || targetClient.FeedType != client?.FeedType)
+                    throw new ExecutionFailureException($"Target Package Source does have the same feed type and base url as From package source.");
 
-            this.TargetPackageSource = this.TargetPackageSource ?? this.PackageSource;
+                this.TargetFeedName = targetClient.FeedName;
+                this.TargetPackageSourceName = null;
+            }
 
-            this.ResolvePackageSource(context, this.TargetPackageSource, out var toUserName, out var toPassword, out var toFeedUrl);
-
-            if (toPassword?.Length > 0)
-                this.ApiKey = AH.Unprotect(toPassword);
-            else if (string.IsNullOrEmpty(this.ApiKey))
-                throw new ExecutionFailureException("This operation requires a ProGet API key. This can be specified either with Inedo Product credentials or with Username & Password credentials (with a UserName of \"api\").");
-
-            var match = Regex.Match(toFeedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
-            if (!match.Success)
-                throw new ExecutionFailureException($"Could not feed name from feedUrl: " + toFeedUrl);
-
-            this.ToFeed = match.Groups[2].Value;
+            await this.ResolveAttachedPackageAsync(context);
+            this.PrepareCredentialPropertiesForRemote(context);
+            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
         }
-
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            this.LogInformation($"Promoting {GetFullPackageName(this.PackageGroup, this.PackageName)} {this.PackageVersion} from {this.FromFeed} to {this.ToFeed} on {this.HostName}...");
+            this.LogInformation($"Promoting {this.PackageName} {this.PackageVersion} to {this.TargetFeedName}...");
 
-            if (string.Equals(this.FromFeed, this.ToFeed, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(this.TargetFeedName, this.FeedName, StringComparison.OrdinalIgnoreCase))
             {
-                this.LogWarning("Source and target feeds are the same; nothing to do.");
+                this.LogWarning("Target feed and source feed are the same; nothing to do.");
                 return null;
             }
 
-            var url = this.HostName;
-            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                url = "http://" + url;
-
-            if (!url.EndsWith("/"))
-                url += "/";
-
-            url += "api/promotions/promote";
-
-            this.LogDebug($"Making request to {url}...");
-            var request = WebRequest.CreateHttp(url);
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.Headers.Add("X-ApiKey", this.ApiKey);
-            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient_UNINCLUSED).Assembly.GetName().Version}";
-            request.UseDefaultCredentials = true;
-
-            try
-            {
-                using (var writer = new StreamWriter(await request.GetRequestStreamAsync(), InedoLib.UTF8Encoding))
-                {
-                    var data = new Dictionary<string, string>
-                    {
-                        ["fromFeed"] = this.FromFeed,
-                        ["toFeed"] = this.ToFeed,
-                        ["packageName"] = this.PackageName,
-                        ["version"] = this.PackageVersion
-                    };
-
-                    if (!string.IsNullOrWhiteSpace(this.PackageGroup))
-                        data["groupName"] = this.PackageGroup;
-
-                    if (!string.IsNullOrWhiteSpace(this.Reason))
-                        data["comments"] = this.Reason;
-
-                    writer.Write(
-                        string.Join(
-                            "&",
-                            data.Select(p => Uri.EscapeDataString(p.Key) + "=" + Uri.EscapeDataString(p.Value))
-                        )
-                    );
-                }
-
-                using (var response = await request.GetResponseAsync())
-                {
-                }
-
-                this.LogInformation("Promotion was successful.");
-
-                return true;
-            }
-            catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
-            {
-                using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
-                {
-                    var message = reader.ReadToEnd();
-                    this.LogError($"The server responsed with {(int)exResponse.StatusCode}: {message}");
-                }
-            }
-
-            return null;
+            var client = new ProGetFeedClient(this.FeedUrl, log: this, cancellationToken: context.CancellationToken);
+            await client.PromoteAsync(this, this.TargetFeedName, this.Reason);
+            return true;
         }
         protected override async Task AfterRemoteExecuteAsync(object result)
         {
             await base.AfterRemoteExecuteAsync(result);
 
-            if (this.PackageManager != null && result is bool b && b)
+            if (this.packageManager != null && result != null && !string.IsNullOrWhiteSpace(this.originalPackageSourceName))
             {
                 AttachedPackage package = null;
 
-                foreach (var p in await this.PackageManager.GetBuildPackagesAsync(default))
+                foreach (var p in await this.packageManager.GetBuildPackagesAsync(default))
                 {
-                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase) && string.Equals(p.PackageSource, this.PackageSource, StringComparison.OrdinalIgnoreCase))
+                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase) 
+                        && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase) 
+                        && string.Equals(p.PackageSource, this.originalPackageSourceName, StringComparison.OrdinalIgnoreCase))
                     {
                         package = p;
-                        await this.PackageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
+                        await this.packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
                     }
                 }
 
                 if (package != null)
                 {
-                    await this.PackageManager.AttachPackageToBuildAsync(
-                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, this.TargetPackageSource),
+                    await this.packageManager.AttachPackageToBuildAsync(
+                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, this.originalTargetPackageSourceName),
                         default
                     );
                 }
             }
         }
 
+
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
             return new ExtendedRichDescription(
                 new RichDescription(
                     "Promote ",
-                    new Hilite(GetFullPackageName(config[nameof(PackageGroup)], config[nameof(PackageName)])),
+                    new Hilite(config[nameof(PackageName)]),
                     " ",
                     new Hilite(config[nameof(PackageVersion)])
                 ),
                 new RichDescription(
                     "from ",
-                    new Hilite(config[nameof(PackageSource)]),
+                    new Hilite(config[nameof(PackageSourceName)]),
                     " to ",
-                    new Hilite(config[nameof(TargetPackageSource)])
+                    new Hilite(config[nameof(TargetFeedName)])
                 )
             );
-        }
-
-        private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
-        {
-            if (string.Equals(userName, "api", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(password))
-                this.ApiKey = password;
-
-            var match = Regex.Match(feedUrl, @"^(?<1>.+)/[^/]+/(?<2>[^/]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture);
-            if (!match.Success)
-                throw new ExecutionFailureException($"This operation requires a ProGet feed endpoint URL to be specified in the \"{this.PackageSource}\" package source.");
-
-            this.HostName = match.Groups[1].Value;
-            this.FromFeed = match.Groups[2].Value;
         }
     }
 }

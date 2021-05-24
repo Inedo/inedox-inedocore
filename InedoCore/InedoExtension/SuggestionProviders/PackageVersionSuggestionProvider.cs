@@ -17,14 +17,18 @@ namespace Inedo.Extensions.SuggestionProviders
             if (string.IsNullOrEmpty(packageName))
                 return Enumerable.Empty<string>();
 
-            var client = ProGetFeedClient.TryCreate(config.AsFeedPackageConfiguration(), config.EditorContext as ICredentialResolutionContext ?? CredentialResolutionContext.None);
+            var client = config.TryCreateProGetFeedClient();
             if (client == null)
                 return Enumerable.Empty<string>();
 
 
             var package = await client.ListPackageVersionsAsync(packageName).ConfigureAwait(false);
 
-            return new[] { "latest", "latest-stable" }.Concat(package.Select(v => v.Version.ToString()));
+            var options = SDK.ProductName == "BuildMaster"
+                ? new[] { "attached", "latest", "latest-stable" }
+                : new[] { "latest", "latest-stable" };
+
+            return options.Concat(package.OrderByDescending(p => p.Version).Select(v => v.Version.ToString()));
         }
     }
 }

@@ -2,7 +2,6 @@
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.SecureResources;
-using Inedo.Extensions.Configurations.ProGet;
 using Inedo.Extensions.Credentials;
 using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.UniversalPackages;
@@ -13,9 +12,11 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Numerics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -29,7 +30,7 @@ namespace Inedo.Extensions.Operations.ProGet
     /// </summary>
     internal sealed class ProGetFeedClient
     {
-        private static readonly LazyRegex ApiEndPointUrlRegex = new LazyRegex(@"(?<baseUrl>(https?://)?[^/]+)/(?<feedType>upack)(/?(?<feedName>[^/]+)/?)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+        public static readonly LazyRegex ApiEndPointUrlRegex = new LazyRegex(@"(?<baseUrl>(https?://)?[^/]+)/(?<feedType>upack|nuget)(/?(?<feedName>[^/]+)/?)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
         public string FeedApiEndpointUrl { get; }
         public string ProGetBaseUrl { get;  }
@@ -58,62 +59,71 @@ namespace Inedo.Extensions.Operations.ProGet
             this.Credentials = credentials;
         }
 
-        public static ProGetFeedClient TryCreate(IFeedPackageConfiguration feedConfig, ICredentialResolutionContext context, ILogSink log = null, CancellationToken cancellationToken = default)
+        public async Task RepackageAsync(IFeedPackageConfiguration packageConfig, string newVersion, string reason)
         {
-            if (feedConfig == null)
-                return null;
+            var packageId = UniversalPackageId.Parse(packageConfig.PackageName);
 
-            UniversalPackageSource packageSource = null;
-            if (!string.IsNullOrEmpty(feedConfig.PackageSourceName))
+            var data = new Dictionary<string, string>
             {
-                packageSource = SecureResource.TryCreate(feedConfig.PackageSourceName, context) as UniversalPackageSource;
-                if (packageSource == null)
+                ["feed"] = this.FeedName,
+                ["packageName"] = packageId.Name,
+                ["version"] = packageConfig.PackageVersion,
+                ["newVersion"] = newVersion
+            };
+
+            if (!string.IsNullOrWhiteSpace(packageId.Group))
+                data["group"] = packageId.Group;
+
+            if (!string.IsNullOrWhiteSpace(reason))
+                data["comments"] = reason;
+
+            try
+            {
+                using var client = this.CreateHttpClient();
+                using var response = await client.PostAsync(this.ProGetBaseUrl + "api/repackaging/repackage", new FormUrlEncodedContent(data), this.CancellationToken).ConfigureAwait(false);
+                this.Log.LogInformation("Repackage was successful.");
+            }
+            catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
+            {
+                using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
                 {
-                    log.LogDebug($"No {nameof(UniversalPackageSource)} with the name {feedConfig.PackageSourceName} was found.");
-                    return null;
+                    var message = reader.ReadToEnd();
+                    this.Log.LogError($"The server responded with {(int)exResponse.StatusCode}: {message}");
                 }
             }
-
-            // endpoint can be specified via secure resource or directly
-            string apiEndpointUrl = null;
-            {
-                if (!string.IsNullOrEmpty(feedConfig.FeedUrl))
-                    apiEndpointUrl = feedConfig?.FeedUrl;
-
-                else if (!string.IsNullOrEmpty(packageSource?.ApiEndpointUrl))
-                    apiEndpointUrl = packageSource.ApiEndpointUrl;
-
-                else
-                {
-                    log.LogDebug($"No Api Endpoint URL was specified.");
-                    return null;
-                }
-            }
-
-            // rebuild URL if FeedName is overriden
-            if (!string.IsNullOrEmpty(feedConfig.FeedName))
-            {
-                var match = ApiEndPointUrlRegex.Match(apiEndpointUrl ?? "");
-                if (!match.Success)
-                {
-                    log.LogDebug($"{apiEndpointUrl} is not a valid {nameof(UniversalPackageSource)} url.");
-                    return null;
-                }
-
-                apiEndpointUrl = $"{match.Groups["baseUrl"]}/upack/{feedConfig.FeedName}/";
-            }
-
-            SecureCredentials credentials;
-            if (!string.IsNullOrEmpty(feedConfig.ApiKey))
-                credentials = new TokenCredentials { Token = AH.CreateSecureString(feedConfig.ApiKey) };
-            else if (!string.IsNullOrEmpty(feedConfig.UserName))
-                credentials = new UsernamePasswordCredentials { UserName = feedConfig.UserName, Password = AH.CreateSecureString(feedConfig.Password) };
-            else
-                credentials = packageSource?.GetCredentials(context);
-
-            return new ProGetFeedClient(apiEndpointUrl, credentials, log, cancellationToken);
         }
+        public async Task PromoteAsync(IFeedPackageConfiguration packageConfig, string newFeed, string reason)
+        {
+            var packageId = UniversalPackageId.Parse(packageConfig.PackageName);
 
+            var data = new Dictionary<string, string>
+            {
+                ["fromFeed"] = this.FeedName,
+                ["packageName"] = packageId.Name,
+                ["version"] = packageConfig.PackageVersion,
+                ["toFeed"] = newFeed
+            };
+            if (!string.IsNullOrWhiteSpace(packageId.Group))
+                data["group"] = packageId.Group;
+
+            if (!string.IsNullOrWhiteSpace(reason))
+                data["comments"] = reason;
+
+            try
+            {
+                using var client = this.CreateHttpClient();
+                using var response = await client.PostAsync(this.ProGetBaseUrl + "api/promotions/promote", new FormUrlEncodedContent(data), this.CancellationToken).ConfigureAwait(false);
+                this.Log.LogInformation("Repackage was successful.");
+            }
+            catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
+            {
+                using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
+                {
+                    var message = reader.ReadToEnd();
+                    this.Log.LogError($"The server responded with {(int)exResponse.StatusCode}: {message}");
+                }
+            }
+        }
         public async Task<string[]> GetFeedNamesAsync()
         {
             using var client = this.CreateHttpClient();
@@ -133,31 +143,11 @@ namespace Inedo.Extensions.Operations.ProGet
 
         public async Task<RemoteUniversalPackageVersion> FindPackageVersionAsync(string packageName, string packageVersion)
         {
-
             var id = UniversalPackageId.Parse(packageName);
-            var upack = this.CreateUPacklient();
-
-#warning handle this with ProGetPackageVersionSpecifier
-            if (packageVersion?.StartsWith("latest") == true)
-            {
-                this.Log.LogDebug($"Looking for {packageVersion}...");
-
-                var stableOnly = packageVersion == "latest-stable";
-                foreach (var package in await upack.ListPackageVersionsAsync(id, false, null, this.CancellationToken).ConfigureAwait(false))
-                {
-                    if (stableOnly && !string.IsNullOrEmpty(package.Version.Prerelease))
-                        continue;
-
-                    this.Log.LogDebug($"Found version {package.Version}.");
-                    return package;
-                }
-                this.Log.LogDebug($"No versions found.");
-                return null;
-            }
-
-            return await upack.GetPackageVersionAsync(id, UniversalPackageVersion.Parse(packageVersion), false, this.CancellationToken).ConfigureAwait(false);
+            var versions = await this.CreateUPacklient().ListPackageVersionsAsync(id, false, null, this.CancellationToken).ConfigureAwait(false);
+            return this.FindPackageVersion(versions, packageVersion);
         }
-        public async Task<ProGetPackageVersionInfo> GetPackageVersionWithFilesAsync(UniversalPackageId id, UniversalPackageVersion version)
+        public async Task<ProGetClient_UNINCLUSED.ProGetPackageVersionInfo> GetPackageVersionWithFilesAsync(UniversalPackageId id, UniversalPackageVersion version)
         {
             if (string.IsNullOrWhiteSpace(id?.Name))
                 throw new ArgumentNullException(nameof(id));
@@ -172,7 +162,7 @@ namespace Inedo.Extensions.Operations.ProGet
             using var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding);
             using var jsonReader = new JsonTextReader(streamReader);
             var serializer = JsonSerializer.Create();
-            return serializer.Deserialize<ProGetPackageVersionInfo>(jsonReader);
+            return serializer.Deserialize<ProGetClient_UNINCLUSED.ProGetPackageVersionInfo>(jsonReader);
         }
         public async Task<Stream> DownloadPackageContentAsync(UniversalPackageId id, UniversalPackageVersion version, PackageDeploymentData deployInfo, Action<long, long> progressUpdate = null)
         {
@@ -213,20 +203,23 @@ namespace Inedo.Extensions.Operations.ProGet
         }
         private HttpClient CreateHttpClient()
         {
+            var clientOptions = new HttpClientHandler { UseDefaultCredentials = true };
             HttpClient client;
+            
             if (this.Credentials is TokenCredentials tcreds)
             {
                 this.Log.LogDebug($"Making request with API Key...");
-                client = new HttpClient();
+                client = new HttpClient(clientOptions);
                 client.DefaultRequestHeaders.Add("X-ApiKey", AH.Unprotect(tcreds.Token));
             }
             else if (this.Credentials is UsernamePasswordCredentials upcreds)
             {
                 this.Log.LogDebug($"Making request as {upcreds.UserName}...");
-                client = new HttpClient(new HttpClientHandler { Credentials = new NetworkCredential(upcreds.UserName, AH.Unprotect(upcreds.Password) ?? "") });
+                clientOptions.Credentials = new NetworkCredential(upcreds.UserName, AH.Unprotect(upcreds.Password) ?? "");
+                client = new HttpClient(clientOptions);
             }
             else
-                client = new HttpClient();
+                client = new HttpClient(clientOptions);
 
             client.Timeout = Timeout.InfiniteTimeSpan;
 
@@ -237,8 +230,9 @@ namespace Inedo.Extensions.Operations.ProGet
             return client;
         }
 
-        public Task<Stream> GetPackageStreamAsync(IFeedPackageConfiguration config) 
-            => this.CreateUPacklient().GetPackageStreamAsync(UniversalPackageId.Parse(config.PackageName), UniversalPackageVersion.Parse(config.PackageVersion), this.CancellationToken);
+        public Task<Stream> GetPackageStreamAsync(UniversalPackageId id, UniversalPackageVersion version) => this.CreateUPacklient().GetPackageStreamAsync(id, version, this.CancellationToken);
+        public Task<Stream> GetPackageStreamAsync(IFeedPackageConfiguration config) => this.GetPackageStreamAsync(UniversalPackageId.Parse(config.PackageName), UniversalPackageVersion.Parse(config.PackageVersion));
+
 
         private static async Task HandleError(HttpResponseMessage response)
         {
@@ -250,6 +244,35 @@ namespace Inedo.Extensions.Operations.ProGet
                 message = "Invalid feed URL. Ensure the feed URL follows the format: http://{proget-server}/upack/{feed-name}";
 
             throw new ProGetException((int)response.StatusCode, message);
+        }
+
+        private static readonly LazyRegex FindVersionRegex = new LazyRegex(@"^(?<1>[0-9]+)(\.(?<2>[0-9]+)(?<3>\.([0-9]+(-.+)?)?)?)?", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+        private RemoteUniversalPackageVersion FindPackageVersion(IEnumerable<RemoteUniversalPackageVersion> packages, string packageVersion)
+        {
+            if (string.Equals(packageVersion, "latest", StringComparison.OrdinalIgnoreCase))
+            {
+                return packages.FirstOrDefault();
+            }
+            else if (string.Equals(packageVersion, "latest-stable", StringComparison.OrdinalIgnoreCase))
+            {
+                return packages.FirstOrDefault(v => string.IsNullOrEmpty(v.Version.Prerelease));
+            }
+
+            var match = FindVersionRegex.Match(packageVersion ?? "");
+            if (match.Groups[1].Success && !match.Groups[3].Success)
+            {
+                var major = BigInteger.Parse(match.Groups[1].Value);
+
+                if (match.Groups[2].Success)
+                {
+                    var minor = BigInteger.Parse(match.Groups[2].Value);
+                    return packages.FirstOrDefault(v => v.Version.Major == major && v.Version.Minor == minor);
+                }
+                return packages.FirstOrDefault(v => v.Version.Major == major);
+            }
+            
+            var semver = UniversalPackageVersion.Parse(packageVersion);
+            return packages.FirstOrDefault(v => v.Version == semver);
         }
     }
 }

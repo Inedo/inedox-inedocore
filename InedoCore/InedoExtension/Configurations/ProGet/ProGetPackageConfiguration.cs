@@ -14,17 +14,17 @@ using Inedo.Extensions.SecureResources;
 namespace Inedo.Extensions.Configurations.ProGet
 {
     [Serializable]
-    [DisplayName("ProGet Package")]
+    [DisplayName("Universal Package")]
     [PersistFrom("Inedo.Otter.Extensions.Configurations.ProGet.ProGetPackageConfiguration,OtterCoreEx")]
-    public sealed class ProGetPackageConfiguration : PersistedConfiguration, IFeedPackageConfiguration, IExistential
+    public sealed class ProGetPackageConfiguration : PersistedConfiguration, IFeedPackageInstallationConfiguration, IExistential
     {
         public override string ConfigurationKey
         {
             get
             {
-                if (this.LocalRegistry == "Machine")
+                if (this.LocalRegistry == LocalRegistryOptions.Machine)
                     return this.PackageName;
-                else if (this.LocalRegistry == "User")
+                else if (this.LocalRegistry == LocalRegistryOptions.User)
                     return $"User::{this.PackageName}";
                 
                 
@@ -49,6 +49,7 @@ namespace Inedo.Extensions.Configurations.ProGet
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
         [PlaceholderText("latest")]
+        [DefaultValue("latest")]
         [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
@@ -71,11 +72,10 @@ namespace Inedo.Extensions.Configurations.ProGet
         [Category("Local registry")]
         [ScriptAlias("LocalRegistry")]
         [DisplayName("Use Local Registry")]
-        [Description("See https://docs.inedo.com/docs/upack-universal-package-registry-what-is")]
-        [DefaultValue("None")]
-        [SuggestableValue("Machine", "User", /*"Custom", */ "None")]
+        [PlaceholderText("Record installation in Machine registry")]
+        [DefaultValue(LocalRegistryOptions.Machine)]
         [Persistent]
-        public string LocalRegistry { get; set; }
+        public LocalRegistryOptions LocalRegistry { get; set; }
 
         [Category("Local registry")]
         [Description("Cache Package")]
@@ -84,22 +84,19 @@ namespace Inedo.Extensions.Configurations.ProGet
         [PlaceholderText("package is not cached locally")]
         public bool LocalCache { get; set; }
 
-        [Category("File options")]
-        [ScriptAlias("DeleteExtra")]
-        [DisplayName("Delete files not in Package")]
-        public bool DeleteExtra { get; set; }
+        [Persistent]
+        [Category("File comparison")]
+        [ScriptAlias("FileCompare")]
+        [DisplayName("Compare files")]
+        [DefaultValue(FileCompareOptions.FileSize)]
+        public FileCompareOptions FileCompare { get; set; }
 
-        [Category("File options")]
-        [ScriptAlias("Include")]
-        [PlaceholderText("** (all items)")]
-        [DefaultValue("@(**)")]
+        [Category("File comparison")]
+        [ScriptAlias("Ignore")]
+        [PlaceholderText("compare all files")]
         [MaskingDescription]
-        public IEnumerable<string> Includes { get; set; } = new[] { "**" };
-
-        [Category("File options")]
-        [ScriptAlias("Exclude")]
-        [MaskingDescription]
-        public IEnumerable<string> Excludes { get; set; }
+        [FieldEditMode(FieldEditMode.Multiline)]
+        public IEnumerable<string> IgnoreFiles { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("DirectDownload")]
@@ -143,8 +140,29 @@ namespace Inedo.Extensions.Configurations.ProGet
         [Description("An API Key that can access this feed.")]
         public string ApiKey { get; set; }
 
+        [Undisclosed]
+        [ScriptAlias("DeleteExtra")]
+        public bool DeleteExtra { get; set; }
+        [Undisclosed]
+        [ScriptAlias("Include")]
+        public IEnumerable<string> Includes { get; set; }
+        [Undisclosed]
+        [ScriptAlias("Exclude")]
+        public IEnumerable<string> Excludes { get; set; }
+
+
         [Persistent]
         public bool DriftedFiles { get; set; }
 
+        [Persistent]
+        public List<string> DriftedFileNames { get; set; } = new List<string>();
+
+    }
+
+    public enum FileCompareOptions
+    {
+        DoNotCompare,
+        FileSize,
+        FileSizeAndLastModified
     }
 }

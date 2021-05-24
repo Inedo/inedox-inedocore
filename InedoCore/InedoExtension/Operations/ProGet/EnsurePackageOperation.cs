@@ -8,13 +8,10 @@ using Inedo.Extensibility.Operations;
 using Inedo.Extensions.Configurations.ProGet;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
-using Inedo.UPack.Packaging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -24,17 +21,50 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Ensure-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("proget")]
+    [Note("To determine if a package is installed, the local package registry and package files are both checked. You can control these with LocalRegistry and FileCompare options.")]
+    [Example(@"#Ensure that FooBarApp is Installed
+ProGet::Ensure-Package
+(
+    From: MyPackageSource,
+    Name: FooBarApp,
+    Version: $FooBarVersion,
+    To: D:\WebApps\FooBar.App,
+    Ignore: web.config
+);"
+    )]
     public sealed class EnsurePackageOperation : EnsureOperation<ProGetPackageConfiguration>
     {
         private volatile OperationProgress progress = null;
-
         public override OperationProgress GetProgress() => this.progress;
-        internal void SetProgress(OperationProgress p) => this.progress = p;
-        private void SetProgress(int? percent, string message) => this.progress = new OperationProgress(percent, message);
+        private void SetProgress(OperationProgress p) => this.progress = p;
+
+        private bool ValidateConfiguration()
+        {
+            if (this.Template.Includes?.Any() == true
+                || this.Template.Excludes.Any() == true
+                || this.Template.DeleteExtra == true)
+            {
+                this.LogError($"Includes/Excludes and DeleteExtra options are no longer supported.");
+                return false;
+
+            }
+
+            if (this.Template.FileCompare == FileCompareOptions.DoNotCompare && this.Template.LocalRegistry == LocalRegistryOptions.None)
+            {
+                this.LogError(
+                    $"{nameof(this.Template.FileCompare)} is set to {nameof(FileCompareOptions.DoNotCompare)} and " +
+                    $"{nameof(this.Template.LocalRegistry)} is set to {nameof(LocalRegistryOptions.None)}, which means there's nothing to compare. ");
+                return false;
+            }
+            return true;
+        }
 
         public override async Task<PersistedConfiguration> CollectAsync(IOperationCollectionContext context)
         {
-            var client = ProGetFeedClient.TryCreate(this.Template, context as ICredentialResolutionContext ?? CredentialResolutionContext.None, this, context.CancellationToken);
+            if (!this.ValidateConfiguration())
+                return null;
+
+            var client = this.Template.TryCreateProGetFeedClient(context);
             this.LogInformation($"Connecting to {client.ProGetBaseUrl} to get metadata for {this.Template.PackageName}:{this.Template.PackageVersion}...");
 
             var package = await client.FindPackageVersionAsync(this.Template.PackageName, this.Template.PackageVersion);
@@ -51,7 +81,7 @@ namespace Inedo.Extensions.Operations.ProGet
             };
 
             // Check the registry
-            if (this.Template.LocalRegistry != "None")
+            if (this.Template.LocalRegistry != LocalRegistryOptions.None)
             {
                 collectedConfig.LocalRegistry = this.Template.LocalRegistry;
 
@@ -74,7 +104,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 );
                 if (matchedInstalledPackage == null)
                 {
-                    this.LogInformation("Package not listed in registry.");
+                    this.LogInformation($"Package not installed in local {this.Template.LocalRegistry} registery.");
                     collectedConfig.Exists = false;
                     return collectedConfig;
                 }
@@ -84,7 +114,7 @@ namespace Inedo.Extensions.Operations.ProGet
                     return collectedConfig;
                 }
 
-                this.LogInformation("Package listed in registry.");
+                this.LogInformation($"Package installed in local {this.Template.LocalRegistry} registry.");
                 if (!this.Template.Exists)
                 {
                     collectedConfig.TargetDirectory = matchedInstalledPackage.InstallPath;
@@ -92,103 +122,98 @@ namespace Inedo.Extensions.Operations.ProGet
                 }
             }
 
-
-            var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
-
-            try
+            // Check the files
+            if (this.Template.FileCompare != FileCompareOptions.DoNotCompare)
             {
-                if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
+                collectedConfig.FileCompare = this.Template.FileCompare;
+
+                var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
+
+                try
                 {
-                    this.LogInformation(this.Template.TargetDirectory + " does not exist.");
-                    collectedConfig.Exists = false;
-                    return collectedConfig;
-                }
-                collectedConfig.TargetDirectory = this.Template.TargetDirectory;
-
-                var mask = new MaskingContext(this.Template.Includes, this.Template.Excludes);
-
-                this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
-
-                var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, mask).ConfigureAwait(false);
-
-                var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
-
-                foreach (var file in remoteFileList)
-                {
-                    var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
-                    if (file is SlimDirectoryInfo)
-                        relativeName += "/";
-
-                    remoteFiles.Add(relativeName, file);
-                }
-
-                remoteFileList = null; // async GC optimization
-
-                this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
-
-                this.LogInformation($"Connecting to feed to get file metadata...");
-                var versionInfo = await client.GetPackageVersionWithFilesAsync(package.FullName, package.Version);
-
-                if (versionInfo.fileList == null)
-                {
-                    this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
-                    return null;
-                }
-
-                this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
-
-                foreach (var entry in versionInfo.fileList)
-                {
-                    var relativeName = entry.name;
-                    if (!mask.IsMatch(relativeName))
+                    if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
                     {
-                        continue;
-                    }
-
-                    var file = remoteFiles.GetValueOrDefault(relativeName);
-                    if (file == null)
-                    {
-                        this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
-                        collectedConfig.DriftedFiles = true;
+                        this.LogInformation(this.Template.TargetDirectory + " does not exist.");
+                        collectedConfig.Exists = false;
                         return collectedConfig;
                     }
+                    collectedConfig.TargetDirectory = this.Template.TargetDirectory;
 
-                    if (!entry.name.EndsWith("/"))
+                    var mask = new MaskingContext(new[] { "**" }, this.Template.IgnoreFiles);
+
+                    this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
+
+                    var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, mask).ConfigureAwait(false);
+
+                    var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var file in remoteFileList)
                     {
-                        var fileInfo = (SlimFileInfo)file;
-                        if (entry.size != fileInfo.Size || entry.date != fileInfo.LastWriteTimeUtc)
+                        var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                        if (file is SlimDirectoryInfo)
+                            relativeName += "/";
+
+                        remoteFiles.Add(relativeName, file);
+                    }
+
+                    remoteFileList = null; // async GC optimization
+
+                    this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
+
+                    this.LogInformation($"Connecting to feed to get file metadata...");
+                    var versionInfo = await client.GetPackageVersionWithFilesAsync(package.FullName, package.Version);
+
+                    if (versionInfo.fileList == null)
+                    {
+                        this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
+                        return null;
+                    }
+
+                    this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
+
+                    foreach (var entry in versionInfo.fileList)
+                    {
+                        var relativeName = entry.name;
+                        if (!mask.IsMatch(relativeName))
                         {
-                            this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
-                            this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
-                            this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
-                            collectedConfig.DriftedFiles = true;
-                            return collectedConfig;
+                            continue;
+                        }
+
+                        var file = remoteFiles.GetValueOrDefault(relativeName);
+                        if (file == null)
+                        {
+                            this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
+                            collectedConfig.DriftedFileNames.Add(relativeName);
+                            continue;
+                        }
+
+                        if (!entry.name.EndsWith("/"))
+                        {
+                            var fileInfo = (SlimFileInfo)file;
+                            if (entry.size != fileInfo.Size
+                                 || (this.Template.FileCompare == FileCompareOptions.FileSizeAndLastModified && entry.date != fileInfo.LastWriteTimeUtc))
+                            {
+                                this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
+                                this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
+                                this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
+                                collectedConfig.DriftedFileNames.Add(relativeName);
+                            }
                         }
                     }
-                }
+                    if (collectedConfig.DriftedFileNames.Count > 0)
+                        return collectedConfig;
 
-                if (this.Template.DeleteExtra)
+                    this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
+                    collectedConfig.DriftedFiles = false;
+                }
+                catch (ProGetException ex)
                 {
-                    foreach (var name in remoteFiles.Keys)
-                    {
-                        if (!versionInfo.fileList.Any(entry => entry.name == name))
-                        {
-                            this.LogInformation($"File {name} in {this.Template.TargetDirectory} does not exist in package.");
-                            collectedConfig.DriftedFiles = true;
-                            return collectedConfig;
-                        }
-                    }
+                    this.LogError(ex.FullMessage);
+                    return null;
                 }
+            }
 
-                this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
-                collectedConfig.DriftedFiles = false;
-                return collectedConfig;
-            }
-            catch (ProGetException ex)
-            {
-                this.LogError(ex.FullMessage);
-                return null;
-            }
+            return collectedConfig;
         }
 
         public override Task<ComparisonResult> CompareAsync(PersistedConfiguration other, IOperationCollectionContext context)
@@ -198,7 +223,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             ComparisonResult compare()
             {
-                if (this.Template.LocalRegistry != "None" && this.Template.LocalRegistry != collectedConfig.LocalRegistry)
+                if (this.Template.LocalRegistry != LocalRegistryOptions.None && this.Template.LocalRegistry != collectedConfig.LocalRegistry)
                     diffs.Add(new Difference(nameof(this.Template.LocalRegistry), this.Template.LocalRegistry, collectedConfig.LocalRegistry));
 
                 if (collectedConfig.Exists != this.Template.Exists)
@@ -215,84 +240,12 @@ namespace Inedo.Extensions.Operations.ProGet
             return Task.FromResult(compare());
         }
 
-        public override Task ConfigureAsync(IOperationExecutionContext context) => this.DeployAsynch(context);
-        
-        public async Task DownloadThenUpload(IOperationExecutionContext context)
+        public override Task ConfigureAsync(IOperationExecutionContext context)
         {
-            var client = ProGetFeedClient.TryCreate(this.Template, context as ICredentialResolutionContext, this, context.CancellationToken);
+            if (!this.ValidateConfiguration())
+                return InedoLib.NullTask;
 
-            var packageVersion = await client.FindPackageVersionAsync(this.Template);
-            if (packageVersion == null)
-            {
-                this.LogError($"Package {this.Template.PackageName} v{this.Template.PackageVersion} was not found.");
-                return;
-            }
-
-            long size = packageVersion.Size == 0 ? 100 * 1024 * 1024 : packageVersion.Size;
-
-            var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>();
-            var targetDir = context.ResolvePath(this.Template.TargetDirectory);
-                
-            this.LogDebug($"Ensuring target directory ({targetDir}) exists...");
-            await fileOps.CreateDirectoryAsync(targetDir);
-
-            this.SetProgress(0, "downloading package");
-            this.LogInformation("Downloading package...");
-            var tempStream = TemporaryStream.Create(size);
-            var sourceStream = await client.GetPackageStreamAsync(this.Template);
-            await sourceStream.CopyToAsync(tempStream, 80 * 1024, context.CancellationToken, position => this.SetProgress((int)(100 * position / size), "downloading package"));
-
-            var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
-            await fileOps.CreateDirectoryAsync(tempDirectoryName);
-            var tempZipFileName = tempDirectoryName + ".zip";
-
-            this.LogDebug($"Uploading package as temp file ({tempZipFileName }) on remote server");
-            this.SetProgress(0, "copying package to agent");
-            using (var remote = await fileOps.OpenFileAsync(tempZipFileName, FileMode.CreateNew, FileAccess.Write))
-            {
-                await tempStream.CopyToAsync(remote, 81920, context.CancellationToken, position => this.SetProgress((int)(100 * position / size), "copying package to agent"));
-            }
-
-            await this.InstallPackage(tempZipFileName, targetDir, context.CancellationToken);
-        }
-        private async Task InstallPackage(string tempZipFileName, string targetDir, CancellationToken cancellationToken)
-        {
-            this.LogInformation($"Installing package to {targetDir}...");
-            using (var package = new UniversalPackage(tempZipFileName))
-            {
-                await package.ExtractContentItemsAsync(targetDir, cancellationToken);
-            }
-            this.LogInformation("Package installed.");
-        }
-        public async Task InstallLocal(IOperationExecutionContext context)
-        {
-            var client = ProGetFeedClient.TryCreate(this.Template, context as ICredentialResolutionContext, this, context.CancellationToken);
-            
-            var packageVersion = await client.FindPackageVersionAsync(this.Template);
-            if (packageVersion == null)
-            {
-                this.LogError($"Package {this.Template.PackageName} v{this.Template.PackageVersion} was not found.");
-                return;
-            }
-
-            long size = packageVersion.Size == 0 ? 100 * 1024 * 1024 : packageVersion.Size;
-
-            var targetDir = context.ResolvePath(this.Template.TargetDirectory);
-            this.LogDebug($"Ensuring target directory ({targetDir}) exists...");
-            DirectoryEx.Create(targetDir);
-
-            this.LogInformation("Downloading package...");
-            var tempStream = TemporaryStream.Create(size);
-            var sourceStream = await client.GetPackageStreamAsync(this.Template);
-            await sourceStream.CopyToAsync(tempStream, 80 * 1024, context.CancellationToken); ;
-
-            tempStream.Position = 0;
-
-            this.LogInformation($"Installing package to {targetDir}...");
-            using var package = new UniversalPackage(tempStream, true);
-            await package.ExtractContentItemsAsync(targetDir, context.CancellationToken);
-
-            this.LogInformation("Package installed.");
+            return this.Template.InstallPackageAsync(context, this.SetProgress);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
@@ -300,12 +253,12 @@ namespace Inedo.Extensions.Operations.ProGet
             return new ExtendedRichDescription(
                 new RichDescription(
                     "Ensure Universal Package ",
-                    new Hilite(config[nameof(ProGetPackageConfiguration.PackageName)]),
-                    $" ({config[nameof(ProGetPackageConfiguration.PackageVersion)]})."                    
+                    new Hilite(config[nameof(IFeedPackageInstallationConfiguration.PackageName)]),
+                    $" ({AH.CoalesceString(config[nameof(IFeedPackageInstallationConfiguration.PackageVersion)], "latest")})."
                 ),
                 new RichDescription(
-                    "are present in ",
-                    new DirectoryHilite(config[nameof(ProGetPackageConfiguration.TargetDirectory)])
+                    "is installed in ",
+                    new DirectoryHilite(config[nameof(IFeedPackageInstallationConfiguration.TargetDirectory)])
                 )
             );
         }

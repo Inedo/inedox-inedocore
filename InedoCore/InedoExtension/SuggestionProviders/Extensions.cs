@@ -1,24 +1,25 @@
 ﻿using Inedo.Extensibility;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensions.Configurations.ProGet;
+using Inedo.Extensions.Operations.ProGet;
 using Inedo.Extensions.UniversalPackages;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
     internal static class Extensions
     {
-        public static IFeedPackageConfiguration AsFeedPackageConfiguration(this IComponentConfiguration config) => new ProGetFeedConfiguration(config);
-        
-        private struct ProGetFeedConfiguration : IFeedPackageConfiguration
+        public static ProGetFeedClient TryCreateProGetFeedClient(this IComponentConfiguration config)
         {
-            public ProGetFeedConfiguration(IComponentConfiguration config) => this.config = config;
-            private readonly IComponentConfiguration config;
-            string IFeedPackageConfiguration.PackageSourceName => this.config[nameof(IFeedPackageConfiguration.PackageSourceName)];
-            string IFeedPackageConfiguration.FeedName => this.config[nameof(IFeedPackageConfiguration.FeedName)];
-            string IFeedPackageConfiguration.FeedUrl => this.config[nameof(IFeedPackageConfiguration.FeedUrl)];
-            string IFeedPackageConfiguration.UserName => this.config[nameof(IFeedPackageConfiguration.UserName)];
-            string IFeedPackageConfiguration.Password => this.config[nameof(IFeedPackageConfiguration.Password)];
-            string IFeedPackageConfiguration.ApiKey => this.config[nameof(IFeedPackageConfiguration.ApiKey)];
-            string IFeedPackageConfiguration.PackageName => this.config[nameof(IFeedPackageConfiguration.PackageName)];
-            string IFeedPackageConfiguration.PackageVersion => this.config[nameof(IFeedPackageConfiguration.PackageVersion)];
+            var packageConfig = new ProGetPackageConfiguration
+            {
+                PackageSourceName = config[nameof(IFeedPackageConfiguration.PackageSourceName)],
+                FeedName = config[nameof(IFeedPackageConfiguration.FeedName)],
+                FeedUrl = config[nameof(IFeedPackageConfiguration.FeedUrl)],
+                UserName = config[nameof(IFeedPackageConfiguration.UserName)],
+                Password = config[nameof(IFeedPackageConfiguration.Password)],
+                ApiKey = config[nameof(IFeedPackageConfiguration.ApiKey)]
+            };
+            return packageConfig.TryCreateProGetFeedClient(config.EditorContext as ICredentialResolutionContext ?? CredentialResolutionContext.None);
         }
     }
 }
