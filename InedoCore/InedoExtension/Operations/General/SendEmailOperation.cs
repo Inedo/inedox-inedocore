@@ -195,7 +195,8 @@ This email was sent from BuildMaster on $Date.>>
                 client = new SmtpClient(host, port)
                 {
                     EnableSsl = ssl,
-                    UseDefaultCredentials = false // login to mail server anonymously if no username/password specified
+                    UseDefaultCredentials = false, // login to mail server anonymously if no username/password specified
+                    Timeout = 15 * 1000
                 };
 
                 if (!string.IsNullOrEmpty(username))
