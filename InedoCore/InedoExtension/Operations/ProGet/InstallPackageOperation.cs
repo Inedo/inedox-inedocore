@@ -1,7 +1,4 @@
-﻿
-using Inedo.Diagnostics;
-using Inedo.Documentation;
-using Inedo.ExecutionEngine.Executer;
+﻿using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SecureResources;
@@ -10,7 +7,6 @@ using Inedo.Extensions.UniversalPackages;
 using Inedo.Web;
 using System;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -21,6 +17,15 @@ namespace Inedo.Extensions.Operations.ProGet
     [DisplayName("Install Universal Package")]
     [Description("Installs a universal package to the specified location using a Package Source.")]
     [ScriptNamespace(Namespaces.ProGet)]
+    [Example(@"ProGet::Install-Package
+(
+    From: MyPackageSource,
+    Name: MyAppPackage,
+    Version: 3.4.2,
+
+    To: C:\MyApps\MyApp
+);
+")]
     public sealed class InstallPackageOperation : ExecuteOperation, IFeedPackageInstallationConfiguration
     {
         [ScriptAlias("From")]

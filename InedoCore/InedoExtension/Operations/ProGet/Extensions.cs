@@ -23,11 +23,13 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     internal static class Extensions
     {
-        public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedPackageConfiguration feedConfig, IOperationExecutionContext context)
+        public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedConfiguration feedConfig, ILogSink log, CancellationToken token)
+                    => TryCreateProGetFeedClient(feedConfig, CredentialResolutionContext.None, log, token);
+        public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedConfiguration feedConfig, IOperationExecutionContext context)
             => TryCreateProGetFeedClient(feedConfig, context as ICredentialResolutionContext ?? CredentialResolutionContext.None, context.Log, context.CancellationToken);
-        public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedPackageConfiguration feedConfig, ICredentialResolutionContext context)
+        public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedConfiguration feedConfig, ICredentialResolutionContext context)
             => TryCreateProGetFeedClient(feedConfig, context, null, default);
-        private static ProGetFeedClient TryCreateProGetFeedClient(IFeedPackageConfiguration feedConfig, ICredentialResolutionContext context, ILogSink log, CancellationToken cancellationToken)
+        private static ProGetFeedClient TryCreateProGetFeedClient(IFeedConfiguration feedConfig, ICredentialResolutionContext context, ILogSink log, CancellationToken cancellationToken)
         {
             if (feedConfig == null)
                 return null;
@@ -107,7 +109,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 config.PackageVersion = match.Version;
             }
         }
-        public static void PrepareCredentialPropertiesForRemote(this IFeedPackageConfiguration feedConfig, IOperationExecutionContext context)
+        public static void PrepareCredentialPropertiesForRemote(this IFeedConfiguration feedConfig, IOperationExecutionContext context)
         {
             var client = feedConfig.TryCreateProGetFeedClient(context);
 

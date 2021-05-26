@@ -1,6 +1,6 @@
 ﻿namespace Inedo.Extensions.UniversalPackages
 {
-    internal interface IFeedPackageConfiguration
+    internal interface IFeedConfiguration
     {
         string PackageSourceName { get; set; }
         string FeedName { get; set; }
@@ -8,7 +8,9 @@
         string UserName { get; set; }
         string Password { get; set; }
         string ApiKey { get; set; }
-
+    }
+    internal interface IFeedPackageConfiguration : IFeedConfiguration
+    {
         string PackageName { get; set; }
         string PackageVersion { get; set; }
     }

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -11,90 +12,147 @@ using Inedo.ExecutionEngine;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using Inedo.Serialization;
 using Inedo.UPack;
+using Inedo.UPack.Net;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-#warning PackageSource
     [Serializable]
     [ScriptAlias("Create-Package")]
-    [DisplayName("Create Package")]
-    [Description("Creates a universal package from the specified directory.")]
+    [DisplayName("Create Universal Package")]
+    [Description("Creates a universal package from the specified directory and publishes to a feed.")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Tag("proget")]
-    public sealed class CreatePackageOperation : RemotePackageOperationBase
+    [Example(@"ProGet::Create-Package
+(
+    Name: MyAppPackage,
+    Version: 3.4.2,
+
+    From :$WorkingDirectory,
+    PushTo: MyPackageSource    
+);
+")]
+    public sealed class CreatePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
     {
+        [Required]
+        [ScriptAlias("Name")]
+        [DisplayName("Package name")]
+        [SuggestableValue(typeof(PackageNameSuggestionProvider))]
+        public string PackageName { get; set; }
+        [Required]
+        [ScriptAlias("Version")]
+        [DisplayName("Package version")]
+        [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
+        public string PackageVersion { get; set; }
         [ScriptAlias("From")]
         [PlaceholderText("$WorkingDirectory")]
         [DisplayName("Source directory")]
         public string SourceDirectory { get; set; }
-        [Category("Advanced")]
-        [ScriptAlias("Include")]
-        [MaskingDescription]
-        [PlaceholderText("* (top-level items)")]
-        public IEnumerable<string> Includes { get; set; }
-        [Category("Advanced")]
-        [ScriptAlias("Exclude")]
-        [MaskingDescription]
-        public IEnumerable<string> Excludes { get; set; }
+        [ScriptAlias("PushTo")]
+        [ScriptAlias("PackageSource")]
+        [DisplayName("To package source")]
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSourceName { get; set; }
+
+        [Category("Packaging options")]
         [ScriptAlias("To")]
-        [DisplayName("To")]
+        [DisplayName("Package file name")]
         [PlaceholderText("<Name>-<Version>.upack")]
         [Description("This may either be a file name or a directory. If the value ends with .upack, then this is treated as a file name. Otherwise, it is treated as an output directory into which the package file will be written.")]
         public string Output { get; set; }
-        [Category("Advanced")]
-        [ScriptAlias("Overwrite")]
-        public bool Overwrite { get; set; }
-
-        [ScriptAlias("Group")]
-        [DisplayName("Package group")]
-        public string Group { get; set; }
-        [Required]
-        [ScriptAlias("Name")]
-        [DisplayName("Package name")]
-        public override string PackageName { get; set; }
-        [Required]
-        [ScriptAlias("Version")]
-        [DisplayName("Package version")]
-        public string Version { get; set; }
-
-        [ScriptAlias("PackageSource")]
-        [DisplayName("Package source")]
-        [Category("Package Source (Preview)")]
-        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
-        [Description("When specified, the package will be uploaded to this package source and attached to the current build.")]
-        public override string PackageSource { get; set; }
-
-        [Category("Advanced")]
+        [Category("Packaging options")]
+        [ScriptAlias("Include")]
+        [MaskingDescription]
+        [PlaceholderText("** (all items in directory)")]
+        [DisplayName("Include files")]
+        public IEnumerable<string> Includes { get; set; } = new[] { "**" };
+        [Category("Packaging options")]
+        [ScriptAlias("Exclude")]
+        [MaskingDescription]
+        [DisplayName("Exclude files")]
+        [PlaceholderText("include all files")]
+        public IEnumerable<string> Excludes { get; set; }
+        [Category("Packaging options")]
         [ScriptAlias("Metadata")]
         [DisplayName("Additional metadata")]
         [FieldEditMode(FieldEditMode.Multiline)]
         [Description("Additional properties may be specified using map syntax. For example: %(description: my package description)")]
         public IReadOnlyDictionary<string, RuntimeValue> Metadata { get; set; }
+        [Category("Packaging options")]
+        [ScriptAlias("Overwrite")]
+        [DisplayName("Overwrite existing package")]
+        public bool Overwrite { get; set; }
 
-        [SlimSerializable]
-        private string UserName { get; set; }
-        [SlimSerializable]
-        private string Password { get; set; }
-        [SlimSerializable]
-        private string FeedUrl { get; set; }
+        [Category("Connection/Identity")]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [PlaceholderText("Use Feed from package source")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
+        [Category("Connection/Identity")]
+        [ScriptAlias("FeedUrl")]
+        [DisplayName("ProGet server URL")]
+        [PlaceholderText("Use server URL from package source")]
+        public string FeedUrl { get; set; }
+        [Category("Connection/Identity")]
+        [ScriptAlias("UserName")]
+        [DisplayName("ProGet user name")]
+        [Description("The name of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use user name from package source")]
+        public string UserName { get; set; }
+        [Category("Connection/Identity")]
+        [ScriptAlias("Password")]
+        [DisplayName("ProGet password")]
+        [PlaceholderText("Use password from package source")]
+        [Description("The password of a user in ProGet that can access this feed.")]
+        public string Password { get; set; }
+        [Category("Connection/Identity")]
+        [ScriptAlias("ApiKey")]
+        [DisplayName("ProGet API Key")]
+        [PlaceholderText("Use API Key from package source")]
+        [Description("An API Key that can access this feed.")]
+        public string ApiKey { get; set; }
 
-        protected override Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+
+        [Undisclosed]
+        [ScriptAlias("Group")]
+        public string PackageGroup { get; set; }
+
+        [NonSerialized]
+        private IPackageManager packageManager;
+        [NonSerialized]
+        private string originalPackageSourceName;
+
+        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
-            this.ValidateArguments();
-            return base.BeforeRemoteExecuteAsync(context);
+            if (UniversalPackageId.Parse(this.PackageName) == null)
+                throw new ExecutionFailureException("Invalid package name specified.");
+
+            if (UniversalPackageVersion.TryParse(this.PackageVersion) == null)
+                throw new EncoderFallbackException("Specified package version is not a valid semantic version.");
+
+            this.originalPackageSourceName = this.PackageSourceName;
+
+            if (!string.IsNullOrEmpty(this.PackageGroup))
+                this.PackageName = this.PackageGroup + "/" + this.PackageName;
+
+            await this.ResolveAttachedPackageAsync(context);
+            this.PrepareCredentialPropertiesForRemote(context);
+            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
         }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
             var outputFileName = context.ResolvePath(this.Output);
             if (Directory.Exists(outputFileName) || !outputFileName.EndsWith(".upack", StringComparison.OrdinalIgnoreCase))
-                outputFileName = Path.Combine(outputFileName, $"{this.PackageName}-{this.Version}.upack");
+                outputFileName = Path.Combine(outputFileName, $"{this.PackageName}-{this.PackageVersion}.upack");
 
             var sourceDirectory = context.ResolvePath(this.SourceDirectory);
 
@@ -107,11 +165,12 @@ namespace Inedo.Extensions.Operations.ProGet
                 return null;
             }
 
+            var packageName = UniversalPackageId.Parse(this.PackageName);
             var metadata = new UniversalPackageMetadata
             {
-                Group = this.Group,
-                Name = this.PackageName,
-                Version = UniversalPackageVersion.Parse(this.Version)
+                Group = packageName.Group,
+                Name = packageName.Name,
+                Version = UniversalPackageVersion.Parse(this.PackageVersion)
             };
 
             if (this.Metadata != null && this.Metadata.Count > 0)
@@ -155,8 +214,8 @@ namespace Inedo.Extensions.Operations.ProGet
             }
 
             // when package source is specified, upload it
-            if (!string.IsNullOrWhiteSpace(this.PackageSource))
-                return await this.UploadAndComputeHashAsync(outputFileName, this.FeedUrl, this.UserName, AH.CreateSecureString(this.Password), context.CancellationToken);
+            if (!string.IsNullOrWhiteSpace(this.FeedUrl))
+                return await this.TryCreateProGetFeedClient(this, context.CancellationToken).UploadPackageAndComputeHashAsync(outputFileName);
 
             return null;
 
@@ -188,15 +247,16 @@ namespace Inedo.Extensions.Operations.ProGet
             }
         }
 
+
         protected override async Task AfterRemoteExecuteAsync(object result)
         {
             await base.AfterRemoteExecuteAsync(result);
 
-            if (this.PackageManager != null && !string.IsNullOrWhiteSpace(this.PackageSource))
+            if (this.packageManager != null && !string.IsNullOrWhiteSpace(this.originalPackageSourceName))
             {
                 this.LogDebug("Attaching package to build...");
-                await this.PackageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(AttachedPackageType.Universal, GetFullPackageName(this.Group, this.PackageName), this.Version, (byte[])result, this.PackageSource),
+                await this.packageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(AttachedPackageType.Universal, this.PackageName, this.PackageVersion, (byte[])result, this.originalPackageSourceName),
                     default
                 );
                 this.LogDebug("Package attached.");
@@ -208,7 +268,7 @@ namespace Inedo.Extensions.Operations.ProGet
             return new ExtendedRichDescription(
                 new RichDescription(
                     "Create ",
-                    new Hilite((config[nameof(Group)] + "/" + config[nameof(PackageName)]).Trim('/') + " " + config[nameof(Version)]),
+                    new Hilite((config[nameof(PackageName)]) + " " + config[nameof(PackageVersion)]),
                     " universal package"
                 ),
                 new RichDescription(
@@ -218,29 +278,8 @@ namespace Inedo.Extensions.Operations.ProGet
             );
         }
 
-        private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
-        {
-            this.UserName = userName;
-            this.Password = password;
-            this.FeedUrl = feedUrl;
-        }
 
-        private void ValidateArguments()
-        {
-            if (string.IsNullOrEmpty(this.PackageName))
-                throw new ExecutionFailureException("Missing \"Name\" argument.");
 
-            if (string.IsNullOrEmpty(this.Version))
-                throw new ExecutionFailureException("Missing \"Version\" argument.");
 
-            if (!string.IsNullOrEmpty(this.Group) && !UniversalPackageId.IsValidGroup(this.Group))
-                throw new ExecutionFailureException("Invalid package group specified.");
-
-            if (!UniversalPackageId.IsValidName(this.PackageName))
-                throw new ExecutionFailureException("Invalid package name specified.");
-
-            if (UniversalPackageVersion.TryParse(this.Version) == null)
-                throw new EncoderFallbackException("Specified package version is not a valid semantic version.");
-        }
     }
 }

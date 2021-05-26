@@ -129,88 +129,81 @@ ProGet::Ensure-Package
 
                 var fileOps = context.Agent.GetService<IFileOperationsExecuter>();
 
-                try
+                if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
                 {
-                    if (!await fileOps.DirectoryExistsAsync(this.Template.TargetDirectory).ConfigureAwait(false))
-                    {
-                        this.LogInformation(this.Template.TargetDirectory + " does not exist.");
-                        collectedConfig.Exists = false;
-                        return collectedConfig;
-                    }
-                    collectedConfig.TargetDirectory = this.Template.TargetDirectory;
-
-                    var mask = new MaskingContext(new[] { "**" }, this.Template.IgnoreFiles);
-
-                    this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
-
-                    var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, mask).ConfigureAwait(false);
-
-                    var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var file in remoteFileList)
-                    {
-                        var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
-                        if (file is SlimDirectoryInfo)
-                            relativeName += "/";
-
-                        remoteFiles.Add(relativeName, file);
-                    }
-
-                    remoteFileList = null; // async GC optimization
-
-                    this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
-
-                    this.LogInformation($"Connecting to feed to get file metadata...");
-                    var versionInfo = await client.GetPackageVersionWithFilesAsync(package.FullName, package.Version);
-
-                    if (versionInfo.fileList == null)
-                    {
-                        this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
-                        return null;
-                    }
-
-                    this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
-
-                    foreach (var entry in versionInfo.fileList)
-                    {
-                        var relativeName = entry.name;
-                        if (!mask.IsMatch(relativeName))
-                        {
-                            continue;
-                        }
-
-                        var file = remoteFiles.GetValueOrDefault(relativeName);
-                        if (file == null)
-                        {
-                            this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
-                            collectedConfig.DriftedFileNames.Add(relativeName);
-                            continue;
-                        }
-
-                        if (!entry.name.EndsWith("/"))
-                        {
-                            var fileInfo = (SlimFileInfo)file;
-                            if (entry.size != fileInfo.Size
-                                 || (this.Template.FileCompare == FileCompareOptions.FileSizeAndLastModified && entry.date != fileInfo.LastWriteTimeUtc))
-                            {
-                                this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
-                                this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
-                                this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
-                                collectedConfig.DriftedFileNames.Add(relativeName);
-                            }
-                        }
-                    }
-                    if (collectedConfig.DriftedFileNames.Count > 0)
-                        return collectedConfig;
-
-                    this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
-                    collectedConfig.DriftedFiles = false;
+                    this.LogInformation(this.Template.TargetDirectory + " does not exist.");
+                    collectedConfig.Exists = false;
+                    return collectedConfig;
                 }
-                catch (ProGetException ex)
+                collectedConfig.TargetDirectory = this.Template.TargetDirectory;
+
+                var mask = new MaskingContext(new[] { "**" }, this.Template.IgnoreFiles);
+
+                this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
+
+                var remoteFileList = await fileOps.GetFileSystemInfosAsync(this.Template.TargetDirectory, mask).ConfigureAwait(false);
+
+                var remoteFiles = new Dictionary<string, SlimFileSystemInfo>(remoteFileList.Count, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var file in remoteFileList)
                 {
-                    this.LogError(ex.FullMessage);
+                    var relativeName = file.FullName.Substring(this.Template.TargetDirectory.Length).Replace('\\', '/').Trim('/');
+                    if (file is SlimDirectoryInfo)
+                        relativeName += "/";
+
+                    remoteFiles.Add(relativeName, file);
+                }
+
+                remoteFileList = null; // async GC optimization
+
+                this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
+
+                this.LogInformation($"Connecting to feed to get file metadata...");
+                var versionInfo = await client.GetPackageVersionWithFilesAsync(package.FullName, package.Version);
+
+                if (versionInfo.fileList == null)
+                {
+                    this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
                     return null;
                 }
+
+                this.LogDebug($"Package contains {versionInfo.fileList.Length} file system entries.");
+
+                foreach (var entry in versionInfo.fileList)
+                {
+                    var relativeName = entry.name;
+                    if (!mask.IsMatch(relativeName))
+                    {
+                        continue;
+                    }
+
+                    var file = remoteFiles.GetValueOrDefault(relativeName);
+                    if (file == null)
+                    {
+                        this.LogInformation($"Entry {relativeName} is not present in {this.Template.TargetDirectory}.");
+                        collectedConfig.DriftedFileNames.Add(relativeName);
+                        continue;
+                    }
+
+                    if (!entry.name.EndsWith("/"))
+                    {
+                        var fileInfo = (SlimFileInfo)file;
+                        if (entry.size != fileInfo.Size
+                                || (this.Template.FileCompare == FileCompareOptions.FileSizeAndLastModified && entry.date != fileInfo.LastWriteTimeUtc))
+                        {
+                            this.LogInformation($"File {relativeName} in {this.Template.TargetDirectory} is different from file in package.");
+                            this.LogDebug($"Source info: {entry.size} bytes, {entry.date} timestamp");
+                            this.LogDebug($"Target info: {fileInfo.Size} bytes, {fileInfo.LastWriteTimeUtc} timestamp");
+                            collectedConfig.DriftedFileNames.Add(relativeName);
+                        }
+                    }
+                }
+                if (collectedConfig.DriftedFileNames.Count > 0)
+                    return collectedConfig;
+
+                this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
+                collectedConfig.DriftedFiles = false;
+
             }
 
             return collectedConfig;

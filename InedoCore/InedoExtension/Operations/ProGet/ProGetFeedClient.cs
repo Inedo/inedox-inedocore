@@ -2,6 +2,7 @@
 using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.SecureResources;
+using Inedo.Extensibility.VariableFunctions;
 using Inedo.Extensions.Credentials;
 using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.UniversalPackages;
@@ -12,12 +13,14 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Numerics;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +29,7 @@ using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswor
 namespace Inedo.Extensions.Operations.ProGet
 {
     /// <summary>
-    /// This is a rewrite of <see cref="ProGetClient"/> to use the <see cref="UniversalFeedClient"/> when possible
+    /// This is refactor/rewrite of what is now the <see cref="ObsoleteProGetClient"/>, and uses a combination of the <see cref="UniversalFeedClient"/> and ProGet API when possible
     /// </summary>
     internal sealed class ProGetFeedClient
     {
@@ -147,7 +150,7 @@ namespace Inedo.Extensions.Operations.ProGet
             var versions = await this.CreateUPacklient().ListPackageVersionsAsync(id, false, null, this.CancellationToken).ConfigureAwait(false);
             return this.FindPackageVersion(versions, packageVersion);
         }
-        public async Task<ProGetClient_UNINCLUSED.ProGetPackageVersionInfo> GetPackageVersionWithFilesAsync(UniversalPackageId id, UniversalPackageVersion version)
+        public async Task<ProGetPackageVersionInfo> GetPackageVersionWithFilesAsync(UniversalPackageId id, UniversalPackageVersion version)
         {
             if (string.IsNullOrWhiteSpace(id?.Name))
                 throw new ArgumentNullException(nameof(id));
@@ -162,7 +165,7 @@ namespace Inedo.Extensions.Operations.ProGet
             using var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding);
             using var jsonReader = new JsonTextReader(streamReader);
             var serializer = JsonSerializer.Create();
-            return serializer.Deserialize<ProGetClient_UNINCLUSED.ProGetPackageVersionInfo>(jsonReader);
+            return serializer.Deserialize<ProGetPackageVersionInfo>(jsonReader);
         }
         public async Task<Stream> DownloadPackageContentAsync(UniversalPackageId id, UniversalPackageVersion version, PackageDeploymentData deployInfo, Action<long, long> progressUpdate = null)
         {
@@ -191,6 +194,55 @@ namespace Inedo.Extensions.Operations.ProGet
             return tempStream;
         }
 
+        public async Task<byte[]> UploadPackageAndComputeHashAsync(string fileName)
+        {
+            // start computing the hash in the background
+            var computeHashTask = Task.Factory.StartNew(computePackageHash, TaskCreationOptions.LongRunning, this.CancellationToken);
+
+            this.Log.LogDebug("Package source URL: " + this.FeedApiEndpointUrl);
+
+            using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
+            {
+                var client = this.CreateUPacklient();
+                await client.UploadPackageAsync(fileStream, this.CancellationToken);
+            }
+
+            this.Log.LogDebug("Package uploaded.");
+
+            this.Log.LogDebug("Waiting for package hash to be computed...");
+            var hash = await computeHashTask;
+            this.Log.LogDebug("Package SHA1: " + new HexString(hash));
+            return hash;
+
+            byte[] computePackageHash(object arts)
+            {
+                using var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan);
+                using var sha1 = SHA1.Create();
+                return sha1.ComputeHash(fileStream);
+            }
+        }
+        public async Task<byte[]> UploadVirtualPackageAndComputeHashAsync(string fileName)
+        {
+            var tempFileName = Path.GetTempFileName();
+            try
+            {
+                using (var vpackStream = File.OpenRead(fileName))
+                using (var tempZip = new ZipArchive(File.Create(tempFileName), ZipArchiveMode.Create))
+                {
+                    var upackEntry = tempZip.CreateEntry("upack.json");
+                    using (var upackStream = upackEntry.Open())
+                    {
+                        vpackStream.CopyTo(upackStream);
+                    }
+                }
+
+                return await this.UploadPackageAndComputeHashAsync(tempFileName);
+            }
+            finally
+            {
+                File.Delete(tempFileName);
+            }
+        }
         private UniversalFeedClient CreateUPacklient()
         {
             if (this.Credentials is TokenCredentials tcreds)
@@ -243,7 +295,7 @@ namespace Inedo.Extensions.Operations.ProGet
             if (response.StatusCode == HttpStatusCode.InternalServerError && message.StartsWith("<!DOCTYPE"))
                 message = "Invalid feed URL. Ensure the feed URL follows the format: http://{proget-server}/upack/{feed-name}";
 
-            throw new ProGetException((int)response.StatusCode, message);
+            throw new ObsoleteProGetClient.ProGetException((int)response.StatusCode, message);
         }
 
         private static readonly LazyRegex FindVersionRegex = new LazyRegex(@"^(?<1>[0-9]+)(\.(?<2>[0-9]+)(?<3>\.([0-9]+(-.+)?)?)?)?", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
@@ -273,6 +325,87 @@ namespace Inedo.Extensions.Operations.ProGet
             
             var semver = UniversalPackageVersion.Parse(packageVersion);
             return packages.FirstOrDefault(v => v.Version == semver);
+        }
+
+        internal sealed class ProGetPackageVersionInfo
+        {
+            public string group { get; set; }
+            public string name { get; set; }
+            public string version { get; set; }
+            public string title { get; set; }
+            public string description { get; set; }
+            public int downloads { get; set; }
+            public bool isLocal { get; set; }
+            public bool isCached { get; set; }
+            public string icon { get; set; }
+            public ProGetPackageFileInfo[] fileList { get; set; }
+        }
+
+        internal sealed class ProGetPackageFileInfo
+        {
+            public string name { get; set; }
+            public long? size { get; set; }
+            public DateTime? date { get; set; }
+        }
+        internal sealed class PackageDeploymentData
+        {
+
+            public static PackageDeploymentData Create(IOperationExecutionContext context, ILogSink log, string description)
+            {
+                string baseUrl = SDK.BaseUrl;
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
+                    return null;
+                }
+
+                string serverName = AH.CoalesceString(context?.ServerName, Environment.MachineName);
+                string relativeUrl;
+                if (SDK.ProductName == "BuildMaster")
+                {
+                    relativeUrl = context.ExpandVariables($"applications/{((IVariableFunctionContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
+                }
+                else
+                {
+                    relativeUrl = "executions/execution-in-progress?executionId=" + context.ExecutionId;
+                }
+
+                return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
+            }
+
+
+            public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
+            {
+                if (baseUrl == null)
+                    throw new ArgumentNullException(nameof(baseUrl));
+                if (relativeUrl == null)
+                    throw new ArgumentNullException(nameof(relativeUrl));
+
+                this.Application = application ?? throw new ArgumentNullException(nameof(application));
+                this.Url = baseUrl.TrimEnd('/') + '/' + relativeUrl.TrimStart('/');
+                this.Target = target ?? throw new ArgumentNullException(nameof(target));
+                this.Description = description ?? "";
+            }
+            public PackageDeploymentData(string application, string url, string target, string description)
+            {
+                this.Application = application ?? throw new ArgumentNullException(nameof(application));
+                this.Url = url ?? throw new ArgumentException(nameof(url));
+                this.Target = target ?? throw new ArgumentNullException(nameof(target));
+                this.Description = description ?? "";
+            }
+
+            public string Application { get; }
+            public string Description { get; }
+            public string Url { get; }
+            public string Target { get; }
+
+            public static class Headers
+            {
+                public const string Application = "X-ProGet-Deployment-Application";
+                public const string Description = "X-ProGet-Deployment-Description";
+                public const string Url = "X-ProGet-Deployment-Url";
+                public const string Target = "X-ProGet-Deployment-Target";
+            }
         }
     }
 }

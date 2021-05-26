@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 
 namespace Inedo.Extensions.UniversalPackages
 {
-#warning rename to RemoteJson or something
     [JsonObject]
     internal sealed class RegisteredPackageModel
     {

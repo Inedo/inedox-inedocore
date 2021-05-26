@@ -20,11 +20,14 @@ using Newtonsoft.Json;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-    internal sealed class ProGetClient_UNINCLUSED
+    /// <summary>
+    /// This is a stripped-down version of an old client that was built before there was a UPack library
+    /// </summary>
+    internal sealed class ObsoleteProGetClient
     {
         private static readonly LazyRegex FeedNameRegex = new LazyRegex(@"(?<1>(https?://)?[^/]+)/upack(/?(?<2>.+))", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
-        public ProGetClient_UNINCLUSED(string serverUrl, string feedName, string userName, string password, ILogSink log = null, CancellationToken cancellationToken = default(CancellationToken))
+        public ObsoleteProGetClient(string serverUrl, string feedName, string userName, string password, ILogSink log = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(serverUrl))
                 throw new ProGetException(400, "A ProGet server URL must be specified for this operation either in the operation itself or in the credential.");
@@ -157,7 +160,7 @@ namespace Inedo.Extensions.Operations.ProGet
             request.AllowWriteStreamBuffering = true;
             request.PreAuthenticate = true;
             request.Timeout = Timeout.Infinite;
-            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient_UNINCLUSED).Assembly.GetName().Version}";
+            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ObsoleteProGetClient).Assembly.GetName().Version}";
             if (apiKey != null)
                 request.Headers.Add("X-ApiKey", AH.Unprotect(apiKey));
 
@@ -199,7 +202,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetClient_UNINCLUSED).Assembly.GetName().Version.ToString()));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ObsoleteProGetClient).Assembly.GetName().Version.ToString()));
 
             if (apiKey != null)
                 client.DefaultRequestHeaders.Add("X-ApiKey", AH.Unprotect(apiKey));
@@ -256,167 +259,144 @@ namespace Inedo.Extensions.Operations.ProGet
             public string icon { get; set; }
             public string[] versions { get; set; }
         }
-
-        internal sealed class ProGetPackageVersionInfo
+        internal sealed class PackageName
         {
-            public string group { get; set; }
-            public string name { get; set; }
-            public string version { get; set; }
-            public string title { get; set; }
-            public string description { get; set; }
-            public int downloads { get; set; }
-            public bool isLocal { get; set; }
-            public bool isCached { get; set; }
-            public string icon { get; set; }
-            public ProGetPackageFileInfo[] fileList { get; set; }
-        }
-
-        internal sealed class ProGetPackageFileInfo
-        {
-            public string name { get; set; }
-            public long? size { get; set; }
-            public DateTime? date { get; set; }
-        }
-    }
-
-    internal sealed class PackageName
-    {
-        public static PackageName Parse(string fullName)
-        {
-            fullName = fullName?.Trim('/');
-            if (string.IsNullOrEmpty(fullName))
-                return new PackageName(fullName);
-
-            int index = fullName.LastIndexOf('/');
-
-            if (index > 0)
-                return new PackageName(fullName.Substring(0, index), fullName.Substring(index + 1));
-            else
-                return new PackageName(fullName);
-        }
-
-        public PackageName(string name)
-        {
-            this.Group = "";
-            this.Name = name ?? "";
-        }
-        public PackageName(string group, string name)
-        {
-            this.Group = group ?? "";
-            this.Name = name ?? "";
-        }
-        public string Group { get; }
-        public string Name { get; }
-
-        public override string ToString()
-        {
-            if (string.IsNullOrEmpty(this.Group))
-                return this.Name;
-            else
-                return this.Group + '/' + this.Name;
-        }
-    }
-
-    internal sealed class ProGetException : Exception
-    {
-        public ProGetException(int statusCode, string message)
-            : base(message)
-        {
-            this.StatusCode = statusCode;
-        }
-
-        public ProGetException(int statusCode, string message, WebException ex)
-            : base(message, ex)
-        {
-            this.StatusCode = statusCode;
-        }
-
-        public int StatusCode { get; set; }
-
-        public string FullMessage => $"The server returned an error ({this.StatusCode}): {this.Message}";
-    }
-
-    internal sealed class ProGetPackagePushData
-    {
-        public string Title { get; set; }
-        public string Icon { get; set; }
-        public string Description { get; set; }
-        public string[] Dependencies { get; set; }
-
-        public IEnumerable<string> GetQueryArgs()
-        {
-            if (!string.IsNullOrEmpty(this.Title))
-                yield return "title=" + Uri.EscapeDataString(this.Title);
-
-            if (!string.IsNullOrEmpty(this.Icon))
-                yield return "icon=" + Uri.EscapeDataString(this.Icon);
-
-            if (!string.IsNullOrEmpty(this.Description))
-                yield return "description=" + Uri.EscapeDataString(this.Description);
-
-            if (this.Dependencies != null && this.Dependencies.Length > 0)
-                yield return "dependencies=" + Uri.EscapeDataString(string.Join(",", this.Dependencies));
-        }
-    }
-
-    internal sealed class PackageDeploymentData
-    {
-
-        public static PackageDeploymentData Create(IOperationExecutionContext context, ILogSink log, string description)
-        {
-            string baseUrl = SDK.BaseUrl;
-            if (string.IsNullOrEmpty(baseUrl))
+            public static PackageName Parse(string fullName)
             {
-                log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
-                return null;
+                fullName = fullName?.Trim('/');
+                if (string.IsNullOrEmpty(fullName))
+                    return new PackageName(fullName);
+
+                int index = fullName.LastIndexOf('/');
+
+                if (index > 0)
+                    return new PackageName(fullName.Substring(0, index), fullName.Substring(index + 1));
+                else
+                    return new PackageName(fullName);
             }
 
-            string serverName = AH.CoalesceString(context?.ServerName, Environment.MachineName);
-            string relativeUrl;
-            if (SDK.ProductName == "BuildMaster")
+            public PackageName(string name)
             {
-                relativeUrl = context.ExpandVariables($"applications/{((IVariableFunctionContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
+                this.Group = "";
+                this.Name = name ?? "";
             }
-            else
+            public PackageName(string group, string name)
             {
-                relativeUrl = "executions/execution-in-progress?executionId=" + context.ExecutionId;
+                this.Group = group ?? "";
+                this.Name = name ?? "";
+            }
+            public string Group { get; }
+            public string Name { get; }
+
+            public override string ToString()
+            {
+                if (string.IsNullOrEmpty(this.Group))
+                    return this.Name;
+                else
+                    return this.Group + '/' + this.Name;
+            }
+        }
+
+        internal sealed class ProGetException : Exception
+        {
+            public ProGetException(int statusCode, string message)
+                : base(message)
+            {
+                this.StatusCode = statusCode;
             }
 
-            return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
+            public ProGetException(int statusCode, string message, WebException ex)
+                : base(message, ex)
+            {
+                this.StatusCode = statusCode;
+            }
+
+            public int StatusCode { get; set; }
+
+            public string FullMessage => $"The server returned an error ({this.StatusCode}): {this.Message}";
         }
 
-
-        public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
+        internal sealed class ProGetPackagePushData
         {
-            if (baseUrl == null)
-                throw new ArgumentNullException(nameof(baseUrl));
-            if (relativeUrl == null)
-                throw new ArgumentNullException(nameof(relativeUrl));
+            public string Title { get; set; }
+            public string Icon { get; set; }
+            public string Description { get; set; }
+            public string[] Dependencies { get; set; }
 
-            this.Application = application ?? throw new ArgumentNullException(nameof(application));
-            this.Url = baseUrl.TrimEnd('/') + '/' + relativeUrl.TrimStart('/');
-            this.Target = target ?? throw new ArgumentNullException(nameof(target));
-            this.Description = description ?? "";
+            public IEnumerable<string> GetQueryArgs()
+            {
+                if (!string.IsNullOrEmpty(this.Title))
+                    yield return "title=" + Uri.EscapeDataString(this.Title);
+
+                if (!string.IsNullOrEmpty(this.Icon))
+                    yield return "icon=" + Uri.EscapeDataString(this.Icon);
+
+                if (!string.IsNullOrEmpty(this.Description))
+                    yield return "description=" + Uri.EscapeDataString(this.Description);
+
+                if (this.Dependencies != null && this.Dependencies.Length > 0)
+                    yield return "dependencies=" + Uri.EscapeDataString(string.Join(",", this.Dependencies));
+            }
         }
-        public PackageDeploymentData(string application, string url, string target, string description)
+        internal sealed class PackageDeploymentData
         {
-            this.Application = application ?? throw new ArgumentNullException(nameof(application));
-            this.Url = url ?? throw new ArgumentException(nameof(url));
-            this.Target = target ?? throw new ArgumentNullException(nameof(target));
-            this.Description = description ?? "";
-        }
 
-        public string Application { get; }
-        public string Description { get; }
-        public string Url { get; }
-        public string Target { get; }
+            public static PackageDeploymentData Create(IOperationExecutionContext context, ILogSink log, string description)
+            {
+                string baseUrl = SDK.BaseUrl;
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
+                    return null;
+                }
 
-        public static class Headers
-        {
-            public const string Application = "X-ProGet-Deployment-Application";
-            public const string Description = "X-ProGet-Deployment-Description";
-            public const string Url = "X-ProGet-Deployment-Url";
-            public const string Target = "X-ProGet-Deployment-Target";
+                string serverName = AH.CoalesceString(context?.ServerName, Environment.MachineName);
+                string relativeUrl;
+                if (SDK.ProductName == "BuildMaster")
+                {
+                    relativeUrl = context.ExpandVariables($"applications/{((IVariableFunctionContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
+                }
+                else
+                {
+                    relativeUrl = "executions/execution-in-progress?executionId=" + context.ExecutionId;
+                }
+
+                return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
+            }
+
+
+            public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
+            {
+                if (baseUrl == null)
+                    throw new ArgumentNullException(nameof(baseUrl));
+                if (relativeUrl == null)
+                    throw new ArgumentNullException(nameof(relativeUrl));
+
+                this.Application = application ?? throw new ArgumentNullException(nameof(application));
+                this.Url = baseUrl.TrimEnd('/') + '/' + relativeUrl.TrimStart('/');
+                this.Target = target ?? throw new ArgumentNullException(nameof(target));
+                this.Description = description ?? "";
+            }
+            public PackageDeploymentData(string application, string url, string target, string description)
+            {
+                this.Application = application ?? throw new ArgumentNullException(nameof(application));
+                this.Url = url ?? throw new ArgumentException(nameof(url));
+                this.Target = target ?? throw new ArgumentNullException(nameof(target));
+                this.Description = description ?? "";
+            }
+
+            public string Application { get; }
+            public string Description { get; }
+            public string Url { get; }
+            public string Target { get; }
+
+            public static class Headers
+            {
+                public const string Application = "X-ProGet-Deployment-Application";
+                public const string Description = "X-ProGet-Deployment-Description";
+                public const string Url = "X-ProGet-Deployment-Url";
+                public const string Target = "X-ProGet-Deployment-Target";
+            }
         }
     }
 }
