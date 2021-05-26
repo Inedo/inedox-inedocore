@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace Inedo.Extensions.UniversalPackages
 {
     [JsonObject]
-    internal sealed class RegisteredPackage
+    internal sealed class RegisteredPackageModel
     {
         [JsonProperty("group", NullValueHandling = NullValueHandling.Ignore)]
         public string Group { get; set; }
@@ -25,7 +25,7 @@ namespace Inedo.Extensions.UniversalPackages
         [JsonProperty("installedBy", NullValueHandling = NullValueHandling.Ignore)]
         public string InstalledBy { get; set; }
 
-        public static bool NameAndGroupEquals(RegisteredPackage p1, RegisteredPackage p2)
+        public static bool NameAndGroupEquals(RegisteredPackageModel p1, RegisteredPackageModel p2)
         {
             if (ReferenceEquals(p1, p2))
                 return true;

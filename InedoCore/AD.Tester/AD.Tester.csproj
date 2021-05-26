@@ -8,10 +8,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.10.0" />
-    <PackageReference Include="Inedo.UPack" Version="1.0.9" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net452'">
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.DirectoryServices.Protocols" />
