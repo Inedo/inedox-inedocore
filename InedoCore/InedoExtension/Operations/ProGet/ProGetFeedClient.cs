@@ -140,6 +140,7 @@ namespace Inedo.Extensions.Operations.ProGet
             return serializer.Deserialize<string[]>(jsonReader);
         }
         public Task<IReadOnlyList<RemoteUniversalPackage>> ListPackagesAsync() => this.CreateUPacklient().ListPackagesAsync(null, null, this.CancellationToken);
+        public Task<IReadOnlyList<RemoteUniversalPackage>> ListPackagesAsync(string groupName, int maxCount) => this.CreateUPacklient().ListPackagesAsync(groupName, maxCount, this.CancellationToken);
 
         public Task<IReadOnlyList<RemoteUniversalPackageVersion>> ListPackageVersionsAsync(string packageName) => this.CreateUPacklient().ListPackageVersionsAsync(UniversalPackageId.Parse(packageName), false, null, this.CancellationToken);
         public Task<RemoteUniversalPackageVersion> FindPackageVersionAsync(IFeedPackageConfiguration config) => this.FindPackageVersionAsync(config.PackageName, config.PackageVersion);
