@@ -1,45 +1,45 @@
-﻿using System;
+﻿using Inedo.Documentation;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.SecureResources;
+using Inedo.Extensibility.VariableTemplates;
+using Inedo.Extensions.Operations.ProGet;
+using Inedo.Extensions.SecureResources;
+using Inedo.Serialization;
+using Inedo.Web;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Inedo.Documentation;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.ListVariableSources;
-using Inedo.Serialization;
-using Inedo.UPack;
-using Inedo.UPack.Net;
 
 namespace Inedo.Extensions.ListVariableSources
 {
     [DisplayName("Universal Package Versions")]
     [Description("Versions of a specific universal package from a universal package feed.")]
-    public sealed class UniversalPackageVersionVariableSource : ListVariableSource
+    public sealed class UniversalPackageVersionVariableSource : DynamicListVariableType
     {
+        [Persistent]
+        [DisplayName("Package source")]
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSourceName { get; set; }
         [Required]
         [Persistent]
-        [DisplayName("Package")]
+        [DisplayName("Package name")]
         [Description("The full name of the package in the format Group/Name.")]
-        public string PackageId { get; set; }
-        [Persistent]
-        [DisplayName("Feed URL")]
-        public string FeedUrl { get; set; }
-        [Persistent]
-        [DisplayName("Credentials")]
-        [Description("Specify the name of an InedoProductCredentials resource to use for authentication.")]
-        [PlaceholderText("no authentication")]
-        public string CredentialName { get; set; }
+        public string PackageName { get; set; }
         [Persistent]
         [DisplayName("Include prerelease versions")]
         public bool IncludePrerelease { get; set; }
 
-        public override async Task<IEnumerable<string>> EnumerateValuesAsync(ValueEnumerationContext context)
+        public override async Task<IEnumerable<string>> EnumerateListValuesAsync(VariableTemplateContext context)
         {
-            var id = UniversalPackageId.Parse(this.PackageId);
+            var credContext = new CredentialResolutionContext(context.ProjectId, null);
+            var packageSource = SecureResource.TryCreate(this.PackageSourceName, credContext) as UniversalPackageSource;
+            if (packageSource == null)
+                return Enumerable.Empty<string>();
 
-            var client = new UniversalFeedClient(this.GetEndpoint());
-
-            return (await client.ListPackageVersionsAsync(id, false).ConfigureAwait(false))
+            var client = new ProGetFeedClient(packageSource.ApiEndpointUrl, packageSource.GetCredentials(credContext));
+            
+            return (await client.ListPackageVersionsAsync(this.PackageName).ConfigureAwait(false))
                 .Where(p => this.IncludePrerelease || string.IsNullOrEmpty(p.Version.Prerelease))
                 .OrderByDescending(p => p.Version)
                 .Select(p => p.Version.ToString());
@@ -48,26 +48,11 @@ namespace Inedo.Extensions.ListVariableSources
         {
             return new RichDescription(
                 "Versions of ",
-                new Hilite(this.PackageId),
+                new Hilite(this.PackageName),
                 " from ",
-                new Hilite(AH.CoalesceString(this.FeedUrl, this.CredentialName)),
+                new Hilite(this.PackageSourceName),
                 "."
             );
-        }
-
-        private UniversalFeedEndpoint GetEndpoint()
-        {
-            if (string.IsNullOrWhiteSpace(this.CredentialName))
-                return new UniversalFeedEndpoint(this.FeedUrl, true);
-
-            var credentials = ResourceCredentials.Create<InedoProductCredentials>(this.CredentialName);
-
-            var url = AH.CoalesceString(this.FeedUrl, credentials.Host);
-
-            if (credentials.ApiKey != null && credentials.ApiKey.Length > 0)
-                return new UniversalFeedEndpoint(new Uri(url), "api", credentials.ApiKey);
-
-            return new UniversalFeedEndpoint(url, true);
         }
     }
 }

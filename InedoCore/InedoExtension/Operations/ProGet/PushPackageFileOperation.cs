@@ -7,9 +7,12 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using Inedo.Serialization;
+using Inedo.UPack;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 using Newtonsoft.Json;
@@ -29,27 +32,64 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 (
     PackageSource: InternalFeed
 );")]
-    public sealed class PushPackageFileOperation : RemotePackageOperationBase
+    public sealed class PushPackageFileOperation : RemoteExecuteOperation, IFeedConfiguration
     {
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
         public string FilePath { get; set; }
 
-        [Required]
+        [ScriptAlias("To")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
-        public override string PackageSource { get; set; }
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSourceName { get; set; }
 
-        public override string PackageName { get => null; set => throw new InvalidOperationException(); }
+        [Category("Connection/Identity")]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [PlaceholderText("Use Feed from package source")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
 
-        [SlimSerializable]
-        private string UserName { get; set; }
-        [SlimSerializable]
-        private string Password { get; set; }
-        [SlimSerializable]
-        private string FeedUrl { get; set; }
+        [Category("Connection/Identity")]
+        [ScriptAlias("FeedUrl")]
+        [DisplayName("ProGet server URL")]
+        [PlaceholderText("Use server URL from package source")]
+        public string FeedUrl { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("UserName")]
+        [DisplayName("ProGet user name")]
+        [Description("The name of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use user name from package source")]
+        public string UserName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Password")]
+        [DisplayName("ProGet password")]
+        [PlaceholderText("Use password from package source")]
+        [Description("The password of a user in ProGet that can access this feed.")]
+        public string Password { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("ApiKey")]
+        [DisplayName("ProGet API Key")]
+        [PlaceholderText("Use API Key from package source")]
+        [Description("An API Key that can access this feed.")]
+        public string ApiKey { get; set; }
+
+        [NonSerialized]
+        private IPackageManager packageManager;
+        [NonSerialized]
+        private string originalPackageSourceName;
+
+        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+        {
+            this.originalPackageSourceName = this.PackageSourceName;
+            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
+            this.PrepareCredentialPropertiesForRemote(context);
+        }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
@@ -61,11 +101,12 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             (var fullName, var version, bool vpack) = GetPackageInfo(fullPath);
             this.LogDebug($"Package verified. Name: {fullName}, Version: {version}");
 
+            var client = this.TryCreateProGetFeedClient(this, context.CancellationToken);
             byte[] hash;
             if (!vpack)
-                hash = await this.UploadAndComputeHashAsync(fullPath, this.FeedUrl, this.UserName, AH.CreateSecureString(this.Password), context.CancellationToken);
+                hash = await client.UploadVirtualPackageAndComputeHashAsync(fullPath);
             else
-                hash = await this.UploadVirtualAndComputeHashAsync(fullPath, this.FeedUrl, this.UserName, AH.CreateSecureString(this.Password), context.CancellationToken);
+                hash = await client.UploadPackageAndComputeHashAsync(fullName);
 
             return new PackageInfo(fullName, version, hash);
         }
@@ -74,11 +115,11 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         {
             await base.AfterRemoteExecuteAsync(result);
 
-            if (this.PackageManager != null && result is PackageInfo info)
+            if (this.packageManager != null && result is PackageInfo info && !string.IsNullOrWhiteSpace(this.originalPackageSourceName))
             {
                 this.LogDebug("Attaching package to build...");
-                await this.PackageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(AttachedPackageType.Universal, info.Name, info.Version, info.Hash, this.PackageSource),
+                await this.packageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(AttachedPackageType.Universal, info.Name, info.Version, info.Hash, this.originalPackageSourceName),
                     default
                 );
                 this.LogDebug("Package attached.");
@@ -94,18 +135,10 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
                 ),
                 new RichDescription(
                     "to ",
-                    new Hilite(config[nameof(PackageSource)])
+                    new Hilite(config[nameof(PackageSourceName)])
                 )
             );
         }
-
-        private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
-        {
-            this.UserName = userName;
-            this.Password = password;
-            this.FeedUrl = feedUrl;
-        }
-
         private static (string fullName, string version, bool vpack) GetPackageInfo(string path)
         {
             if (path.EndsWith(".vpack", StringComparison.OrdinalIgnoreCase))
@@ -120,13 +153,13 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
                 if (string.IsNullOrWhiteSpace(version))
                     throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"version\" property.");
 
-                return (GetFullPackageName(group, name), version, true);
+                return (new UniversalPackageId(group, name).ToString(), version, true);
             }
 
             try
             {
                 using var package = new UniversalPackage(path);
-                return (GetFullPackageName(package.Group, package.Name), package.Version.ToString(), false);
+                return (new UniversalPackageId(package.Group, package.Name).ToString(), package.Version.ToString(), false);
             }
             catch (Exception ex)
             {

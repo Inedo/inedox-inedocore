@@ -4,15 +4,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.SecureResources;
 using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
@@ -23,11 +20,11 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     [Serializable]
     [Tag("proget")]
-    [ScriptAlias("Promote-Package")]
-    [DisplayName("Promote Package")]
+    [ScriptAlias("Repack-Package")]
+    [DisplayName("Repackage Package")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [Description("Promotes a package from one feed to another in a ProGet instance.")]
-    public sealed class PromotePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
+    [Description("Uses ProGet's Repackaging feature to Creates a new package with an altered version number to a ProGet feed and adds a repackaging entry to its metadata for auditing.")]
+    public sealed class RepackagePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
     {
         [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
@@ -41,32 +38,22 @@ namespace Inedo.Extensions.Operations.ProGet
         [SuggestableValue(typeof(PackageNameSuggestionProvider))]
         public string PackageName { get; set; }
 
-        [Required]
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
-        [PlaceholderText("latest")]
-        [DefaultValue("latest")]
+        [PlaceholderText("\"attached\" (BuildMaster only; otherwise required)")]
         [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
-        [ScriptAlias("ToFeed")]
-        [DisplayName("Promote to Feed")]
-        [PlaceholderText("required if not set in Connection/Identity")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
-        public string TargetFeedName { get; set; }
+        [Required]
+        [ScriptAlias("NewVersion")]
+        [DisplayName("New version")]
+        public string NewVersion { get; set; }
 
         [ScriptAlias("Reason")]
         [DisplayName("Reason")]
         [PlaceholderText("Unspecified")]
         public string Reason { get; set; }
 
-
-        [Category("Connection/Identity")]
-        [DisplayName("To source")]
-        [ScriptAlias("To")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
-        [PlaceholderText("Same as From package source")]
-        public string TargetPackageSourceName { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("Feed")]
@@ -110,36 +97,13 @@ namespace Inedo.Extensions.Operations.ProGet
         private IPackageManager packageManager;
         [NonSerialized]
         private string originalPackageSourceName;
-        [NonSerialized]
-        private string originalTargetPackageSourceName;
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             this.originalPackageSourceName = this.PackageSourceName;
-            this.originalTargetPackageSourceName = this.TargetPackageSourceName;
 
             if (!string.IsNullOrEmpty(this.PackageGroup))
                 this.PackageName = this.PackageGroup + "/" + this.PackageName;
-            
-            if (!string.IsNullOrEmpty(this.TargetPackageSourceName))
-            {
-                string targetApiEndpointUrl;
-                var targetPackageSource = SecureResource.TryCreate(this.TargetPackageSourceName, context as ICredentialResolutionContext ?? CredentialResolutionContext.None);
-                if (targetPackageSource is UniversalPackageSource utargetPackageSource)
-                    targetApiEndpointUrl = utargetPackageSource.ApiEndpointUrl;
-                else if (targetPackageSource is NuGetPackageSource ntargetPackageSource)
-                    targetApiEndpointUrl = ntargetPackageSource.ApiEndpointUrl;
-                else
-                    throw new ExecutionFailureException($"No {nameof(UniversalPackageSource)} or {nameof(NuGetPackageSource)} with the name {this.TargetPackageSourceName} was found.");
-
-                var client = this.TryCreateProGetFeedClient(context);
-                var targetClient = new ProGetFeedClient(targetApiEndpointUrl);
-                if (targetClient.ProGetBaseUrl != client?.ProGetBaseUrl || targetClient.FeedType != client?.FeedType)
-                    throw new ExecutionFailureException($"Target Package Source does have the same feed type and base url as From package source.");
-
-                this.TargetFeedName = targetClient.FeedName;
-                this.TargetPackageSourceName = null;
-            }
 
             await this.ResolveAttachedPackageAsync(context);
             this.PrepareCredentialPropertiesForRemote(context);
@@ -147,16 +111,16 @@ namespace Inedo.Extensions.Operations.ProGet
         }
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            this.LogInformation($"Promoting {this.PackageName} {this.PackageVersion} to {this.TargetFeedName}...");
+            this.LogInformation($"Repackaging {this.PackageName} {this.PackageVersion} to {this.NewVersion} on {this.PackageSourceName} ({this.FeedName} feed)...");
 
-            if (string.Equals(this.TargetFeedName, this.FeedName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(this.PackageVersion, this.NewVersion, StringComparison.OrdinalIgnoreCase))
             {
-                this.LogWarning("Target feed and source feed are the same; nothing to do.");
+                this.LogWarning("\"Version\" and \"NewVersion\" are the same; nothing to do.");
                 return null;
             }
 
             var client = new ProGetFeedClient(this.FeedUrl, log: this, cancellationToken: context.CancellationToken);
-            await client.PromoteAsync(this, this.TargetFeedName, this.Reason);
+            await client.RepackageAsync(this, this.NewVersion, this.Reason);
             return true;
         }
         protected override async Task AfterRemoteExecuteAsync(object result)
@@ -165,44 +129,38 @@ namespace Inedo.Extensions.Operations.ProGet
 
             if (this.packageManager != null && result != null && !string.IsNullOrWhiteSpace(this.originalPackageSourceName))
             {
-                AttachedPackage package = null;
+                var packageType = AttachedPackageType.Universal;
 
                 foreach (var p in await this.packageManager.GetBuildPackagesAsync(default))
                 {
-                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase) 
-                        && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase) 
-                        && string.Equals(p.PackageSource, this.originalPackageSourceName, StringComparison.OrdinalIgnoreCase))
+                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase))
                     {
-                        package = p;
+                        packageType = p.PackageType;
                         await this.packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
                     }
                 }
 
-                if (package != null)
-                {
-                    await this.packageManager.AttachPackageToBuildAsync(
-                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, this.originalTargetPackageSourceName),
-                        default
-                    );
-                }
+                await this.packageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(packageType, this.PackageName, this.NewVersion, null, AH.NullIf(this.originalPackageSourceName, string.Empty)),
+                    default
+                );
             }
         }
-
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
             return new ExtendedRichDescription(
                 new RichDescription(
-                    "Promote ",
+                    "Repackage ",
                     new Hilite(config[nameof(PackageName)]),
                     " ",
-                    new Hilite(config[nameof(PackageVersion)])
+                    new Hilite(config[nameof(PackageVersion)]),
+                    " to ",
+                    new Hilite(config[nameof(NewVersion)])
                 ),
                 new RichDescription(
-                    "from ",
-                    new Hilite(config[nameof(PackageSourceName)]),
-                    " to ",
-                    new Hilite(config[nameof(TargetFeedName)])
+                    "on ",
+                    new Hilite(config[nameof(PackageSourceName)])
                 )
             );
         }
