@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-    [DisplayName("Ensure Universal Package")]
+    [DisplayName("Ensure Universal Package Installed")]
     [Description("Ensures that the specified universal package is installed in the specified directory.")]
     [ScriptAlias("Ensure-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
@@ -41,7 +41,7 @@ ProGet::Ensure-Package
         private bool ValidateConfiguration()
         {
             if (this.Template.Includes?.Any() == true
-                || this.Template.Excludes.Any() == true
+                || this.Template.Excludes?.Any() == true
                 || this.Template.DeleteExtra == true)
             {
                 this.LogError($"Includes/Excludes and DeleteExtra options are no longer supported.");

@@ -38,7 +38,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
-        [SuggestableValue(typeof(PackageNameFromSourceSuggestionProvider))]
+        [SuggestableValue(typeof(PackageNameSuggestionProvider))]
         public string PackageName { get; set; }
 
         [Required]
