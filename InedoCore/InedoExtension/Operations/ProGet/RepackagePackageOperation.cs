@@ -10,7 +10,9 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
+using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
+using Inedo.Extensions.UniversalPackages;
 using Inedo.Serialization;
 using Inedo.Web;
 
@@ -21,60 +23,95 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Repack-Package")]
     [DisplayName("Repackage Package")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [Description("Creates a new package with an altered version number to a ProGet feed and adds a repackaging entry to its metadata for auditing.")]
-    public sealed class ChangePackageVersionOperation : RemotePackageOperationBase
+    [Description("Uses ProGet's Repackaging feature to Creates a new package with an altered version number to a ProGet feed and adds a repackaging entry to its metadata for auditing.")]
+    public sealed class RepackagePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
     {
-        protected override bool ResolveNuGetPackageSources => true;
-
+        [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
-        [PlaceholderText("Infer from package name")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
-        public override string PackageSource { get; set; }
+        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        public string PackageSourceName { get; set; }
 
-        [ScriptAlias("Group")]
-        [DisplayName("Group")]
-        public string PackageGroup { get; set; }
         [Required]
         [ScriptAlias("Name")]
-        [DisplayName("Name")]
-        public override string PackageName { get; set; }
-        [Required]
+        [DisplayName("Package name")]
+        [SuggestableValue(typeof(PackageNameSuggestionProvider))]
+        public string PackageName { get; set; }
+
         [ScriptAlias("Version")]
-        [DisplayName("Version")]
+        [DisplayName("Package version")]
+        [PlaceholderText("\"attached\" (BuildMaster only; otherwise required)")]
+        [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
+
         [Required]
         [ScriptAlias("NewVersion")]
         [DisplayName("New version")]
         public string NewVersion { get; set; }
+
         [ScriptAlias("Reason")]
         [DisplayName("Reason")]
         [PlaceholderText("Unspecified")]
         public string Reason { get; set; }
 
-        [SlimSerializable]
-        private string ApiKey { get; set; }
-        [SlimSerializable]
-        private string HostName { get; set; }
-        [SlimSerializable]
-        private string FeedName { get; set; }
 
-        protected override Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+        [Category("Connection/Identity")]
+        [ScriptAlias("Feed")]
+        [DisplayName("Feed name")]
+        [PlaceholderText("Use Feed from package source")]
+        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
+        public string FeedName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("FeedUrl")]
+        [DisplayName("ProGet server URL")]
+        [PlaceholderText("Use server URL from package source")]
+        public string FeedUrl { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("UserName")]
+        [DisplayName("ProGet user name")]
+        [Description("The name of a user in ProGet that can access this feed.")]
+        [PlaceholderText("Use user name from package source")]
+        public string UserName { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("Password")]
+        [DisplayName("ProGet password")]
+        [PlaceholderText("Use password from package source")]
+        [Description("The password of a user in ProGet that can access this feed.")]
+        public string Password { get; set; }
+
+        [Category("Connection/Identity")]
+        [ScriptAlias("ApiKey")]
+        [DisplayName("ProGet API Key")]
+        [PlaceholderText("Use API Key from package source")]
+        [Description("An API Key that can access this feed.")]
+        public string ApiKey { get; set; }
+
+        [Undisclosed]
+        [ScriptAlias("Group")]
+        public string PackageGroup { get; set; }
+
+        [NonSerialized]
+        private IPackageManager packageManager;
+        [NonSerialized]
+        private string originalPackageSourceName;
+
+        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
-            if (string.IsNullOrWhiteSpace(this.PackageName))
-                throw new ExecutionFailureException("\"Name\" is required.");
+            this.originalPackageSourceName = this.PackageSourceName;
 
-            if (string.IsNullOrWhiteSpace(this.PackageVersion))
-                throw new ExecutionFailureException("\"Version\" is required.");
+            if (!string.IsNullOrEmpty(this.PackageGroup))
+                this.PackageName = this.PackageGroup + "/" + this.PackageName;
 
-            if (string.IsNullOrWhiteSpace(this.NewVersion))
-                throw new ExecutionFailureException("\"NewVersion\" is required.");
-
-            return base.BeforeRemoteExecuteAsync(context);
+            await this.ResolveAttachedPackageAsync(context);
+            this.PrepareCredentialPropertiesForRemote(context);
+            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
         }
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            this.LogInformation($"Repackaging {GetFullPackageName(this.PackageGroup, this.PackageName)} {this.PackageVersion} to {this.NewVersion} on {this.HostName} ({this.FeedName} feed)...");
+            this.LogInformation($"Repackaging {this.PackageName} {this.PackageVersion} to {this.NewVersion} on {this.PackageSourceName} ({this.FeedName} feed)...");
 
             if (string.Equals(this.PackageVersion, this.NewVersion, StringComparison.OrdinalIgnoreCase))
             {
@@ -82,87 +119,29 @@ namespace Inedo.Extensions.Operations.ProGet
                 return null;
             }
 
-            var url = this.HostName;
-            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                url = "http://" + url;
-
-            if (!url.EndsWith("/"))
-                url += "/";
-
-            url += "api/repackaging/repackage";
-
-            this.LogDebug($"Making request to {url}...");
-            var request = WebRequest.CreateHttp(url);
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.Headers.Add("X-ApiKey", this.ApiKey);
-            request.UserAgent = $"{SDK.ProductName}/{SDK.ProductVersion} InedoCore/{typeof(ProGetClient).Assembly.GetName().Version}";
-            request.UseDefaultCredentials = true;
-
-            try
-            {
-                using (var writer = new StreamWriter(await request.GetRequestStreamAsync(), InedoLib.UTF8Encoding))
-                {
-                    var data = new Dictionary<string, string>
-                    {
-                        ["feed"] = this.FeedName,
-                        ["packageName"] = this.PackageName,
-                        ["version"] = this.PackageVersion,
-                        ["newVersion"] = this.NewVersion
-                    };
-
-                    if (!string.IsNullOrWhiteSpace(this.PackageGroup))
-                        data["group"] = this.PackageGroup;
-
-                    if (!string.IsNullOrWhiteSpace(this.Reason))
-                        data["comments"] = this.Reason;
-
-                    writer.Write(
-                        string.Join(
-                            "&",
-                            data.Select(p => Uri.EscapeDataString(p.Key) + "=" + Uri.EscapeDataString(p.Value))
-                        )
-                    );
-                }
-
-                using (var response = await request.GetResponseAsync())
-                {
-                }
-
-                this.LogInformation("Repackage was successful.");
-
-                return new RepackageInfo(GetFullPackageName(this.PackageGroup, this.PackageName), this.PackageVersion, this.NewVersion);
-            }
-            catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
-            {
-                using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
-                {
-                    var message = reader.ReadToEnd();
-                    this.LogError($"The server responded with {(int)exResponse.StatusCode}: {message}");
-                }
-            }
-
-            return null;
+            var client = new ProGetFeedClient(this.FeedUrl, log: this, cancellationToken: context.CancellationToken);
+            await client.RepackageAsync(this, this.NewVersion, this.Reason);
+            return true;
         }
         protected override async Task AfterRemoteExecuteAsync(object result)
         {
             await base.AfterRemoteExecuteAsync(result);
 
-            if (this.PackageManager != null && result is RepackageInfo info && !string.IsNullOrWhiteSpace(this.PackageSource))
+            if (this.packageManager != null && result != null && !string.IsNullOrWhiteSpace(this.originalPackageSourceName))
             {
                 var packageType = AttachedPackageType.Universal;
 
-                foreach (var p in await this.PackageManager.GetBuildPackagesAsync(default))
+                foreach (var p in await this.packageManager.GetBuildPackagesAsync(default))
                 {
-                    if (p.Active && string.Equals(p.Name, info.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, info.OriginalVersion, StringComparison.OrdinalIgnoreCase))
+                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase) && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase))
                     {
                         packageType = p.PackageType;
-                        await this.PackageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
+                        await this.packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
                     }
                 }
 
-                await this.PackageManager.AttachPackageToBuildAsync(
-                    new AttachedPackage(packageType, info.PackageName, info.NewVersion, null, AH.NullIf(this.PackageSource, string.Empty)),
+                await this.packageManager.AttachPackageToBuildAsync(
+                    new AttachedPackage(packageType, this.PackageName, this.NewVersion, null, AH.NullIf(this.originalPackageSourceName, string.Empty)),
                     default
                 );
             }
@@ -173,7 +152,7 @@ namespace Inedo.Extensions.Operations.ProGet
             return new ExtendedRichDescription(
                 new RichDescription(
                     "Repackage ",
-                    new Hilite(GetFullPackageName(config[nameof(PackageGroup)], config[nameof(PackageName)])),
+                    new Hilite(config[nameof(PackageName)]),
                     " ",
                     new Hilite(config[nameof(PackageVersion)]),
                     " to ",
@@ -181,56 +160,9 @@ namespace Inedo.Extensions.Operations.ProGet
                 ),
                 new RichDescription(
                     "on ",
-                    new Hilite(config[nameof(PackageSource)])
+                    new Hilite(config[nameof(PackageSourceName)])
                 )
             );
-        }
-
-        private protected override void SetPackageSourceProperties(string userName, string password, string feedUrl)
-        {
-            if (!string.Equals(userName, "api", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(password))
-                throw new ExecutionFailureException("This operation requires a ProGet API key. This can be specified either with Inedo Product credentials or with Username & Password credentials (with a UserName of \"api\").");
-
-            this.ApiKey = password;
-
-            Uri uri;
-            try
-            {
-                uri = new Uri(feedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? feedUrl : ("http://" + feedUrl));
-            }
-            catch (Exception ex)
-            {
-                throw new ExecutionFailureException("Feed URL is invalid: " + ex.Message);
-            }
-
-            this.HostName = uri.GetLeftPart(UriPartial.Authority);
-
-            var pathParts = uri.AbsolutePath.Trim('/').Split(new[] { '/' });
-            if (pathParts.Length < 2)
-                throw new ExecutionFailureException("Could not determine feed name from feed URL " + feedUrl);
-
-            this.FeedName = Uri.UnescapeDataString(pathParts[1]);
-        }
-
-        [SlimSerializable]
-        private sealed class RepackageInfo
-        {
-            public RepackageInfo()
-            {
-            }
-            public RepackageInfo(string packageName, string originalVersion, string newVersion)
-            {
-                this.PackageName = packageName;
-                this.OriginalVersion = originalVersion;
-                this.NewVersion = newVersion;
-            }
-
-            [SlimSerializable]
-            public string PackageName { get; set; }
-            [SlimSerializable]
-            public string OriginalVersion { get; set; }
-            [SlimSerializable]
-            public string NewVersion { get; set; }
         }
     }
 }
