@@ -23,8 +23,8 @@ namespace Inedo.Extensions.Operations.ProGet
     [ScriptAlias("Repack-Package")]
     [DisplayName("Repackage Package")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [Description("Creates a new package with an altered version number to a ProGet feed and adds a repackaging entry to its metadata for auditing.")]
-    public sealed class ChangePackageVersionOperation : RemoteExecuteOperation, IFeedPackageConfiguration
+    [Description("Uses ProGet's Repackaging feature to Creates a new package with an altered version number to a ProGet feed and adds a repackaging entry to its metadata for auditing.")]
+    public sealed class RepackagePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
     {
         [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
