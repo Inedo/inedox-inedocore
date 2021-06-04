@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Inedo.Extensibility;
@@ -8,6 +9,7 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
+    [Obsolete]
     internal sealed class OtterRoleNameSuggestionProvider : ISuggestionProvider
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)

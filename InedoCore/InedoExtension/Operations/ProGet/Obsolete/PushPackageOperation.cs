@@ -38,7 +38,9 @@ ProGet::Push-Package
 #pragma warning disable CS0618 // Type or member is obsolete
     public sealed class PushPackageOperation : RemoteExecuteOperation, IHasCredentials<ProGetCredentials>
 #pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0612 // Type or member is obsolete
         , IHasCredentials<InedoProductCredentials>
+#pragma warning restore CS0612 // Type or member is obsolete
     {
         [NonSerialized]
         private IPackageManager packageManager;

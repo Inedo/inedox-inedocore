@@ -5,9 +5,11 @@ using Inedo.Extensions.Operations.Otter;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Credentials;
 using Inedo.Web;
+using System;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
+    [Obsolete]
     internal sealed class OtterServerNameSuggestionProvider : ISuggestionProvider
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)

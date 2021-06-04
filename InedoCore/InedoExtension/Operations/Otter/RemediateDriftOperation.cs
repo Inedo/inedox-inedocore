@@ -26,10 +26,12 @@ Otter::Remediate-Drift
     Role: hdars-web-1k
 );")]
     [Note("Either a server name or role name is required, but not both. If both values are entered, role name will be ignored.")]
+#pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable CS0618 // Type or member is obsolete
-    public sealed partial class RemediateDriftOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
-#pragma warning restore CS0618 // Type or member is obsolete
+    public sealed partial class RemediateDriftOperation : ExecuteOperation
+        , IHasCredentials<OtterCredentials>
         , IHasCredentials<InedoProductCredentials>
+
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
@@ -55,16 +57,15 @@ Otter::Remediate-Drift
         [ScriptAlias("Host")]
         [DisplayName("Otter server URL")]
         [PlaceholderText("Use URL from credentials")]
-#pragma warning disable CS0618 // Type or member is obsolete
         [MappedCredential(nameof(OtterCredentials.Host))]
-#pragma warning restore CS0618 // Type or member is obsolete
         public string Host { get; set; }
         [Category("Connection")]
         [ScriptAlias("ApiKey")]
         [DisplayName("API key")]
         [PlaceholderText("Use API key from credentials")]
-#pragma warning disable CS0618 // Type or member is obsolete
+
         [MappedCredential(nameof(OtterCredentials.ApiKey))]
+#pragma warning restore CS0612 // Type or member is obsolete
 #pragma warning restore CS0618 // Type or member is obsolete
         public SecureString ApiKey { get; set; }
 

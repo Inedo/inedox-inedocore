@@ -28,10 +28,13 @@ Otter::Set-Variable
     Sensitive: false
 );")]
     [Note("If multiple entity scopes are provided, the variable will be multi-scoped. If no entity scope is provided, a global variable will be set.")]
+    public sealed class SetOtterVariablesOperation : ExecuteOperation
 #pragma warning disable CS0618 // Type or member is obsolete
-    public sealed class SetOtterVariablesOperation : ExecuteOperation, IHasCredentials<OtterCredentials>
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0612 // Type or member is obsolete
+        , IHasCredentials<OtterCredentials>
         , IHasCredentials<InedoProductCredentials>
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0612 // Type or member is obsolete
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
@@ -49,6 +52,7 @@ Otter::Set-Variable
 
         [ScriptAlias("Server")]
         [DisplayName("Server name")]
+#pragma warning disable CS0612 // Type or member is obsolete
         [SuggestableValue(typeof(OtterServerNameSuggestionProvider))]
         public string Server { get; set; }
 
@@ -60,6 +64,7 @@ Otter::Set-Variable
         [ScriptAlias("Environment")]
         [DisplayName("Environment name")]
         [SuggestableValue(typeof(OtterEnvironmentNameSuggestionProvider))]
+#pragma warning restore CS0612 // Type or member is obsolete
         public string Environment { get; set; }
 
         [ScriptAlias("Sensitive")]

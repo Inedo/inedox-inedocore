@@ -282,7 +282,7 @@ namespace Inedo.Extensions.UserDirectories
             foreach (var domain in domains)
             {
                 this.LogDebug($"Searching domain {domain}...");
-#warning BASE DN
+                //BASE DN
                 var result = this.Search("DC=" + domain.Name.Replace(".", ",DC="), searchString.ToString(), userName: domain.DomainQualifiedName, password: domain.Password).FirstOrDefault();
                 if (result != null)
                     return result;
@@ -324,7 +324,7 @@ namespace Inedo.Extensions.UserDirectories
             foreach (var domain in this.domainsToSearch.Value)
             {
                 this.LogDebug("Searching domain: " + domain);
-#warning BASE DN
+                //BASE DN
                 foreach (var result in this.Search("DC=" + domain.Name.Replace(".", ",DC="), filter, scope: scope, userName: domain.DomainQualifiedName, password: domain.Password))
                 {
                     var principal = this.CreatePrincipal(result);
