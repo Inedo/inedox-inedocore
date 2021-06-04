@@ -1,13 +1,13 @@
-﻿using Inedo.Documentation;
+﻿using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.Web;
-using System;
-using System.ComponentModel;
-using System.Threading.Tasks;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -28,6 +28,8 @@ namespace Inedo.Extensions.Operations.ProGet
 ")]
     public sealed class InstallPackageOperation : ExecuteOperation, IFeedPackageInstallationConfiguration
     {
+        private volatile OperationProgress progress;
+
         [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
@@ -57,7 +59,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [DisplayName("Use Local Registry")]
         [PlaceholderText("Record installation in Machine registry")]
         [DefaultValue(LocalRegistryOptions.Machine)]
-        public LocalRegistryOptions LocalRegistry { get; set; }
+        public LocalRegistryOptions LocalRegistry { get; set; } = LocalRegistryOptions.Machine;
 
         [Category("Local registry")]
         [Description("Cache Package")]
@@ -108,19 +110,18 @@ namespace Inedo.Extensions.Operations.ProGet
         [Description("An API Key that can access this feed.")]
         public string ApiKey { get; set; }
 
-        private volatile OperationProgress progress = null;
         public override OperationProgress GetProgress() => this.progress;
-        private void SetProgress(OperationProgress p) => this.progress = p;
-
+ 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
             if (string.IsNullOrWhiteSpace(this.PackageVersion))
             {
                 if (SDK.ProductName == "BuildMaster")
-                    this.PackageVersion = "attached"; 
+                    this.PackageVersion = "attached";
                 else
                     this.PackageVersion = "latest";
             }
+
             await this.ResolveAttachedPackageAsync(context);
 
             await this.InstallPackageAsync(context, this.SetProgress);
@@ -141,5 +142,6 @@ namespace Inedo.Extensions.Operations.ProGet
             );
         }
 
+        private void SetProgress(OperationProgress p) => this.progress = p;
     }
 }
