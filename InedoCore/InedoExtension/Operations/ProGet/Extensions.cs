@@ -24,7 +24,7 @@ namespace Inedo.Extensions.Operations.ProGet
     internal static class Extensions
     {
         public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedConfiguration feedConfig, ILogSink log, CancellationToken token)
-                    => TryCreateProGetFeedClient(feedConfig, CredentialResolutionContext.None, log, token);
+            => TryCreateProGetFeedClient(feedConfig, CredentialResolutionContext.None, log, token);
         public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedConfiguration feedConfig, IOperationExecutionContext context)
             => TryCreateProGetFeedClient(feedConfig, context as ICredentialResolutionContext ?? CredentialResolutionContext.None, context.Log, context.CancellationToken);
         public static ProGetFeedClient TryCreateProGetFeedClient(this IFeedConfiguration feedConfig, ICredentialResolutionContext context)
@@ -34,13 +34,28 @@ namespace Inedo.Extensions.Operations.ProGet
             if (feedConfig == null)
                 return null;
 
-            UniversalPackageSource packageSource = null;
+            SecureCredentials packageSourceCredentials = null; string packageSourceApiEndpointUrl = null;
             if (!string.IsNullOrEmpty(feedConfig.PackageSourceName))
             {
-                packageSource = SecureResource.TryCreate(feedConfig.PackageSourceName, context) as UniversalPackageSource;
+                var packageSource = SecureResource.TryCreate(feedConfig.PackageSourceName, context);
                 if (packageSource == null)
                 {
-                    log.LogDebug($"No {nameof(UniversalPackageSource)} with the name {feedConfig.PackageSourceName} was found.");
+                    log.LogWarning($"No package source with the name \"{feedConfig.PackageSourceName}\" could be found.");
+                    return null;
+                }
+                if (packageSource is UniversalPackageSource upackSource)
+                {
+                    packageSourceCredentials = upackSource.GetCredentials(context);
+                    packageSourceApiEndpointUrl = upackSource.ApiEndpointUrl;
+                }
+                else if (packageSource is NuGetPackageSource nugetSource)
+                {
+                    packageSourceCredentials = nugetSource.GetCredentials(context);
+                    packageSourceApiEndpointUrl = nugetSource.ApiEndpointUrl;
+                }
+                else
+                {
+                    log.LogWarning($"The specified package source (\"{feedConfig.PackageSourceName}\") is a \"{packageSource.GetType().Name}\", but must be a NuGet or Universal feed.");
                     return null;
                 }
             }
@@ -51,12 +66,12 @@ namespace Inedo.Extensions.Operations.ProGet
                 if (!string.IsNullOrEmpty(feedConfig.FeedUrl))
                     apiEndpointUrl = feedConfig?.FeedUrl;
 
-                else if (!string.IsNullOrEmpty(packageSource?.ApiEndpointUrl))
-                    apiEndpointUrl = packageSource.ApiEndpointUrl;
+                else if (!string.IsNullOrEmpty(packageSourceApiEndpointUrl))
+                    apiEndpointUrl = packageSourceApiEndpointUrl;
 
                 else
                 {
-                    log.LogDebug($"No Api Endpoint URL was specified.");
+                    log.LogDebug($"No Package Source or Api Endpoint URL was specified.");
                     return null;
                 }
             }
@@ -67,7 +82,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 var match = ProGetFeedClient.ApiEndPointUrlRegex.Match(apiEndpointUrl ?? "");
                 if (!match.Success)
                 {
-                    log.LogDebug($"{apiEndpointUrl} is not a valid {nameof(UniversalPackageSource)} url.");
+                    log.LogWarning($"{apiEndpointUrl} is not a valid {nameof(UniversalPackageSource)} url.");
                     return null;
                 }
 
@@ -80,7 +95,7 @@ namespace Inedo.Extensions.Operations.ProGet
             else if (!string.IsNullOrEmpty(feedConfig.UserName))
                 credentials = new UsernamePasswordCredentials { UserName = feedConfig.UserName, Password = AH.CreateSecureString(feedConfig.Password) };
             else
-                credentials = packageSource?.GetCredentials(context);
+                credentials = packageSourceCredentials;
 
             return new ProGetFeedClient(apiEndpointUrl, credentials, log, cancellationToken);
         }
@@ -109,13 +124,15 @@ namespace Inedo.Extensions.Operations.ProGet
                 config.PackageVersion = match.Version;
             }
         }
-        public static void PrepareCredentialPropertiesForRemote(this IFeedConfiguration feedConfig, IOperationExecutionContext context)
+        public static void PrepareCredentialPropertiesForRemote(this IFeedConfiguration feedConfig, IOperationExecutionContext context, bool clientRequired = true)
         {
             var client = feedConfig.TryCreateProGetFeedClient(context);
-            
+            if (clientRequired && client == null)
+                throw new ExecutionFailureException($"Unable to connect to a ProGet feed.");
+
             feedConfig.PackageSourceName = null;
             feedConfig.FeedName = null; 
-            feedConfig.FeedUrl = client?.FeedApiEndpointUrl;
+            feedConfig.FeedUrl = client.FeedApiEndpointUrl;
 
             if (client?.Credentials is TokenCredentials tcred)
                 feedConfig.ApiKey = AH.Unprotect(tcred.Token);

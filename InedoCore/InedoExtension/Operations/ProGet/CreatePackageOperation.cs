@@ -144,7 +144,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 this.PackageName = this.PackageGroup + "/" + this.PackageName;
 
             await this.ResolveAttachedPackageAsync(context);
-            this.PrepareCredentialPropertiesForRemote(context);
+            this.PrepareCredentialPropertiesForRemote(context, false);
             this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
         }
 
