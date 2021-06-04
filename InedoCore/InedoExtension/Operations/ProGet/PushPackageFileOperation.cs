@@ -103,10 +103,10 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 
             var client = this.TryCreateProGetFeedClient(this, context.CancellationToken);
             byte[] hash;
-            if (!vpack)
+            if (vpack)
                 hash = await client.UploadVirtualPackageAndComputeHashAsync(fullPath);
             else
-                hash = await client.UploadPackageAndComputeHashAsync(fullName);
+                hash = await client.UploadPackageAndComputeHashAsync(fullPath);
 
             return new PackageInfo(fullName, version, hash);
         }

@@ -155,7 +155,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 return null;
             }
 
-            var client = new ProGetFeedClient(this.FeedUrl, log: this, cancellationToken: context.CancellationToken);
+            var client = this.TryCreateProGetFeedClient(log: this, token: context.CancellationToken);
             await client.PromoteAsync(this, this.TargetFeedName, this.Reason);
             return true;
         }
@@ -181,7 +181,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 if (package != null)
                 {
                     await this.packageManager.AttachPackageToBuildAsync(
-                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, this.originalTargetPackageSourceName),
+                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, AH.CoalesceString(this.originalTargetPackageSourceName, this.originalPackageSourceName)),
                         default
                     );
                 }

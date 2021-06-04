@@ -80,20 +80,14 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrWhiteSpace(reason))
                 data["comments"] = reason;
 
-            try
+            using var client = this.CreateHttpClient();
+            using var response = await client.PostAsync(this.ProGetBaseUrl + "/api/repackaging/repackage", new FormUrlEncodedContent(data), this.CancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
             {
-                using var client = this.CreateHttpClient();
-                using var response = await client.PostAsync(this.ProGetBaseUrl + "api/repackaging/repackage", new FormUrlEncodedContent(data), this.CancellationToken).ConfigureAwait(false);
-                this.Log.LogInformation("Repackage was successful.");
+                await this.LogHttpErrorAsync(response).ConfigureAwait(false);
+                return;
             }
-            catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
-            {
-                using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
-                {
-                    var message = reader.ReadToEnd();
-                    this.Log.LogError($"The server responded with {(int)exResponse.StatusCode}: {message}");
-                }
-            }
+            this.Log.LogInformation("Repackage was successful.");
         }
         public async Task PromoteAsync(IFeedPackageConfiguration packageConfig, string newFeed, string reason)
         {
@@ -112,26 +106,24 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrWhiteSpace(reason))
                 data["comments"] = reason;
 
-            try
+            using var client = this.CreateHttpClient();
+            using var response = await client.PostAsync(this.ProGetBaseUrl + "/api/promotions/promote", new FormUrlEncodedContent(data), this.CancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
             {
-                using var client = this.CreateHttpClient();
-                using var response = await client.PostAsync(this.ProGetBaseUrl + "api/promotions/promote", new FormUrlEncodedContent(data), this.CancellationToken).ConfigureAwait(false);
-                this.Log.LogInformation("Repackage was successful.");
+                await this.LogHttpErrorAsync(response).ConfigureAwait(false);
+                return;
             }
-            catch (WebException ex) when (ex.Response is HttpWebResponse exResponse)
-            {
-                using (var reader = new StreamReader(exResponse.GetResponseStream(), InedoLib.UTF8Encoding))
-                {
-                    var message = reader.ReadToEnd();
-                    this.Log.LogError($"The server responded with {(int)exResponse.StatusCode}: {message}");
-                }
-            }
+            this.Log.LogInformation("Repackage was successful.");
         }
         public async Task<string[]> GetFeedNamesAsync()
         {
             using var client = this.CreateHttpClient();
             using var response = await client.GetAsync(this.ProGetBaseUrl + "/upack?list-feeds", HttpCompletionOption.ResponseHeadersRead, this.CancellationToken).ConfigureAwait(false);
-            await HandleError(response).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                await this.LogHttpErrorAsync(response).ConfigureAwait(false);
+                return new string[0];
+            }
 
             using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             using var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding);
@@ -160,7 +152,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             using var client = this.CreateHttpClient();
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken).ConfigureAwait(false);
-            await HandleError(response).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
             using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             using var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding);
@@ -183,7 +175,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 client.DefaultRequestHeaders.Add(PackageDeploymentData.Headers.Target, deployInfo.Target ?? string.Empty);
             }
             using var response = await client.GetAsync(this.FeedApiEndpointUrl + "download/" + url, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken).ConfigureAwait(false);
-            await HandleError(response).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
             using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             var tempStream = TemporaryStream.Create(response.Content.Headers.ContentLength ?? 0L);
@@ -287,16 +279,13 @@ namespace Inedo.Extensions.Operations.ProGet
         public Task<Stream> GetPackageStreamAsync(IFeedPackageConfiguration config) => this.GetPackageStreamAsync(UniversalPackageId.Parse(config.PackageName), UniversalPackageVersion.Parse(config.PackageVersion));
 
 
-        private static async Task HandleError(HttpResponseMessage response)
+        private async Task LogHttpErrorAsync(HttpResponseMessage response)
         {
-            if (response.IsSuccessStatusCode)
-                return;
-
             var message = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.InternalServerError && message.StartsWith("<!DOCTYPE"))
                 message = "Invalid feed URL. Ensure the feed URL follows the format: http://{proget-server}/upack/{feed-name}";
 
-            throw new ObsoleteProGetClient.ProGetException((int)response.StatusCode, message);
+            this.Log.LogError(message);
         }
 
         private static readonly LazyRegex FindVersionRegex = new LazyRegex(@"^(?<1>[0-9]+)(\.(?<2>[0-9]+)(?<3>\.([0-9]+(-.+)?)?)?)?", RegexOptions.Compiled | RegexOptions.ExplicitCapture);

@@ -112,17 +112,17 @@ namespace Inedo.Extensions.Operations.ProGet
         public static void PrepareCredentialPropertiesForRemote(this IFeedConfiguration feedConfig, IOperationExecutionContext context)
         {
             var client = feedConfig.TryCreateProGetFeedClient(context);
-
+            
             feedConfig.PackageSourceName = null;
             feedConfig.FeedName = null; 
-            feedConfig.FeedUrl = client.FeedApiEndpointUrl;
+            feedConfig.FeedUrl = client?.FeedApiEndpointUrl;
 
-            if (client.Credentials is TokenCredentials tcred)
+            if (client?.Credentials is TokenCredentials tcred)
                 feedConfig.ApiKey = AH.Unprotect(tcred.Token);
             else
                 feedConfig.ApiKey = null;
 
-            if (client.Credentials is UsernamePasswordCredentials ucred)
+            if (client?.Credentials is UsernamePasswordCredentials ucred)
             {
                 feedConfig.UserName = ucred.UserName;
                 feedConfig.Password = AH.Unprotect(ucred.Password);

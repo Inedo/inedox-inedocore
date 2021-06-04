@@ -189,22 +189,23 @@ namespace Inedo.Extensions.Operations.ProGet
             // Ensure output directory exists
             DirectoryEx.Create(PathEx.GetDirectoryName(outputFileName));
 
+            if (!DirectoryEx.Exists(sourceDirectory))
+            {
+                this.LogWarning($"Source directory {sourceDirectory} does not exist.");
+                return null;
+            }
+
+            var mask = new MaskingContext(this.Includes, this.Excludes);
+
+            var matches = DirectoryEx.GetFileSystemInfos(sourceDirectory, mask).Select(i => i.FullName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (matches.Count == 0)
+            {
+                this.LogWarning($"Nothing was captured in {sourceDirectory} using the specified mask.");
+                return null;
+            }
+
             using (var package = new UniversalPackageBuilder(new FileStream(outputFileName, this.Overwrite ? FileMode.Create : FileMode.CreateNew), metadata))
             {
-                if (!DirectoryEx.Exists(sourceDirectory))
-                {
-                    this.LogWarning($"Source directory {sourceDirectory} does not exist.");
-                    return null;
-                }
-
-                var mask = new MaskingContext(this.Includes, this.Excludes);
-
-                var matches = DirectoryEx.GetFileSystemInfos(sourceDirectory, mask).Select(i => i.FullName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                if (matches.Count == 0)
-                {
-                    this.LogWarning($"Nothing was captured in {sourceDirectory} using the specified mask.");
-                    return null;
-                }
 
                 this.LogDebug($"Adding {matches.Count} items to package...");
 

@@ -119,7 +119,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 return null;
             }
 
-            var client = new ProGetFeedClient(this.FeedUrl, log: this, cancellationToken: context.CancellationToken);
+            var client = this.TryCreateProGetFeedClient(log: this, token: context.CancellationToken);
             await client.RepackageAsync(this, this.NewVersion, this.Reason);
             return true;
         }
