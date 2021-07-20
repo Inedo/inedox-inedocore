@@ -107,7 +107,7 @@ namespace Inedo.Extensions.Operations.Files
 
         protected override Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
         {
-            if (this.ReadOnly ?? this.Hidden ?? this.System == null)
+            if (!this.ReadOnly.HasValue && !this.Hidden.HasValue && !this.System.HasValue)
             {
                 this.LogWarning("No file attributes have been specified.");
                 return Complete;
