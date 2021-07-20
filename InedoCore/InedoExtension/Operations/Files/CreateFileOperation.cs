@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
@@ -73,12 +74,13 @@ Create-File(
                 }
             }
 
+            var text = Regex.Replace(this.Text ?? string.Empty, @"\r?\n", fileOps.NewLine);
+
             this.LogInformation("Creating file...");
             this.LogDebug($"Creating directories for {path}...");
             await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(path)).ConfigureAwait(false);
             this.LogDebug($"Creating {path}...");
-            var linuxFileOps = fileOps as ILinuxFileOperationsExecuter;
-            if (linuxFileOps != null)
+            if (fileOps is ILinuxFileOperationsExecuter linuxFileOps)
             {
                 int? mode = AH.ParseInt(AH.CoalesceString(this.PosixFileMode, "644"));
                 if (mode == null)
@@ -87,15 +89,13 @@ Create-File(
                     return;
                 }
 
-                using (var stream = await linuxFileOps.OpenFileAsync(path, FileMode.Create, FileAccess.Write, Extensions.PosixFileMode.FromDecimal(mode.Value).OctalValue))
-                using (var writer = new StreamWriter(stream, InedoLib.UTF8Encoding) { NewLine = linuxFileOps.NewLine })
-                {
-                    await writer.WriteAsync(this.Text ?? string.Empty);
-                }
+                using var stream = await linuxFileOps.OpenFileAsync(path, FileMode.Create, FileAccess.Write, Extensions.PosixFileMode.FromDecimal(mode.Value).OctalValue);
+                using var writer = new StreamWriter(stream, InedoLib.UTF8Encoding) { NewLine = linuxFileOps.NewLine };
+                await writer.WriteAsync(text);
             }
             else
             {
-                await fileOps.WriteAllTextAsync(path, this.Text ?? string.Empty);
+                await fileOps.WriteAllTextAsync(path, text);
             }
 
             this.LogInformation(path + " file created.");

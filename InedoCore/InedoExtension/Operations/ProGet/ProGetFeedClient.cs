@@ -1,16 +1,4 @@
-﻿using Inedo.Diagnostics;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.SecureResources;
-using Inedo.Extensibility.VariableFunctions;
-using Inedo.Extensions.Credentials;
-using Inedo.Extensions.SecureResources;
-using Inedo.Extensions.UniversalPackages;
-using Inedo.IO;
-using Inedo.UPack;
-using Inedo.UPack.Net;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -24,6 +12,17 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Inedo.Diagnostics;
+using Inedo.Extensibility.Credentials;
+using Inedo.Extensibility.Operations;
+using Inedo.Extensibility.VariableFunctions;
+using Inedo.Extensions.Credentials;
+using Inedo.Extensions.SecureResources;
+using Inedo.Extensions.UniversalPackages;
+using Inedo.IO;
+using Inedo.UPack;
+using Inedo.UPack.Net;
+using Newtonsoft.Json;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -36,13 +35,13 @@ namespace Inedo.Extensions.Operations.ProGet
         public static readonly LazyRegex ApiEndPointUrlRegex = new LazyRegex(@"(?<baseUrl>(https?://)?[^/]+)/(?<feedType>upack|nuget)(/?(?<feedName>[^/]+)/?)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
         public string FeedApiEndpointUrl { get; }
-        public string ProGetBaseUrl { get;  }
-        public string FeedName { get;  }
+        public string ProGetBaseUrl { get; }
+        public string FeedName { get; }
         public string FeedType { get; }
         public SecureCredentials Credentials { get; }
 
         private ILogSink Log { get; }
-        private CancellationToken CancellationToken { get;  }
+        private CancellationToken CancellationToken { get; }
 
         public ProGetFeedClient(string feedApiEndpointUrl, SecureCredentials credentials = null, ILogSink log = null, CancellationToken cancellationToken = default)
         {
@@ -50,7 +49,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw new ArgumentNullException(nameof(feedApiEndpointUrl));
 
             var match = ApiEndPointUrlRegex.Match(feedApiEndpointUrl ?? "");
-            if (!match.Success) 
+            if (!match.Success)
                 throw new ArgumentException($"{feedApiEndpointUrl} is not a valid {nameof(UniversalPackageSource)} url.", nameof(feedApiEndpointUrl));
 
             this.Log = log;
@@ -141,7 +140,7 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var id = UniversalPackageId.Parse(packageName);
             var versions = await this.CreateUPacklient().ListPackageVersionsAsync(id, false, null, this.CancellationToken).ConfigureAwait(false);
-            return this.FindPackageVersion(versions, packageVersion);
+            return this.FindPackageVersion(versions.OrderByDescending(v => v.Version), packageVersion);
         }
         public async Task<ProGetPackageVersionInfo> GetPackageVersionWithFilesAsync(UniversalPackageId id, UniversalPackageVersion version)
         {
@@ -250,7 +249,7 @@ namespace Inedo.Extensions.Operations.ProGet
         {
             var clientOptions = new HttpClientHandler { UseDefaultCredentials = true };
             HttpClient client;
-            
+
             if (this.Credentials is TokenCredentials tcreds)
             {
                 this.Log.LogDebug($"Making request with API Key...");
@@ -310,9 +309,10 @@ namespace Inedo.Extensions.Operations.ProGet
                     var minor = BigInteger.Parse(match.Groups[2].Value);
                     return packages.FirstOrDefault(v => v.Version.Major == major && v.Version.Minor == minor);
                 }
+
                 return packages.FirstOrDefault(v => v.Version.Major == major);
             }
-            
+
             var semver = UniversalPackageVersion.Parse(packageVersion);
             return packages.FirstOrDefault(v => v.Version == semver);
         }
@@ -362,7 +362,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
             }
-
 
             public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
             {

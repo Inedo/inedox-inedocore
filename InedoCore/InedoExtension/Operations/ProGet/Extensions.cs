@@ -1,4 +1,10 @@
-﻿using Inedo.Agents;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
+using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.ExecutionEngine.Executer;
 using Inedo.Extensibility.Credentials;
@@ -10,14 +16,7 @@ using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using Inedo.Serialization;
 using Inedo.UPack.Packaging;
-using System;
-using System.IO;
-using System.Linq;
-using System.Security;
-using System.Threading;
-using System.Threading.Tasks;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
-
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -71,7 +70,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 else
                 {
-                    log.LogDebug($"No Package Source or Api Endpoint URL was specified.");
+                    log.LogDebug("No Package Source or Api Endpoint URL was specified.");
                     return null;
                 }
             }
@@ -131,7 +130,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 throw new ExecutionFailureException($"Unable to connect to a ProGet feed.");
 
             feedConfig.PackageSourceName = null;
-            feedConfig.FeedName = null; 
+            feedConfig.FeedName = null;
             feedConfig.FeedUrl = client.FeedApiEndpointUrl;
 
             if (client?.Credentials is TokenCredentials tcred)
@@ -148,7 +147,7 @@ namespace Inedo.Extensions.Operations.ProGet
             {
                 feedConfig.UserName = null;
                 feedConfig.Password = null;
-            }              
+            }
         }
         public static async Task InstallPackageAsync(this IFeedPackageInstallationConfiguration config, IOperationExecutionContext context, Action<OperationProgress> reportProgress)
         {
@@ -163,6 +162,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 log.LogError($"Package {config.PackageName} v{config.PackageVersion} was not found.");
                 return;
             }
+
             log.LogInformation($"Package {packageToInstall.FullName} v{packageToInstall.Version} will be installed.");
 
             var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>();
@@ -180,7 +180,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             if (config.DirectDownload)
             {
-                log.LogDebug($"Package will downloaded directly on remote server.");
+                log.LogDebug("Package will downloaded directly on remote server.");
                 jobOptions.FeedApiEndpointUrl = client.FeedApiEndpointUrl;
                 jobOptions.ApiKey = (client.Credentials as TokenCredentials)?.Token;
                 jobOptions.UserName = (client.Credentials as UsernamePasswordCredentials)?.UserName;
@@ -192,8 +192,8 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 setProgress(0, "downloading package");
                 log.LogInformation("Downloading package...");
-                var tempStream = TemporaryStream.Create(size);
-                var sourceStream = await client.GetPackageStreamAsync(packageToInstall.FullName, packageToInstall.Version);
+                using var tempStream = TemporaryStream.Create(size);
+                using var sourceStream = await client.GetPackageStreamAsync(packageToInstall.FullName, packageToInstall.Version);
                 await sourceStream.CopyToAsync(tempStream, 80 * 1024, context.CancellationToken, position => setProgress((int)(100 * position / size), "downloading package"));
 
                 var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
@@ -225,43 +225,40 @@ namespace Inedo.Extensions.Operations.ProGet
 
             log.LogDebug($"Recording package installation in {config.LocalRegistry} registry...");
             reportProgress(new OperationProgress("recording package installation in machine registry"));
-            using (var registry = await RemotePackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false))
+            using var registry = await RemotePackageRegistry.GetRegistryAsync(context.Agent, false).ConfigureAwait(false);
+            var package = new RegisteredPackageModel
             {
-                var package = new RegisteredPackageModel
-                {
-                    Group = packageToInstall.Group,
-                    Name = packageToInstall.Name,
-                    Version = packageToInstall.Version.ToString(),
-                    InstallPath = targetPath,
-                    FeedUrl = client.FeedApiEndpointUrl,
-                    InstallationDate = DateTimeOffset.Now.ToString("o"),
-                    InstalledUsing = $"{SDK.ProductName}/{SDK.ProductVersion} (InedoCore/{Extension.Version})"
-                };
+                Group = packageToInstall.Group,
+                Name = packageToInstall.Name,
+                Version = packageToInstall.Version.ToString(),
+                InstallPath = targetPath,
+                FeedUrl = client.FeedApiEndpointUrl,
+                InstallationDate = DateTimeOffset.Now.ToString("o"),
+                InstalledUsing = $"{SDK.ProductName}/{SDK.ProductVersion} (InedoCore/{Extension.Version})"
+            };
 
-                await RemotePackageRegistry.registryLock.WaitAsync(context.CancellationToken).ConfigureAwait(false);
-                try
+            await RemotePackageRegistry.registryLock.WaitAsync(context.CancellationToken).ConfigureAwait(false);
+            try
+            {
+                using (var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+                using (context.CancellationToken.Register(() => cancellationTokenSource.Cancel()))
                 {
-                    using (var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
-                    using (context.CancellationToken.Register(() => cancellationTokenSource.Cancel()))
-                    {
-                        await registry.LockAsync(cancellationTokenSource.Token).ConfigureAwait(false);
+                    await registry.LockAsync(cancellationTokenSource.Token).ConfigureAwait(false);
 
-                        await registry.RegisterPackageAsync(package, context.CancellationToken).ConfigureAwait(false);
+                    await registry.RegisterPackageAsync(package, context.CancellationToken).ConfigureAwait(false);
 
-                        // doesn't need to be in a finally because dispose will unlock if necessary, but prefer doing it asynchronously
-                        await registry.UnlockAsync().ConfigureAwait(false);
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    log.LogWarning("Registering the package in the machine package registry timed out.");
-                }
-                finally
-                {
-                    RemotePackageRegistry.registryLock.Release();
+                    // doesn't need to be in a finally because dispose will unlock if necessary, but prefer doing it asynchronously
+                    await registry.UnlockAsync().ConfigureAwait(false);
                 }
             }
-
+            catch (TaskCanceledException)
+            {
+                log.LogWarning("Registering the package in the machine package registry timed out.");
+            }
+            finally
+            {
+                RemotePackageRegistry.registryLock.Release();
+            }
         }
 
         [SlimSerializable]
@@ -378,8 +375,6 @@ namespace Inedo.Extensions.Operations.ProGet
                 public LoggerWrapper(ILogger logger) => this.logger = logger;
                 void ILogSink.Log(IMessage message) => this.logger.Log(message.Level, message.Message);
             }
-
-
         }
     }
 }
