@@ -76,7 +76,7 @@ namespace Inedo.Extensions.Operations.HTTP
         [Category("Options")]
         [ScriptAlias("ProxyRequest")]
         [DisplayName("Use server in context")]
-        [Description("When selected, this will proxy the HTTP calls through the server is in context instead of using the server Otter or BuildMaster is installed on. If the server in context is SSH-based, then an error will be raised.")]
+        [Description("When selected, this will proxy the HTTP calls through the server is in context instead of using the server Otter or BuildMaster is installed on.")]
         [DefaultValue(true)]
         public bool ProxyRequest { get; set; } = true;
 
