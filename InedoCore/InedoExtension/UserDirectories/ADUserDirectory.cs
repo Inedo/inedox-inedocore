@@ -37,16 +37,14 @@ namespace Inedo.Extensions.UserDirectories
         [Persistent]
         [DisplayName("Domains to search")]
         [PlaceholderText("Only used when Search mode is Specific List")]
-        [Description("With Specific List selected, domains entered (one per line) may contain the name of AD username/password credentials after a comma; "
+        [Description("Only used when Search mode is Specific List. With Specific List selected, domains entered (one per line) may contain the name of AD username/password credentials after a comma; "
             + "e.g. us.kramerica.local,KramericaCredentials")]
-        [Category("Advanced")]
         public string[] DomainsToSearch { get; set; }
 
         [Persistent]
         [DisplayName("Domain controller host")]
         [PlaceholderText("Server is on the domain")]
         [Description("If the product server is not on the domain, specify the host name or IP address of the domain controller here, e.g. 192.168.1.1")]
-        [Category("Advanced")]
         public string DomainControllerAddress { get; set; }
 
         [Persistent]
@@ -70,16 +68,16 @@ namespace Inedo.Extensions.UserDirectories
 
         [Persistent]
         [Category("Advanced")]
-        [DisplayName("Use LDAPS")]
-        [Description("When connecting to your local Active Directory, connect via LDAP over SSL.")]
-        public bool UseLdaps { get; set; }
-
-        [Persistent]
-        [Category("Advanced")]
         [DisplayName("LDAP Port Override")]
         [Description("This will override the port used to connect to LDAP or LDAPS.  If this is not set, then port 389 is used for LDAP and 636 is used for LDAPS.")]
         [PlaceholderText("Use default")]
         public string Port { get; set; }
+
+        [Persistent]
+        [Category("Advanced")]
+        [DisplayName("Use LDAPS")]
+        [Description("When connecting to your local Active Directory, connect via LDAP over SSL.")]
+        public bool UseLdaps { get; set; }
 
         [Persistent]
         [Category("Advanced")]
