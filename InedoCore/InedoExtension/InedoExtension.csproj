@@ -8,10 +8,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.12.0">
+    <PackageReference Include="Inedo.AssetDirectories" Version="1.0.0-ci.10" />
+    <PackageReference Include="Inedo.SDK" Version="1.13.0-ci.4">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Inedo.UPack" Version="1.0.10" />
+    <PackageReference Include="Inedo.UPack" Version="1.0.11" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net452'">
     <Reference Include="System.DirectoryServices" />
