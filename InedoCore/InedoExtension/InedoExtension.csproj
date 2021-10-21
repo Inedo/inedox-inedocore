@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Inedo.AssetDirectories" Version="1.0.0" />
+    <PackageReference Include="Inedo.DependencyScan" Version="1.1.0-ci.8" />
     <PackageReference Include="Inedo.SDK" Version="1.13.0">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
