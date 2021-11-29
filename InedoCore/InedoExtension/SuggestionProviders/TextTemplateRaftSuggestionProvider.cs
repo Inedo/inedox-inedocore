@@ -11,10 +11,7 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-            var items = SDK.GetRaftItems(RaftItemType.TextTemplate, config.EditorContext).Select(i => i.Name);
-            var globalItems = SDK.GetRaftItems(RaftItemType.TextTemplate, null).Select(i => $"global::{i.Name}");
-
-            return Task.FromResult(items.Concat(globalItems));
+            return Task.FromResult(SDK.GetRaftItems(RaftItemType.TextTemplate, config.EditorContext).Select(i => i.Id));
         }
     }
 }
