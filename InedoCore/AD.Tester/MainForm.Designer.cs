@@ -46,6 +46,9 @@
             this.txtDomainUserName = new System.Windows.Forms.TextBox();
             this.labelUserName = new System.Windows.Forms.Label();
             this.labelPassword = new System.Windows.Forms.Label();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.txtPort = new System.Windows.Forms.TextBox();
+            this.label13 = new System.Windows.Forms.Label();
             this.labelCreds = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -84,12 +87,10 @@
             this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.txtLogs = new System.Windows.Forms.TextBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.label13 = new System.Windows.Forms.Label();
-            this.txtPort = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.panel2.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -103,7 +104,6 @@
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).BeginInit();
             this.groupBox4.SuspendLayout();
-            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -340,6 +340,31 @@
             this.labelPassword.Size = new System.Drawing.Size(56, 13);
             this.labelPassword.TabIndex = 1;
             this.labelPassword.Text = "Password:";
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.txtPort);
+            this.panel2.Controls.Add(this.label13);
+            this.panel2.Location = new System.Drawing.Point(164, 261);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(294, 29);
+            this.panel2.TabIndex = 12;
+            // 
+            // txtPort
+            // 
+            this.txtPort.Location = new System.Drawing.Point(73, 4);
+            this.txtPort.Name = "txtPort";
+            this.txtPort.Size = new System.Drawing.Size(216, 20);
+            this.txtPort.TabIndex = 1;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(6, 4);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(29, 13);
+            this.label13.TabIndex = 0;
+            this.label13.Text = "Port:";
             // 
             // labelCreds
             // 
@@ -787,31 +812,6 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Logs";
             // 
-            // panel2
-            // 
-            this.panel2.Controls.Add(this.txtPort);
-            this.panel2.Controls.Add(this.label13);
-            this.panel2.Location = new System.Drawing.Point(164, 261);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(294, 29);
-            this.panel2.TabIndex = 12;
-            // 
-            // label13
-            // 
-            this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(6, 4);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(29, 13);
-            this.label13.TabIndex = 0;
-            this.label13.Text = "Port:";
-            // 
-            // txtPort
-            // 
-            this.txtPort.Location = new System.Drawing.Point(73, 4);
-            this.txtPort.Name = "txtPort";
-            this.txtPort.Size = new System.Drawing.Size(216, 20);
-            this.txtPort.TabIndex = 1;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -832,6 +832,8 @@
             this.tableLayoutPanel1.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
@@ -851,8 +853,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.gvResults)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
-            this.panel2.ResumeLayout(false);
-            this.panel2.PerformLayout();
             this.ResumeLayout(false);
 
         }
