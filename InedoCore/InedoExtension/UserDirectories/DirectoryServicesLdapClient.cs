@@ -12,7 +12,7 @@ namespace Inedo.Extensions.UserDirectories
     {
         private LdapConnection connection;
 
-        public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate, bool referralChasing = false)
+        public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate)
         {
             this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
             if (ldaps)
@@ -23,8 +23,6 @@ namespace Inedo.Extensions.UserDirectories
                     this.connection.SessionOptions.VerifyServerCertificate = new VerifyServerCertificateCallback((connection, certifacte) => true);
                 }
             }
-            if (referralChasing)
-                this.connection.SessionOptions.ReferralChasing = ReferralChasingOptions.All;
         }
         public override void Bind(NetworkCredential credentials)
         {

@@ -14,7 +14,7 @@ namespace Inedo.Extensions.UserDirectories
     {
         private LdapConnection connection;
 
-        public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate, bool referralChasing = false)
+        public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate)
         {
             this.connection = new LdapConnection();
             if (ldaps)
@@ -22,17 +22,12 @@ namespace Inedo.Extensions.UserDirectories
                 this.connection.SecureSocketLayer = true;
                 if (bypassSslCertificate)
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     this.connection.UserDefinedServerCertValidationDelegate += (sender, certificate, chain, sslPolicyErrors) => true;
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
             }
-            this.connection.Connect(server, port ?? (ldaps ? 636 : 389));
-            if (referralChasing)
-            {
-                Logger.Log(MessageLevel.Debug, "Referral chasing enabled", "AD User Directory");
-                this.connection.SearchConstraints.ReferralFollowing = true;
-
-            }
-            
+            this.connection.Connect(server, port ?? (ldaps ? 636 : 389));            
         }
 
         public override void Bind(NetworkCredential credentials)
