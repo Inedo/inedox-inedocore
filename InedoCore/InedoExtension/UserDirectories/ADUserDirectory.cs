@@ -89,7 +89,7 @@ namespace Inedo.Extensions.UserDirectories
         public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
         {
             var group = (ActiveDirectoryGroup)this.TryGetGroup(groupName);
-            return group.GetMembers();
+            return group?.GetMembers() ?? new List<IUserDirectoryUser>();
         }
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
