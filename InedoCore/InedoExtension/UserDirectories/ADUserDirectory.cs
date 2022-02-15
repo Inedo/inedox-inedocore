@@ -398,6 +398,7 @@ namespace Inedo.Extensions.UserDirectories
         {
             private readonly ADUserDirectory directory;
             private readonly UserId userId;
+            private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
 
             public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress)
             {
@@ -413,6 +414,9 @@ namespace Inedo.Extensions.UserDirectories
 
             public bool IsMemberOfGroup(string groupName)
             {
+                if (this.isMemberOfGroupCache.Contains(groupName))
+                    return true;
+
                 Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                 if (groupName == null)
                     throw new ArgumentNullException(nameof(groupName));
@@ -429,6 +433,7 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupSet.Contains(compareName))
                 {
                     Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
+                    this.isMemberOfGroupCache.Add(groupName);
                     return true;
                 }
 
@@ -443,6 +448,7 @@ namespace Inedo.Extensions.UserDirectories
                         if (StringComparer.OrdinalIgnoreCase.Equals(nextGroup, compareName))
                         {
                             Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
+                            this.isMemberOfGroupCache.Add(groupName);
                             return true;
                         }
 
@@ -474,6 +480,7 @@ namespace Inedo.Extensions.UserDirectories
         {
             private readonly GroupId groupId;
             private readonly ADUserDirectory directory;
+            private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
 
             public ActiveDirectoryGroup(ADUserDirectory directory, GroupId groupId)
             {
@@ -486,6 +493,9 @@ namespace Inedo.Extensions.UserDirectories
 
             public bool IsMemberOfGroup(string groupName)
             {
+                if (this.isMemberOfGroupCache.Contains(groupName))
+                    return true;
+
                 Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
                 if (groupName == null)
@@ -503,6 +513,7 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupSet.Contains(compareName))
                 {
                     Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
+                    this.isMemberOfGroupCache.Add(groupName);
                     return true;
                 }
 
@@ -527,7 +538,11 @@ namespace Inedo.Extensions.UserDirectories
                     }
                     Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
-                    return groupsSearched.Contains(compareName);
+                    if (groupsSearched.Contains(compareName))
+                    {
+                        this.isMemberOfGroupCache.Add(groupName);
+                        return true;
+                    }
                 }
                 Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
