@@ -345,12 +345,13 @@ namespace Inedo.Extensions.UserDirectories
                     this,
                     userId,
                     result.GetPropertyValue("displayName"),
-                    result.GetPropertyValue("mail")
+                    result.GetPropertyValue("mail"),
+                    result.ExtractGroupNames()
                 );
             }
             else
             {
-                return new ActiveDirectoryGroup(this, (GroupId)principalId);
+                return new ActiveDirectoryGroup(this, (GroupId)principalId, result.ExtractGroupNames());
             }
         }
         private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
@@ -399,13 +400,50 @@ namespace Inedo.Extensions.UserDirectories
             private readonly ADUserDirectory directory;
             private readonly UserId userId;
             private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
+            private readonly Lazy<ISet<string>> groups; 
 
-            public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress)
+
+            public ActiveDirectoryUser(ADUserDirectory directory, UserId userId, string displayName, string emailAddress, ISet<string> groupNames = null)
             {
                 this.directory = directory;
                 this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
                 this.DisplayName = AH.CoalesceString(displayName, userId.Principal);
                 this.EmailAddress = emailAddress;
+
+                this.groups = new Lazy<ISet<string>>(() =>
+                {
+                    ISet<string> groups;
+                    if (groupNames == null)
+                    {
+                        var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
+                        groups = userSearchResult == null ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : userSearchResult.ExtractGroupNames();
+                    }
+                    else
+                    {
+                        groups = groupNames;
+                    }
+                    if (this.directory.SearchGroupsRecursively)
+                    {
+                        var groupsToSearch = new Queue<string>(groups);
+                        while (groupsToSearch.Count > 0)
+                        {
+                            var nextGroup = groupsToSearch.Dequeue();
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            if (groupSearchResult != null)
+                            {
+                                var groupNames = groupSearchResult.ExtractGroupNames();
+                                foreach (var groupName in groupNames)
+                                {
+                                    if (groups.Add(groupName))
+                                        groupsToSearch.Enqueue(groupName);
+                                }
+                            }
+
+                        }
+
+                    }
+                    return groups;
+                });
             }
 
             string IUserDirectoryPrincipal.Name => this.userId.ToFullyQualifiedName();
@@ -421,48 +459,13 @@ namespace Inedo.Extensions.UserDirectories
                 if (groupName == null)
                     throw new ArgumentNullException(nameof(groupName));
 
-                var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
-                if (userSearchResult == null)
-                {
-                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory"); ;
-                    return false;
-                }
-
-                var groupSet = userSearchResult.ExtractGroupNames();
+                
                 var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-                if (groupSet.Contains(compareName))
+                if (this.groups.Value.Contains(compareName))
                 {
                     Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                     this.isMemberOfGroupCache.Add(groupName);
                     return true;
-                }
-
-                if (this.directory.SearchGroupsRecursively)
-                {
-                    var groupsToSearch = new Queue<string>(groupSet);
-                    var groupsSearched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    while (groupsToSearch.Count > 0)
-                    {
-                        var nextGroup = groupsToSearch.Dequeue();
-                        if (StringComparer.OrdinalIgnoreCase.Equals(nextGroup, compareName))
-                        {
-                            Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
-                            this.isMemberOfGroupCache.Add(groupName);
-                            return true;
-                        }
-
-                        if (groupsSearched.Add(nextGroup))
-                        {
-                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
-                            if (groupSearchResult != null)
-                            {
-                                var groupGroups = groupSearchResult.ExtractGroupNames();
-                                foreach (var g in groupGroups)
-                                    groupsToSearch.Enqueue(g);
-                            }
-                        }
-                    }
                 }
                 Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
 
@@ -481,11 +484,47 @@ namespace Inedo.Extensions.UserDirectories
             private readonly GroupId groupId;
             private readonly ADUserDirectory directory;
             private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
+            private readonly Lazy<ISet<string>> groups;
 
-            public ActiveDirectoryGroup(ADUserDirectory directory, GroupId groupId)
+            public ActiveDirectoryGroup(ADUserDirectory directory, GroupId groupId, ISet<string> groupNames = null)
             {
                 this.directory = directory;
                 this.groupId = groupId ?? throw new ArgumentNullException(nameof(groupId));
+
+                this.groups = new Lazy<ISet<string>>(() =>
+                {
+                    ISet<string> groups;
+                    if (groupNames == null)
+                    {
+                        var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                        groups = rootGroupSearchResult == null ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : rootGroupSearchResult.ExtractGroupNames();
+                    }
+                    else
+                    {
+                        groups = groupNames;
+                    }
+                    if (this.directory.SearchGroupsRecursively)
+                    {
+                        var groupsToSearch = new Queue<string>(groups);
+                        while (groupsToSearch.Count > 0)
+                        {
+                            var nextGroup = groupsToSearch.Dequeue();
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            if (groupSearchResult != null)
+                            {
+                                var groupNames = groupSearchResult.ExtractGroupNames();
+                                foreach (var groupName in groupNames)
+                                {
+                                    if (groups.Add(groupName))
+                                        groupsToSearch.Enqueue(groupName);
+                                }
+                            }
+
+                        }
+
+                    }
+                    return groups;
+                });
             }
 
             string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
@@ -499,51 +538,16 @@ namespace Inedo.Extensions.UserDirectories
                 Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
                 if (groupName == null)
-                    throw new ArgumentNullException(nameof(groupName));
+                    throw new ArgumentNullException(nameof(groupName));                
 
-                var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
-                if (rootGroupSearchResult == null)
-                {
-                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
-                    return false;
-                }
-
-                var groupSet = rootGroupSearchResult.ExtractGroupNames();
                 var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-                if (groupSet.Contains(compareName))
+                if (this.groups.Value.Contains(compareName))
                 {
                     Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
                     this.isMemberOfGroupCache.Add(groupName);
                     return true;
                 }
 
-                if (this.directory.SearchGroupsRecursively)
-                {
-                    var groupsToSearch = new Queue<string>(groupSet);
-                    var groupsSearched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    while (groupsToSearch.Count > 0)
-                    {
-                        var nextGroup = groupsToSearch.Dequeue();
-                        if (groupsSearched.Add(nextGroup))
-                        {
-                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
-                            if (groupSearchResult != null)
-                            {
-                                var groupGroups = groupSearchResult.ExtractGroupNames();
-                                foreach (var g in groupGroups)
-                                    groupsToSearch.Enqueue(g);
-                            }
-                        }
-                    }
-                    Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
-
-                    if (groupsSearched.Contains(compareName))
-                    {
-                        this.isMemberOfGroupCache.Add(groupName);
-                        return true;
-                    }
-                }
                 Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
                 return false;
