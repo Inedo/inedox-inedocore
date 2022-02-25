@@ -345,13 +345,12 @@ namespace Inedo.Extensions.UserDirectories
                     this,
                     userId,
                     result.GetPropertyValue("displayName"),
-                    result.GetPropertyValue("mail"),
-                    result.ExtractGroupNames()
+                    result.GetPropertyValue("mail")
                 );
             }
             else
             {
-                return new ActiveDirectoryGroup(this, (GroupId)principalId, result.ExtractGroupNames());
+                return new ActiveDirectoryGroup(this, (GroupId)principalId);
             }
         }
         private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
