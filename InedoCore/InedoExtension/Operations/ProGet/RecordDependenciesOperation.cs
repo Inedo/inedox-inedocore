@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -123,24 +124,29 @@ ProGet::Record-Dependencies
 
             foreach (var project in projects)
             {
+                var dependents = new HashSet<DependencyPackage>();
+
                 foreach (var package in project.Dependencies)
                 {
                     totalDependencies++;
-                    this.LogInformation($"Publishing consumer data for {package}...");
-                    await package.PublishDependencyAsync(
-                        this.ProGetUrl,
-                        this.ProGetFeed,
-                        new PackageConsumer
-                        {
-                            Feed = AH.CoalesceString(this.ProGetFeed, this.ConsumerFeed),
-                            Name = AH.CoalesceString(name, project.Name),
-                            Group = group,
-                            Version = this.ConsumerVersion
-                        },
-                        this.ApiKey,
-                        this.Comments
-                    );
+                    if (dependents.Add(package))
+                        this.LogInformation($"Publishing consumer data for {package}...");
                 }
+
+                await DependencyPackage.PublishDependenciesAsync(
+                    dependents,
+                    this.ProGetUrl,
+                    this.ProGetFeed,
+                    new PackageConsumer
+                    {
+                        Feed = AH.CoalesceString(this.ProGetFeed, this.ConsumerFeed),
+                        Name = AH.CoalesceString(name, project.Name),
+                        Group = group,
+                        Version = this.ConsumerVersion
+                    },
+                    this.ApiKey,
+                    this.Comments
+                );
             }
 
             this.LogInformation($"Recorded {totalDependencies} across {projects.Count} projects.");
