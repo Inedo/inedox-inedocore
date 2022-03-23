@@ -12,6 +12,7 @@ using Inedo.Security;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 using Inedo.Serialization;
 using System.Net;
+using System.Net.Http;
 
 namespace AD.Tester
 {
@@ -259,6 +260,7 @@ namespace AD.Tester
             public override IEnumerable<SDK.ServerInfo> GetServersInEnvironment(int environmentId) => throw new NotImplementedException();
             public override IEnumerable<SDK.ServerInfo> GetServersInRole(int roleId) => throw new NotImplementedException();
             public override IEnumerable<SDK.UserDirectoryInfo> GetUserDirectories() => throw new NotImplementedException();
+            public override HttpClient CreateHttpClient() => throw new NotImplementedException();
         }
 
         private void button1_Click(object sender, EventArgs e)

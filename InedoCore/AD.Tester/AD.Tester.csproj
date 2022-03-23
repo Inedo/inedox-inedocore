@@ -3,29 +3,16 @@
     <AssemblyName>AD.Tester</AssemblyName>
     <RootNamespace>AD.Tester</RootNamespace>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net452;net5.0-windows</TargetFrameworks>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net452'">
-    <Reference Include="System.DirectoryServices" />
-    <Reference Include="System.DirectoryServices.Protocols" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Net.Http" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.3" />
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net5.0'">
-    <PackageReference Include="System.DirectoryServices" Version="5.0.0" />
-    <PackageReference Include="System.DirectoryServices.Protocols" Version="5.0.1" />
-    <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="3.6.0" />
-  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="1.13.0" />
+    <PackageReference Include="System.DirectoryServices" Version="6.0.0" />
+    <PackageReference Include="System.DirectoryServices.Protocols" Version="6.0.1" />
+    <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="3.6.0" />
+    <PackageReference Include="Inedo.SDK" Version="2.0.0-ci.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InedoExtension\InedoExtension.csproj" />

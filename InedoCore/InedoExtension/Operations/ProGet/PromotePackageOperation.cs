@@ -64,7 +64,6 @@ namespace Inedo.Extensions.Operations.ProGet
         [Category("Connection/Identity")]
         [DisplayName("To source")]
         [ScriptAlias("To")]
-        [SuggestableValue(typeof(PackageSourceSuggestionProvider))]
         [PlaceholderText("Same as From package source")]
         public string TargetPackageSourceName { get; set; }
 
