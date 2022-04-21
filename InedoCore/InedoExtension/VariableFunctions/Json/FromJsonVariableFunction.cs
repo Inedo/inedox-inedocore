@@ -5,7 +5,7 @@ using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
 
 namespace Inedo.Extensions.VariableFunctions.Json
 {
@@ -25,32 +25,27 @@ namespace Inedo.Extensions.VariableFunctions.Json
 
         public override RuntimeValue Evaluate(IVariableFunctionContext context)
         {
-            return ToRuntimeValue(JToken.Parse(this.Json));
+            return ToRuntimeValue(JsonNode.Parse(this.Json));
         }
 
-        private static RuntimeValue ToRuntimeValue(JToken json)
+        private static RuntimeValue ToRuntimeValue(JsonNode json)
         {
-            switch (json.Type)
+            switch (json)
             {
-                case JTokenType.Object:
-                    var obj = (JObject)json;
+                case JsonObject obj:
                     var map = new Dictionary<string, RuntimeValue>(obj.Count, StringComparer.OrdinalIgnoreCase);
-                    foreach (var p in obj.Properties())
-                    {
-                        map[p.Name] = ToRuntimeValue(p.Value);
-                    }
+                    foreach (var p in obj)
+                        map[p.Key] = ToRuntimeValue(p.Value);
                     return new RuntimeValue(map);
-                case JTokenType.Array:
-                    var arr = (JArray)json;
+                
+                case JsonArray arr:
                     var list = new List<RuntimeValue>(arr.Count);
                     foreach (var v in arr)
-                    {
                         list.Add(ToRuntimeValue(v));
-                    }
                     return new RuntimeValue(list);
+
                 default:
-                    var val = (JValue)json;
-                    return new RuntimeValue(val.Value<string>());
+                    return new RuntimeValue(json?.ToString());
             }
         }
     }

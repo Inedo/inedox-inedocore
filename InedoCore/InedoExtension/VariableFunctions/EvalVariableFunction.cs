@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
@@ -26,20 +27,20 @@ set $Result = $Eval($OtterScript);
 
 Log-Information $Result;
 ")]
-    public sealed class EvalVariableFunction : VariableFunction
+    public sealed class EvalVariableFunction : VariableFunction, IAsyncVariableFunction
     {
         [DisplayName("text")]
         [VariableFunctionParameter(0)]
         [Description("The text to process.")]
         public string Text { get; set; }
 
-        public override RuntimeValue Evaluate(IVariableFunctionContext context)
+        public override RuntimeValue Evaluate(IVariableFunctionContext context) => throw new NotSupportedException();
+        public ValueTask<RuntimeValue> EvaluateAsync(IVariableFunctionContext context)
         {
-            var execContext = context as IOperationExecutionContext;
-            if (execContext == null)
-                throw new NotSupportedException("This function can currently only be used within an execution.");
+            if (context is not IOperationExecutionContext execContext)
+                throw new NotSupportedException("This function can only be used within an execution.");
 
-            return execContext.ExpandVariables(this.Text);
+            return execContext.ExpandVariablesAsync(this.Text);
         }
     }
 }

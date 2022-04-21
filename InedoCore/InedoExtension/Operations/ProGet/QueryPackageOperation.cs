@@ -160,11 +160,9 @@ Log-Debug 'Package name is $(%packageData.name).';
                     UniversalPackageMetadata metadata;
                     try
                     {
-                        using (var stream = await fileOps.OpenFileAsync(fullPath, FileMode.Open, FileAccess.Read))
-                        using (var packageFile = new UniversalPackage(stream))
-                        {
-                            metadata = packageFile.GetFullMetadata();
-                        }
+                        using var stream = await fileOps.OpenFileAsync(fullPath, FileMode.Open, FileAccess.Read);
+                        using var packageFile = new UniversalPackage(stream);
+                        metadata = packageFile.GetFullMetadata();
                     }
                     catch (Exception ex)
                     {
@@ -197,8 +195,6 @@ Log-Debug 'Package name is $(%packageData.name).';
                 this.LogInformation($"Package {package.FullName} {package.Version} not found.");
                 this.Exists = false;
             }
-
-
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

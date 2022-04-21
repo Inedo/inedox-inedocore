@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel;
-using Newtonsoft.Json;
+using System.Text.Json.Nodes;
 using Inedo.Documentation;
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
@@ -18,8 +18,9 @@ namespace Inedo.Extensions.VariableFunctions.Json
 
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
-            var s = JsonConvert.ToString(this.Text ?? string.Empty);
-            return s.Substring(1, s.Length - 2);
+            var value = JsonValue.Create(this.Text ?? string.Empty);
+            var s = value.ToJsonString();
+            return s[1..^1];
         }
     }
 }

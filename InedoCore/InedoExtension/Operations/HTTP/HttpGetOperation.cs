@@ -34,13 +34,13 @@ Get-Http http://httpbin.org/get
         [DefaultValue(GetHttpMethod.GET)]
         public GetHttpMethod Method { get; set; } = GetHttpMethod.GET;
 
-        private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
+        private HttpMethod HttpMethod => new(this.Method.ToString());
 
         protected override async Task ExecuteAsyncInternal(IOperationExecutionContext context)
         {
             try
             {
-                new Uri(this.Url);
+                _ = new Uri(this.Url);
             }
             catch (Exception ex)
             {

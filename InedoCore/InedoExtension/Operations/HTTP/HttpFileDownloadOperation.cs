@@ -42,7 +42,7 @@ Download-Http http://example.org/upload-service/v3/hdars (
         {
             try
             {
-                new Uri(this.Url);
+                _ = new Uri(this.Url);
             }
             catch (Exception ex)
             {
@@ -100,7 +100,7 @@ Download-Http http://example.org/upload-service/v3/hdars (
 
             this.totalSize = response.Content.Headers.ContentLength ?? 0;
 
-            using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             await responseStream.CopyToAsync(fileStream, 4096, cancellationToken, pos => this.currentPosition = pos).ConfigureAwait(false);
         }
 

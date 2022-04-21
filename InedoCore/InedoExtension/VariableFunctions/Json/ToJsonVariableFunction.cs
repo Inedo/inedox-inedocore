@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
-using Inedo.Extensibility;
-using Inedo.Extensibility.VariableFunctions;
+using System.Text.Json;
 using Inedo.Documentation;
 using Inedo.ExecutionEngine;
+using Inedo.Extensibility;
+using Inedo.Extensibility.VariableFunctions;
 
 namespace Inedo.Extensions.VariableFunctions.Json
 {
@@ -25,29 +25,29 @@ namespace Inedo.Extensions.VariableFunctions.Json
 
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
-            using (var writer = new StringWriter())
+            using var stream = new MemoryStream();
+
+            using (var writer = new Utf8JsonWriter(stream))
             {
-                using (var json = new JsonTextWriter(writer) { CloseOutput = false })
-                {
-                    WriteJson(json, this.Data);
-                }
-                return writer.ToString();
+                WriteJson(writer, this.Data);
             }
+
+            stream.Position = 0;
+            using var reader = new StreamReader(stream, InedoLib.UTF8Encoding);
+            return reader.ReadToEnd();
         }
 
-        private static void WriteJson(JsonTextWriter json, RuntimeValue data)
+        private static void WriteJson(Utf8JsonWriter json, RuntimeValue data)
         {
             switch (data.ValueType)
             {
                 case RuntimeValueType.Scalar:
-                    json.WriteValue(data.AsString());
+                    json.WriteStringValue(data.AsString());
                     break;
                 case RuntimeValueType.Vector:
                     json.WriteStartArray();
                     foreach (var v in data.AsEnumerable())
-                    {
                         WriteJson(json, v);
-                    }
                     json.WriteEndArray();
                     break;
                 case RuntimeValueType.Map:

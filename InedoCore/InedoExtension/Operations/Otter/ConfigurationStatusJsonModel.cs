@@ -1,5 +1,5 @@
 ﻿using System;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Inedo.Extensions.Operations.Otter
 {
@@ -9,28 +9,28 @@ namespace Inedo.Extensions.Operations.Otter
         {
         }
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("status")]
+        [JsonPropertyName("status")]
         public string Status { get; set; }
 
-        [JsonProperty("errorText", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("errorText")]
         public string ErrorText { get; set; }
 
-        [JsonProperty("collectionDate")]
+        [JsonPropertyName("collectionDate")]
         public DateTime? CollectionDate { get; set; }
 
-        [JsonProperty("latestCollectionId")]
+        [JsonPropertyName("latestCollectionId")]
         public int? LatestCollectionId { get; set; }
 
-        [JsonProperty("remediationDate", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("remediationDate")]
         public DateTime? RemediationDate { get; set; }
 
-        [JsonProperty("remediationId", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("remediationId")]
         public int? RemediationId { get; set; }
     }
 }

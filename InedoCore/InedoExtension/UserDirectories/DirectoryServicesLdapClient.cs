@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.DirectoryServices.Protocols;
 using System.Linq;
 using System.Net;
-using System.Text;
+using System.Runtime.InteropServices;
 using Inedo.Diagnostics;
 
 namespace Inedo.Extensions.UserDirectories
@@ -17,11 +17,11 @@ namespace Inedo.Extensions.UserDirectories
             this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
             if (ldaps)
             {
-                this.connection.SessionOptions.SecureSocketLayer = true;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    this.connection.SessionOptions.SecureSocketLayer = true;
+
                 if (bypassSslCertificate)
-                {
                     this.connection.SessionOptions.VerifyServerCertificate = new VerifyServerCertificateCallback((connection, certifacte) => true);
-                }
             }
         }
         public override void Bind(NetworkCredential credentials)
@@ -95,7 +95,7 @@ namespace Inedo.Extensions.UserDirectories
                         {
                             var groupNames = from part in memberOf.Split(',')
                                              where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                             let name = part.Substring("CN=".Length)
+                                             let name = part["CN=".Length..]
                                              where !string.IsNullOrWhiteSpace(name)
                                              select name;
 

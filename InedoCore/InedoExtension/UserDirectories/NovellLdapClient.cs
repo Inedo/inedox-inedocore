@@ -3,8 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using Inedo.Diagnostics;
-using Newtonsoft.Json;
 using Novell.Directory.Ldap;
 using Logger = Inedo.Diagnostics.Logger;
 
@@ -59,12 +59,13 @@ namespace Inedo.Extensions.UserDirectories
                         Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", lex.ToString(), lex);
                         try
                         {
-                            Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", JsonConvert.SerializeObject(lex));
+                            Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", JsonSerializer.Serialize(lex));
                         }
                         catch
                         {
                             Logger.Log(MessageLevel.Debug, "Couldn't serialize LdapException", "AD User Directory");
                         }
+
                         throw;
                     }
                     catch(Exception ex)
@@ -113,11 +114,11 @@ namespace Inedo.Extensions.UserDirectories
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
-                    foreach (var memberOf in this.entry.GetAttribute("memberof")?.StringValueArray ?? new string[0])
+                    foreach (var memberOf in this.entry.GetAttribute("memberof")?.StringValueArray ?? Array.Empty<string>())
                     {
                         var groupNames = from part in memberOf.Split(',')
                                          where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                         let name = part.Substring("CN=".Length)
+                                         let name = part["CN=".Length..]
                                          where !string.IsNullOrWhiteSpace(name)
                                          select name;
 

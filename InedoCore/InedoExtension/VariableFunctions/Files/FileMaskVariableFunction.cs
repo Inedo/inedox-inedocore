@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -37,21 +38,11 @@ set @NonXDarFiles = @FilesOnDisk(**, **.xdr, $TmpPath); # gets all files except 
         [ScriptAlias("directory")]
         public IEnumerable<string> InDirectory { get; set; }
 
-        protected override IEnumerable EvaluateVector(IVariableFunctionContext context)
-        {
-            var execContext = context as IOperationExecutionContext;
-            if (execContext == null)
-                throw new VariableFunctionException("Execution context is not available.");
+        protected override IEnumerable EvaluateVector(IVariableFunctionContext context) => throw new NotSupportedException();
 
-            var fileOps = execContext.Agent.GetService<IFileOperationsExecuter>();
-            var fileInfos = fileOps.GetFileSystemInfosAsync(AH.CoalesceString(this.InDirectory, execContext.WorkingDirectory), new MaskingContext(this.Includes, this.Excludes)).GetAwaiter().GetResult();
-            return fileInfos.Select(fi => fi.FullName);
-        }
-
-        public async Task<RuntimeValue> EvaluateAsync(IVariableFunctionContext context)
+        public async ValueTask<RuntimeValue> EvaluateAsync(IVariableFunctionContext context)
         {
-            var execContext = context as IOperationExecutionContext;
-            if (execContext == null)
+            if (context is not IOperationExecutionContext execContext)
                 throw new VariableFunctionException("Execution context is not available.");
 
             var fileOps = await execContext.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);

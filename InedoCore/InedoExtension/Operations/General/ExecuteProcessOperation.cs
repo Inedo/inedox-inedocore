@@ -87,7 +87,7 @@ Exec c:\tools\7za.exe (
         [Description("When set to a valid regular expression string, only output messages which match this expression will be logged.")]
         public string OutputTextRegex { get; set; }
 
-        public override OperationProgress GetProgress() => new OperationProgress(AH.NullIf(this.percent, -1), this.status);
+        public override OperationProgress GetProgress() => new(AH.NullIf(this.percent, -1), this.status);
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
@@ -253,15 +253,15 @@ Exec c:\tools\7za.exe (
                 if (match.Success)
                 {
                     fileName = match.Groups[1].Value;
-                    arguments = target.Substring(match.Length).Trim();
+                    arguments = target[match.Length..].Trim();
                 }
                 else
                 {
                     var match2 = Regex.Match(target, "\\s");
                     if (match2.Success)
                     {
-                        fileName = target.Substring(0, match2.Index).Trim();
-                        arguments = target.Substring(match2.Index).Trim();
+                        fileName = target[..match2.Index].Trim();
+                        arguments = target[match2.Index..].Trim();
                     }
                     else
                     {
@@ -313,29 +313,16 @@ Exec c:\tools\7za.exe (
 
             public bool Evaluate(int exitCode)
             {
-                switch (this.Operator)
+                return this.Operator switch
                 {
-                    case "=":
-                    case "==":
-                        return exitCode == this.Value;
-
-                    case "!=":
-                        return exitCode != this.Value;
-
-                    case "<":
-                        return exitCode < this.Value;
-
-                    case ">":
-                        return exitCode > this.Value;
-
-                    case "<=":
-                        return exitCode <= this.Value;
-
-                    case ">=":
-                        return exitCode >= this.Value;
-                }
-
-                return false;
+                    "=" or "==" => exitCode == this.Value,
+                    "!=" => exitCode != this.Value,
+                    "<" => exitCode < this.Value,
+                    ">" => exitCode > this.Value,
+                    "<=" => exitCode <= this.Value,
+                    ">=" => exitCode >= this.Value,
+                    _ => false
+                };
             }
         }
     }

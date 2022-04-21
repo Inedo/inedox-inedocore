@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -15,8 +16,6 @@ using Inedo.Serialization;
 using Inedo.UPack;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
@@ -143,11 +142,11 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         {
             if (path.EndsWith(".vpack", StringComparison.OrdinalIgnoreCase))
             {
-                using var reader = new JsonTextReader(File.OpenText(path));
-                var obj = JObject.Load(reader);
-                var group = (string)obj.Property("group");
-                var name = (string)obj.Property("name");
-                var version = (string)obj.Property("version");
+                using var stream = File.OpenRead(path);
+                var obj = (JsonObject)JsonNode.Parse(stream);
+                var group = (string)obj["group"];
+                var name = (string)obj["name"];
+                var version = (string)obj["version"];
                 if (string.IsNullOrWhiteSpace(name))
                     throw new ExecutionFailureException($"{path} is not a valid virtual package file: missing \"name\" property.");
                 if (string.IsNullOrWhiteSpace(version))

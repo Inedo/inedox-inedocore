@@ -11,8 +11,8 @@ namespace Inedo.Extensions.Operations.HTTP
         public static StatusCodeRangeList Parse(string value)
         {
             if (string.IsNullOrEmpty(value))
-                return new StatusCodeRangeList{ ranges = new List<Range>() };
-                
+                return new StatusCodeRangeList { ranges = new List<Range>() };
+
             var values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             return new StatusCodeRangeList { ranges = values.Select(Range.Parse).Where(r => r != null).ToList() };
         }
@@ -33,8 +33,8 @@ namespace Inedo.Extensions.Operations.HTTP
 
         private sealed class Range
         {
-            private int start;
-            private int end;
+            private readonly int start;
+            private readonly int end;
 
             private Range(int singleValue)
                 : this(singleValue, singleValue)
@@ -43,7 +43,7 @@ namespace Inedo.Extensions.Operations.HTTP
             private Range(int start, int end)
             {
                 if (start > end)
-                    throw new ArgumentException();
+                    throw new ArgumentException("Invalid range.");
 
                 this.start = start;
                 this.end = end;

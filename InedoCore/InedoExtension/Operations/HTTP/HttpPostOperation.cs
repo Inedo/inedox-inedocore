@@ -39,7 +39,7 @@ Post-Http http://httpbin.org/post
         [ScriptAlias("Method")]
         [DefaultValue(PostHttpMethod.POST)]
         public PostHttpMethod Method { get; set; } = PostHttpMethod.POST;
-        private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
+        private HttpMethod HttpMethod => new(this.Method.ToString());
         [Category("Data")]
         [SlimSerializable]
         [ScriptAlias("ContentType")]
@@ -70,7 +70,7 @@ Post-Http http://httpbin.org/post
         {
             try
             {
-                new Uri(this.Url);
+                _ = new Uri(this.Url);
             }
             catch (Exception ex)
             {
@@ -82,10 +82,8 @@ Post-Http http://httpbin.org/post
 
             if (this.LogRequestData)
             {
-                using (var content = this.GetContent())
-                {
-                    this.LogDebug($"Request content: {await content.ReadAsStringAsync().ConfigureAwait(false)}");
-                }
+                using var content = this.GetContent();
+                this.LogDebug($"Request content: {await content.ReadAsStringAsync().ConfigureAwait(false)}");
             }
 
             await this.CallRemoteAsync(context).ConfigureAwait(false);

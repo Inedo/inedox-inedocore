@@ -2,22 +2,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Agents;
 using Inedo.Diagnostics;
 using Inedo.Extensibility.Agents;
 using Inedo.IO;
-using Newtonsoft.Json;
 
 namespace Inedo.Extensions.UniversalPackages
 {
     internal sealed class RemotePackageRegistry : IDisposable
     {
-        public static readonly SemaphoreSlim registryLock = new SemaphoreSlim(1, 1);
+        public static readonly SemaphoreSlim registryLock = new(1, 1);
 
-        private Agent agent;
-        private ILogger logger;
+        private readonly Agent agent;
+        private readonly ILogger logger;
         private bool disposed;
 
         private RemotePackageRegistry(Agent agent, string registryRoot, ILogger logger = null)
@@ -42,7 +42,7 @@ namespace Inedo.Extensions.UniversalPackages
         {
             return await GetInstalledPackagesAsync(await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false), this.RegistryRoot).ConfigureAwait(false);
         }
-        public async Task RegisterPackageAsync(RegisteredPackageModel package, CancellationToken cancellationToken)
+        public async Task RegisterPackageAsync(RegisteredPackageModel package)
         {
             var fileOps = await this.agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
             var packages = await GetInstalledPackagesAsync(fileOps, this.RegistryRoot).ConfigureAwait(false);
@@ -162,12 +162,10 @@ namespace Inedo.Extensions.UniversalPackages
                     string description = null, token = null;
                     try
                     {
-                        using (var lockStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
-                        using (var reader = new StreamReader(lockStream, InedoLib.UTF8Encoding))
-                        {
-                            description = await reader.ReadLineAsync().ConfigureAwait(false);
-                            token = await reader.ReadLineAsync().ConfigureAwait(false);
-                        }
+                        using var lockStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false);
+                        using var reader = new StreamReader(lockStream, InedoLib.UTF8Encoding);
+                        description = await reader.ReadLineAsync().ConfigureAwait(false);
+                        token = await reader.ReadLineAsync().ConfigureAwait(false);
                     }
                     catch (IOException)
                     {
@@ -214,23 +212,15 @@ namespace Inedo.Extensions.UniversalPackages
             if (!await fileOps.FileExistsAsync(fileName).ConfigureAwait(false))
                 return new List<RegisteredPackageModel>();
 
-            using (var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
-            using (var streamReader = new StreamReader(configStream, InedoLib.UTF8Encoding))
-            using (var jsonReader = new JsonTextReader(streamReader))
-            {
-                return (new JsonSerializer().Deserialize<RegisteredPackageModel[]>(jsonReader) ?? new RegisteredPackageModel[0]).ToList();
-            }
+            using var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Open, FileAccess.Read).ConfigureAwait(false);
+            return (JsonSerializer.Deserialize<RegisteredPackageModel[]>(configStream) ?? Array.Empty<RegisteredPackageModel>()).ToList();
         }
         private static async Task WriteInstalledPackagesAsync(IFileOperationsExecuter fileOps, string registryRoot, IEnumerable<RegisteredPackageModel> packages)
         {
             var fileName = fileOps.CombinePath(registryRoot, "installedPackages.json");
 
-            using (var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Create, FileAccess.Write).ConfigureAwait(false))
-            using (var streamWriter = new StreamWriter(configStream, InedoLib.UTF8Encoding))
-            using (var jsonWriter = new JsonTextWriter(streamWriter))
-            {
-                new JsonSerializer { Formatting = Formatting.Indented }.Serialize(jsonWriter, packages.ToArray());
-            }
+            using var configStream = await fileOps.OpenFileAsync(fileName, FileMode.Create, FileAccess.Write).ConfigureAwait(false);
+            JsonSerializer.Serialize(configStream, packages.ToArray(), new JsonSerializerOptions { WriteIndented = true });
         }
 
         internal static class Remote

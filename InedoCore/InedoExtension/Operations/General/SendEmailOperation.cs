@@ -110,55 +110,51 @@ This email was sent from BuildMaster on $Date.>>
 
                 this.LogInformation($"Preparing to send email to {string.Join("; ", addresses)}...");
 
-                using (var smtp = this.CreateSmtpClient())
+                using var smtp = this.CreateSmtpClient();
+                if (smtp == null)
                 {
-                    if (smtp == null)
-                    {
-                        this.LogError("SMTP client configuration is invalid.");
-                        return;
-                    }
-
-                    using (var message = this.CreateMailMessage())
-                    {
-                        if (message == null)
-                        {
-                            this.LogError("SMTP client FromAddress configuration is invalid.");
-                            return;
-                        }
-
-                        foreach (var address in addresses)
-                            message.To.Add(address);
-                        foreach (var address in ccAddresses)
-                            message.CC.Add(address);
-                        foreach (var address in bccAddresses)
-                            message.Bcc.Add(address);
-
-                        message.IsBodyHtml = !string.IsNullOrWhiteSpace(this.BodyHtml);
-                        message.Body = AH.CoalesceString(this.BodyHtml, this.BodyText) ?? string.Empty;
-                        message.Subject = this.Subject ?? string.Empty;
-
-                        foreach (var attachment in attachments)
-                            message.Attachments.Add(attachment);
-
-                        context.CancellationToken.ThrowIfCancellationRequested();
-                        context.CancellationToken.Register(
-                            () =>
-                            {
-                                try
-                                {
-                                    smtp.SendAsyncCancel();
-                                }
-                                catch
-                                {
-                                }
-                            }
-                        );
-
-                        this.LogInformation("Sending email...");
-                        await smtp.SendMailAsync(message).ConfigureAwait(false);
-                        this.LogInformation("Email sent.");
-                    }
+                    this.LogError("SMTP client configuration is invalid.");
+                    return;
                 }
+
+                using var message = this.CreateMailMessage();
+                if (message == null)
+                {
+                    this.LogError("SMTP client FromAddress configuration is invalid.");
+                    return;
+                }
+
+                foreach (var address in addresses)
+                    message.To.Add(address);
+                foreach (var address in ccAddresses)
+                    message.CC.Add(address);
+                foreach (var address in bccAddresses)
+                    message.Bcc.Add(address);
+
+                message.IsBodyHtml = !string.IsNullOrWhiteSpace(this.BodyHtml);
+                message.Body = AH.CoalesceString(this.BodyHtml, this.BodyText) ?? string.Empty;
+                message.Subject = this.Subject ?? string.Empty;
+
+                foreach (var attachment in attachments)
+                    message.Attachments.Add(attachment);
+
+                context.CancellationToken.ThrowIfCancellationRequested();
+                context.CancellationToken.Register(
+                    () =>
+                    {
+                        try
+                        {
+                            smtp.SendAsyncCancel();
+                        }
+                        catch
+                        {
+                        }
+                    }
+                );
+
+                this.LogInformation("Sending email...");
+                await smtp.SendMailAsync(message).ConfigureAwait(false);
+                this.LogInformation("Email sent.");
             }
             finally
             {
@@ -179,7 +175,7 @@ This email was sent from BuildMaster on $Date.>>
         {
             string host = SDK.GetConfigValue("Smtp.Host");
             int port = AH.ParseInt(SDK.GetConfigValue("Smtp.Port")) ?? 25;
-            bool ssl = bool.TryParse(AH.CoalesceString(SDK.GetConfigValue("Smtp.SslEnabled"), SDK.GetConfigValue("Smtp.EnableSSL")), out bool s) ? s : false;
+            bool ssl = bool.TryParse(AH.CoalesceString(SDK.GetConfigValue("Smtp.SslEnabled"), SDK.GetConfigValue("Smtp.EnableSSL")), out bool s) && s;
             string username = SDK.GetConfigValue("Smtp.UserName");
             string password = SDK.GetConfigValue("Smtp.Password");
 

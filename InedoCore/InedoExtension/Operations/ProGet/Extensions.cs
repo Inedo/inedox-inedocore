@@ -245,7 +245,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 {
                     await registry.LockAsync(cancellationTokenSource.Token).ConfigureAwait(false);
 
-                    await registry.RegisterPackageAsync(package, context.CancellationToken).ConfigureAwait(false);
+                    await registry.RegisterPackageAsync(package).ConfigureAwait(false);
 
                     // doesn't need to be in a finally because dispose will unlock if necessary, but prefer doing it asynchronously
                     await registry.UnlockAsync().ConfigureAwait(false);
@@ -304,7 +304,7 @@ namespace Inedo.Extensions.Operations.ProGet
             }
             private async Task<object> InstallFromFile(CancellationToken cancellationToken)
             {
-                this.SetProgress(cancellationToken, "installing package");
+                this.SetProgress("installing package", cancellationToken: cancellationToken);
                 this.LogDebug($"Installing package from \"{this.Options.PackageFilePath}\" to \"{this.Options.TargetPath}\"...");
                 using var package = new UniversalPackage(this.Options.PackageFilePath);
                 await package.ExtractContentItemsAsync(this.Options.TargetPath, cancellationToken);
@@ -325,15 +325,15 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 long size = packageVersion.Size == 0 ? 100 * 1024 * 1024 : packageVersion.Size;
 
-                this.SetProgress(cancellationToken, "downloading package");
+                this.SetProgress("downloading package", cancellationToken: cancellationToken);
                 this.LogDebug("Downloading package...");
                 var tempStream = TemporaryStream.Create(size);
                 var sourceStream = await client.GetPackageStreamAsync(packageVersion.FullName, packageVersion.Version);
-                await sourceStream.CopyToAsync(tempStream, 80 * 1024, cancellationToken, position => this.SetProgress(cancellationToken, "downloading package", (int)(100 * position / size)));
+                await sourceStream.CopyToAsync(tempStream, 80 * 1024, cancellationToken, position => this.SetProgress("downloading package", (int)(100 * position / size), cancellationToken));
                 this.LogInformation("Package downloaded.");
                 tempStream.Position = 0;
 
-                this.SetProgress(cancellationToken, "installing package");
+                this.SetProgress("installing package", cancellationToken: cancellationToken);
                 this.LogDebug($"Installing package...");
                 using var package = new UniversalPackage(tempStream);
                 await package.ExtractContentItemsAsync(this.Options.TargetPath, cancellationToken);
@@ -344,7 +344,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             public event EventHandler<OperationProgress> ProgressChanged;
 
-            private void SetProgress(CancellationToken cancellationToken, string message, int? percent = null)
+            private void SetProgress(string message, int? percent = null, CancellationToken cancellationToken = default)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 

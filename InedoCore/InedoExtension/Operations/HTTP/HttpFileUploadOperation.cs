@@ -33,7 +33,7 @@ Upload-Http ReleaseNotes.xml (
         [ScriptAlias("Method")]
         [DefaultValue(PostHttpMethod.POST)]
         public PostHttpMethod Method { get; set; }
-        private HttpMethod HttpMethod => new HttpMethod(this.Method.ToString());
+        private HttpMethod HttpMethod => new(this.Method.ToString());
         [Required]
         [SlimSerializable]
         [DisplayName("File name")]
@@ -48,7 +48,7 @@ Upload-Http ReleaseNotes.xml (
         {
             try
             {
-                new Uri(this.Url);
+                _ = new Uri(this.Url);
             }
             catch (Exception ex)
             {
@@ -61,13 +61,11 @@ Upload-Http ReleaseNotes.xml (
             if (!this.ProxyRequest)
             {
                 var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
-                using (var fileStream = await fileOps.OpenFileAsync(this.ResolvedFilePath, FileMode.Open, FileAccess.Read).ConfigureAwait(false))
-                {
-                    this.LogInformation($"Uploading file {this.FileName} to {this.Url}...");
-                    await this.PerformRequestAsync(fileStream, context.CancellationToken).ConfigureAwait(false);
-                    this.LogInformation("HTTP file upload completed.");
-                    return;
-                }
+                using var fileStream = await fileOps.OpenFileAsync(this.ResolvedFilePath, FileMode.Open, FileAccess.Read).ConfigureAwait(false);
+                this.LogInformation($"Uploading file {this.FileName} to {this.Url}...");
+                await this.PerformRequestAsync(fileStream, context.CancellationToken).ConfigureAwait(false);
+                this.LogInformation("HTTP file upload completed.");
+                return;
             }
 
             this.LogInformation($"Uploading file {this.FileName} to {this.Url}...");
@@ -89,19 +87,15 @@ Upload-Http ReleaseNotes.xml (
 
         private async Task PerformRequestAsync(Stream fileStream, CancellationToken cancellationToken)
         {
-            using (var client = this.CreateClient())
-            using (var streamContent = new StreamContent(fileStream))
-            using (var formData = new MultipartFormDataContent())
-            {
-                streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                formData.Add(streamContent, "file", PathEx.GetFileName(this.ResolvedFilePath));
+            using var client = this.CreateClient();
+            using var streamContent = new StreamContent(fileStream);
+            using var formData = new MultipartFormDataContent();
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            formData.Add(streamContent, "file", PathEx.GetFileName(this.ResolvedFilePath));
 
-                using (var request = new HttpRequestMessage(this.HttpMethod, this.Url) { Content = formData })
-                using (var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false))
-                {
-                    await this.ProcessResponseAsync(response).ConfigureAwait(false);
-                }
-            }
+            using var request = new HttpRequestMessage(this.HttpMethod, this.Url) { Content = formData };
+            using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            await this.ProcessResponseAsync(response).ConfigureAwait(false);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

@@ -143,7 +143,7 @@ namespace Inedo.Extensions.Operations.HTTP
                 if (this.IgnoreSslErrors)
                     IgnoreSslErrorsOnHttpClientHandler(handler);
 
-                client = new HttpClient(handler);
+                client = new HttpClient(handler, true);
             }
             else
             {
@@ -151,7 +151,7 @@ namespace Inedo.Extensions.Operations.HTTP
                 if (this.IgnoreSslErrors)
                     IgnoreSslErrorsOnHttpClientHandler(handler);
 
-                client = new HttpClient(handler);
+                client = new HttpClient(handler, true);
             }
 
             client.Timeout = Timeout.InfiniteTimeSpan;

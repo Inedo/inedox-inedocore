@@ -1,35 +1,34 @@
 ﻿using System;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Inedo.Extensions.UniversalPackages
 {
-    [JsonObject]
     internal sealed class RegisteredPackageModel
     {
-        [JsonProperty("group", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("group")]
         public string Group { get; set; }
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set;  }
-        [JsonProperty("version")]
+        [JsonPropertyName("version")]
         public string Version { get; set; }
-        [JsonProperty("path")]
+        [JsonPropertyName("path")]
         public string InstallPath { get; set; }
-        [JsonProperty("feedUrl", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("feedUrl")]
         public string FeedUrl { get; set; }
-        [JsonProperty("installationDate", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("installationDate")]
         public string InstallationDate { get; set; }
-        [JsonProperty("installationReason", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("installationReason")]
         public string InstallationReason { get; set; }
-        [JsonProperty("installedUsing", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("installedUsing")]
         public string InstalledUsing { get; set; }
-        [JsonProperty("installedBy", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("installedBy")]
         public string InstalledBy { get; set; }
 
         public static bool NameAndGroupEquals(RegisteredPackageModel p1, RegisteredPackageModel p2)
         {
             if (ReferenceEquals(p1, p2))
                 return true;
-            if (ReferenceEquals(p1, null) | ReferenceEquals(p2, null))
+            if (p1 is null || p2 is null)
                 return false;
 
             return string.Equals(p1.Group ?? string.Empty, p2.Group ?? string.Empty, StringComparison.OrdinalIgnoreCase)

@@ -83,11 +83,6 @@ Apply-Template hdars
         {
             var template = await getTemplateAsync().ConfigureAwait(false);
 
-            this.LogDebug("Detecting newlines in source template...");
-            var sourceNewLines = template.Contains("\r\n") ? TemplateNewLineMode.Windows
-                : template.Contains("\n") ? TemplateNewLineMode.Linux
-                : TemplateNewLineMode.Auto;
-
             this.LogDebug("Applying template...");
             var result = await context.ApplyTextTemplateAsync(template, this.AdditionalVariables).ConfigureAwait(false);
             this.LogInformation("Template applied.");

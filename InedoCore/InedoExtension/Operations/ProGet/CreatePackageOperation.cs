@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
@@ -16,9 +15,7 @@ using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
-using Inedo.Serialization;
 using Inedo.UPack;
-using Inedo.UPack.Net;
 using Inedo.UPack.Packaging;
 using Inedo.Web;
 
@@ -119,7 +116,6 @@ namespace Inedo.Extensions.Operations.ProGet
         [PlaceholderText("Use API Key from package source")]
         [Description("An API Key that can access this feed.")]
         public string ApiKey { get; set; }
-
 
         [Undisclosed]
         [ScriptAlias("Group")]
@@ -234,20 +230,15 @@ namespace Inedo.Extensions.Operations.ProGet
 
             object convert(RuntimeValue value)
             {
-                switch (value.ValueType)
+                return value.ValueType switch
                 {
-                    case RuntimeValueType.Scalar:
-                        return value.AsString();
-                    case RuntimeValueType.Vector:
-                        return value.AsEnumerable().Select(convert).ToArray();
-                    case RuntimeValueType.Map:
-                        return value.AsDictionary().ToDictionary(p => p.Key, p => convert(p.Value));
-                    default:
-                        throw new ArgumentException();
-                }
+                    RuntimeValueType.Scalar => value.AsString(),
+                    RuntimeValueType.Vector => value.AsEnumerable().Select(convert).ToArray(),
+                    RuntimeValueType.Map => value.AsDictionary().ToDictionary(p => p.Key, p => convert(p.Value)),
+                    _ => throw new ArgumentOutOfRangeException(nameof(value))
+                };
             }
         }
-
 
         protected override async Task AfterRemoteExecuteAsync(object result)
         {
@@ -278,9 +269,5 @@ namespace Inedo.Extensions.Operations.ProGet
                 )
             );
         }
-
-
-
-
     }
 }

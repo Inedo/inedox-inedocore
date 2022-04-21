@@ -1,22 +1,22 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Inedo.Extensions.Operations.Otter
 {
     internal sealed class ScopedVariableJsonModel
     {
-        [JsonProperty("name", Required = Required.Always)]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
-        [JsonProperty("value", Required = Required.Always)]
+        [JsonPropertyName("value")]
         public string Value { get; set; }
 
-        [JsonProperty("sensitive")]
+        [JsonPropertyName("sensitive")]
         public bool Sensitive { get; set; }
 
-        [JsonProperty("server")]
+        [JsonPropertyName("server")]
         public string Server { get; set; }
-        [JsonProperty("role")]
+        [JsonPropertyName("role")]
         public string ServerRole { get; set; }
-        [JsonProperty("environment")]
+        [JsonPropertyName("environment")]
         public string Environment { get; set; }
     }
 }

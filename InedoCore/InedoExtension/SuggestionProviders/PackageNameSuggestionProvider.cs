@@ -2,9 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Inedo.Extensibility;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensions.Operations.ProGet;
-using Inedo.Extensions.UniversalPackages;
 using Inedo.Web;
 
 namespace Inedo.Extensions.SuggestionProviders

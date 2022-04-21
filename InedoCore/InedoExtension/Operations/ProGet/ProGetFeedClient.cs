@@ -7,22 +7,19 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Numerics;
-using System.Reflection;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.VariableFunctions;
 using Inedo.Extensions.Credentials;
 using Inedo.Extensions.SecureResources;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.IO;
 using Inedo.UPack;
 using Inedo.UPack.Net;
-using Newtonsoft.Json;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
 
 namespace Inedo.Extensions.Operations.ProGet
@@ -32,7 +29,7 @@ namespace Inedo.Extensions.Operations.ProGet
     /// </summary>
     internal sealed class ProGetFeedClient
     {
-        public static readonly LazyRegex ApiEndPointUrlRegex = new LazyRegex(@"(?<baseUrl>(https?://)?[^/]+)/(?<feedType>upack|nuget)(/?(?<feedName>[^/]+)/?)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+        public static readonly LazyRegex ApiEndPointUrlRegex = new(@"(?<baseUrl>(https?://)?[^/]+)/(?<feedType>upack|nuget)(/?(?<feedName>[^/]+)/?)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
         public string FeedApiEndpointUrl { get; }
         public string ProGetBaseUrl { get; }
@@ -121,26 +118,23 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!response.IsSuccessStatusCode)
             {
                 await this.LogHttpErrorAsync(response).ConfigureAwait(false);
-                return new string[0];
+                return Array.Empty<string>();
             }
 
             using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            using var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding);
-            using var jsonReader = new JsonTextReader(streamReader);
-            var serializer = JsonSerializer.Create();
-            return serializer.Deserialize<string[]>(jsonReader);
+            return JsonSerializer.Deserialize<string[]>(responseStream);
         }
-        public Task<IReadOnlyList<RemoteUniversalPackage>> ListPackagesAsync() => this.CreateUPacklient().ListPackagesAsync(null, null, this.CancellationToken);
-        public Task<IReadOnlyList<RemoteUniversalPackage>> ListPackagesAsync(string groupName, int maxCount) => this.CreateUPacklient().ListPackagesAsync(groupName, maxCount, this.CancellationToken);
+        public Task<IReadOnlyList<RemoteUniversalPackage>> ListPackagesAsync() => this.CreateUPackClient().ListPackagesAsync(null, null, this.CancellationToken);
+        public Task<IReadOnlyList<RemoteUniversalPackage>> ListPackagesAsync(string groupName, int maxCount) => this.CreateUPackClient().ListPackagesAsync(groupName, maxCount, this.CancellationToken);
 
-        public Task<IReadOnlyList<RemoteUniversalPackageVersion>> ListPackageVersionsAsync(string packageName) => this.CreateUPacklient().ListPackageVersionsAsync(UniversalPackageId.Parse(packageName), false, null, this.CancellationToken);
+        public Task<IReadOnlyList<RemoteUniversalPackageVersion>> ListPackageVersionsAsync(string packageName) => this.CreateUPackClient().ListPackageVersionsAsync(UniversalPackageId.Parse(packageName), false, null, this.CancellationToken);
         public Task<RemoteUniversalPackageVersion> FindPackageVersionAsync(IFeedPackageConfiguration config) => this.FindPackageVersionAsync(config.PackageName, config.PackageVersion);
 
         public async Task<RemoteUniversalPackageVersion> FindPackageVersionAsync(string packageName, string packageVersion)
         {
             var id = UniversalPackageId.Parse(packageName);
-            var versions = await this.CreateUPacklient().ListPackageVersionsAsync(id, false, null, this.CancellationToken).ConfigureAwait(false);
-            return this.FindPackageVersion(versions.OrderByDescending(v => v.Version), packageVersion);
+            var versions = await this.CreateUPackClient().ListPackageVersionsAsync(id, false, null, this.CancellationToken).ConfigureAwait(false);
+            return FindPackageVersion(versions.OrderByDescending(v => v.Version), packageVersion);
         }
         public async Task<ProGetPackageVersionInfo> GetPackageVersionWithFilesAsync(UniversalPackageId id, UniversalPackageVersion version)
         {
@@ -154,10 +148,7 @@ namespace Inedo.Extensions.Operations.ProGet
             response.EnsureSuccessStatusCode();
 
             using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            using var streamReader = new StreamReader(responseStream, InedoLib.UTF8Encoding);
-            using var jsonReader = new JsonTextReader(streamReader);
-            var serializer = JsonSerializer.Create();
-            return serializer.Deserialize<ProGetPackageVersionInfo>(jsonReader);
+            return JsonSerializer.Deserialize<ProGetPackageVersionInfo>(responseStream);
         }
         public async Task<Stream> DownloadPackageContentAsync(UniversalPackageId id, UniversalPackageVersion version, PackageDeploymentData deployInfo, Action<long, long> progressUpdate = null)
         {
@@ -195,7 +186,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
             {
-                var client = this.CreateUPacklient();
+                var client = this.CreateUPackClient();
                 await client.UploadPackageAsync(fileStream, this.CancellationToken);
             }
 
@@ -222,10 +213,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 using (var tempZip = new ZipArchive(File.Create(tempFileName), ZipArchiveMode.Create))
                 {
                     var upackEntry = tempZip.CreateEntry("upack.json");
-                    using (var upackStream = upackEntry.Open())
-                    {
-                        vpackStream.CopyTo(upackStream);
-                    }
+                    using var upackStream = upackEntry.Open();
+                    vpackStream.CopyTo(upackStream);
                 }
 
                 return await this.UploadPackageAndComputeHashAsync(tempFileName);
@@ -235,46 +224,37 @@ namespace Inedo.Extensions.Operations.ProGet
                 File.Delete(tempFileName);
             }
         }
-        private UniversalFeedClient CreateUPacklient()
+        private UniversalFeedClient CreateUPackClient()
         {
-            if (this.Credentials is TokenCredentials tcreds)
-                return new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.FeedApiEndpointUrl), "api", tcreds.Token));
-            else if (this.Credentials is UsernamePasswordCredentials upcreds)
-                return new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.FeedApiEndpointUrl), upcreds.UserName, upcreds.Password));
-            else
-                return new UniversalFeedClient(this.FeedApiEndpointUrl);
+            var t = new DefaultApiTransport { HttpClientFactory = r => SDK.CreateHttpClient() };
 
+            if (this.Credentials is TokenCredentials tcreds)
+                return new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.FeedApiEndpointUrl), "api", tcreds.Token), t);
+            else if (this.Credentials is UsernamePasswordCredentials upcreds)
+                return new UniversalFeedClient(new UniversalFeedEndpoint(new Uri(this.FeedApiEndpointUrl), upcreds.UserName, upcreds.Password), t);
+            else
+                return new UniversalFeedClient(new UniversalFeedEndpoint(this.FeedApiEndpointUrl), t);
         }
         private HttpClient CreateHttpClient()
         {
-            var clientOptions = new HttpClientHandler { UseDefaultCredentials = true };
-            HttpClient client;
+            var client = SDK.CreateHttpClient();
 
             if (this.Credentials is TokenCredentials tcreds)
             {
-                this.Log.LogDebug($"Making request with API Key...");
-                client = new HttpClient(clientOptions);
+                this.Log.LogDebug("Making request with API Key...");
                 client.DefaultRequestHeaders.Add("X-ApiKey", AH.Unprotect(tcreds.Token));
             }
             else if (this.Credentials is UsernamePasswordCredentials upcreds)
             {
                 this.Log.LogDebug($"Making request as {upcreds.UserName}...");
-                clientOptions.Credentials = new NetworkCredential(upcreds.UserName, AH.Unprotect(upcreds.Password) ?? "");
-                client = new HttpClient(clientOptions);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("basic", Convert.ToBase64String(InedoLib.UTF8Encoding.GetBytes(upcreds.UserName + ":" + AH.Unprotect(upcreds.Password))));
             }
-            else
-                client = new HttpClient(clientOptions);
 
             client.Timeout = Timeout.InfiniteTimeSpan;
-
-            client.DefaultRequestHeaders.UserAgent.Clear();
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(ProGetFeedClient).Assembly.GetName().Version.ToString()));
-
             return client;
         }
 
-        public Task<Stream> GetPackageStreamAsync(UniversalPackageId id, UniversalPackageVersion version) => this.CreateUPacklient().GetPackageStreamAsync(id, version, this.CancellationToken);
+        public Task<Stream> GetPackageStreamAsync(UniversalPackageId id, UniversalPackageVersion version) => this.CreateUPackClient().GetPackageStreamAsync(id, version, this.CancellationToken);
         public Task<Stream> GetPackageStreamAsync(IFeedPackageConfiguration config) => this.GetPackageStreamAsync(UniversalPackageId.Parse(config.PackageName), UniversalPackageVersion.Parse(config.PackageVersion));
 
 
@@ -287,8 +267,8 @@ namespace Inedo.Extensions.Operations.ProGet
             this.Log.LogError(message);
         }
 
-        private static readonly LazyRegex FindVersionRegex = new LazyRegex(@"^(?<1>[0-9]+)(\.(?<2>[0-9]+)(?<3>\.([0-9]+(-.+)?)?)?)?", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-        private RemoteUniversalPackageVersion FindPackageVersion(IEnumerable<RemoteUniversalPackageVersion> packages, string packageVersion)
+        private static readonly LazyRegex FindVersionRegex = new(@"^(?<1>[0-9]+)(\.(?<2>[0-9]+)(?<3>\.([0-9]+(-.+)?)?)?)?", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+        private static RemoteUniversalPackageVersion FindPackageVersion(IEnumerable<RemoteUniversalPackageVersion> packages, string packageVersion)
         {
             if (string.Equals(packageVersion, "latest", StringComparison.OrdinalIgnoreCase))
             {
@@ -317,6 +297,7 @@ namespace Inedo.Extensions.Operations.ProGet
             return packages.FirstOrDefault(v => v.Version == semver);
         }
 
+#pragma warning disable IDE1006 // Naming Styles
         internal sealed class ProGetPackageVersionInfo
         {
             public string group { get; set; }
@@ -337,32 +318,10 @@ namespace Inedo.Extensions.Operations.ProGet
             public long? size { get; set; }
             public DateTime? date { get; set; }
         }
+#pragma warning restore IDE1006 // Naming Styles
+
         internal sealed class PackageDeploymentData
         {
-
-            public static PackageDeploymentData Create(IOperationExecutionContext context, ILogSink log, string description)
-            {
-                string baseUrl = SDK.BaseUrl;
-                if (string.IsNullOrEmpty(baseUrl))
-                {
-                    log.LogDebug("Deployment will not be recorded in ProGet because the System.BaseUrl configuration setting is not set.");
-                    return null;
-                }
-
-                string serverName = AH.CoalesceString(context?.ServerName, Environment.MachineName);
-                string relativeUrl;
-                if (SDK.ProductName == "BuildMaster")
-                {
-                    relativeUrl = context.ExpandVariables($"applications/{((IVariableFunctionContext)context).ProjectId}/builds/build?releaseNumber=$UrlEncode($ReleaseNumber)&buildNumber=$UrlEncode($PackageNumber)").AsString();
-                }
-                else
-                {
-                    relativeUrl = "executions/execution-in-progress?executionId=" + context.ExecutionId;
-                }
-
-                return new PackageDeploymentData(SDK.ProductName, baseUrl, relativeUrl, serverName, description);
-            }
-
             public PackageDeploymentData(string application, string baseUrl, string relativeUrl, string target, string description)
             {
                 if (baseUrl == null)
@@ -378,7 +337,7 @@ namespace Inedo.Extensions.Operations.ProGet
             public PackageDeploymentData(string application, string url, string target, string description)
             {
                 this.Application = application ?? throw new ArgumentNullException(nameof(application));
-                this.Url = url ?? throw new ArgumentException(nameof(url));
+                this.Url = url ?? throw new ArgumentNullException(nameof(url));
                 this.Target = target ?? throw new ArgumentNullException(nameof(target));
                 this.Description = description ?? "";
             }
