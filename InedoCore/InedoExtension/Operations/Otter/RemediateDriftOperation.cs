@@ -5,11 +5,8 @@ using System.Security;
 using System.Threading.Tasks;
 using Inedo.Diagnostics;
 using Inedo.Documentation;
-using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensibility;
-using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.Operations;
-using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.Otter
 {
@@ -26,12 +23,7 @@ Otter::Remediate-Drift
     Role: hdars-web-1k
 );")]
     [Note("Either a server name or role name is required, but not both. If both values are entered, role name will be ignored.")]
-#pragma warning disable CS0612 // Type or member is obsolete
-#pragma warning disable CS0618 // Type or member is obsolete
     public sealed partial class RemediateDriftOperation : ExecuteOperation
-        , IHasCredentials<OtterCredentials>
-        , IHasCredentials<InedoProductCredentials>
-
     {
         [ScriptAlias("Credentials")]
         [DisplayName("Credentials")]
@@ -39,12 +31,10 @@ Otter::Remediate-Drift
 
         [ScriptAlias("Server")]
         [DisplayName("Server name")]
-        [SuggestableValue(typeof(OtterServerNameSuggestionProvider))]
         public string Server { get; set; }
 
         [ScriptAlias("Role")]
         [DisplayName("Role name")]
-        [SuggestableValue(typeof(OtterRoleNameSuggestionProvider))]
         public string Role { get; set; }
 
         [ScriptAlias("WaitForCompletion")]
@@ -57,16 +47,12 @@ Otter::Remediate-Drift
         [ScriptAlias("Host")]
         [DisplayName("Otter server URL")]
         [PlaceholderText("Use URL from credentials")]
-        [MappedCredential(nameof(OtterCredentials.Host))]
         public string Host { get; set; }
         [Category("Connection")]
         [ScriptAlias("ApiKey")]
         [DisplayName("API key")]
         [PlaceholderText("Use API key from credentials")]
 
-        [MappedCredential(nameof(OtterCredentials.ApiKey))]
-#pragma warning restore CS0612 // Type or member is obsolete
-#pragma warning restore CS0618 // Type or member is obsolete
         public SecureString ApiKey { get; set; }
 
         public async override Task ExecuteAsync(IOperationExecutionContext context)

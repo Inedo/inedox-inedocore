@@ -109,7 +109,7 @@ namespace Inedo.Extensions.Operations.HTTP
             if (!string.IsNullOrEmpty(this.CredentialName))
             {
                 var cred = SecureCredentials.TryCreate(this.CredentialName, (ICredentialResolutionContext)context);
-                if ((cred ?? (cred as ResourceCredentials)?.ToSecureCredentials()) is not UsernamePasswordCredentials usernameCred)
+                if (cred is not UsernamePasswordCredentials usernameCred)
                 {
                     this.LogWarning($"A username/password credential named \"{this.CredentialName}\" was not be found, and cannot be applied to the operation.");
                 }

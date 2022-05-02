@@ -605,17 +605,11 @@ namespace Inedo.Extensions.UserDirectories
                 if (cred is UsernamePasswordCredentials userPassCred)
                     return new CredentialedDomain(split[0], userPassCred.UserName, userPassCred.Password);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-                if (cred is Extensibility.Credentials.UsernamePasswordCredentials legacyPassCred)
-                    return new CredentialedDomain(split[0], legacyPassCred.UserName, legacyPassCred.Password);
-
                 var unexpectedType = cred?.GetType()?.AssemblyQualifiedName ?? "null";
                 throw new InvalidOperationException(
                     $"Credential {split[1]} has an unexpected type ({unexpectedType}); " +
-                    $"expected {typeof(UsernamePasswordCredentials).AssemblyQualifiedName}" +
-                    $" or {typeof(Extensibility.Credentials.UsernamePasswordCredentials).AssemblyQualifiedName}."
+                    $"expected {typeof(UsernamePasswordCredentials).AssemblyQualifiedName}"
                 );
-#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             public bool Equals(CredentialedDomain other) => Equals(this, other);
