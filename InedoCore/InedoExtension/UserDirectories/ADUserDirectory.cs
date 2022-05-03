@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Net;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using Inedo.Diagnostics;
@@ -12,8 +13,6 @@ using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
-
-#pragma warning disable CA1416 // Validate platform compatibility
 
 namespace Inedo.Extensions.UserDirectories
 {
@@ -93,7 +92,7 @@ namespace Inedo.Extensions.UserDirectories
         }
         public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
         {
-            if (userName.Contains("\\"))
+            if (userName.Contains('\\'))
             {
                 userName = this.TryParseLoginUserName(userName);
                 if (userName == null)
@@ -108,7 +107,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 using var conn = GetClient();
                 conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.UseLdaps, this.BypassLdapsCertificateValidation);
-                if(userName?.Contains("@") ?? false)
+                if(userName?.Contains('@') ?? false)
                 {
                     var userNameSplit = userName.Split('@');
                     conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
@@ -128,8 +127,6 @@ namespace Inedo.Extensions.UserDirectories
         }
         public override IUserDirectoryUser TryGetUser(string userName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
         public override IUserDirectoryGroup TryGetGroup(string groupName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
-        [Obsolete("Please use TryGetUser and TryGetGroup instead", false)]
-        public override IUserDirectoryPrincipal TryGetPrincipal(string principalName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.UsersAndGroups, principalName));
         public override IUserDirectoryUser TryParseLogonUser(string logonUser)
         {
             if (string.IsNullOrEmpty(logonUser))
@@ -143,7 +140,7 @@ namespace Inedo.Extensions.UserDirectories
 
         private string TryParseLoginUserName(string logonUser)
         {
-            if (logonUser.Contains("\\"))
+            if (logonUser.Contains('\\'))
             {
                 var parts = logonUser.Split(new[] { '\\' }, 2, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length != 2)
@@ -162,17 +159,18 @@ namespace Inedo.Extensions.UserDirectories
             if (this.SearchMode == ADSearchMode.SpecificDomains)
             {
                 return new HashSet<CredentialedDomain>(
-                    this.DomainsToSearch?.Select(d => CredentialedDomain.Create(d)).Where(d => d != null) ?? new CredentialedDomain[0]
+                    this.DomainsToSearch?.Select(d => CredentialedDomain.Create(d)).Where(d => d != null) ?? Array.Empty<CredentialedDomain>()
                 );
             }
 
             var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (InedoLib.IsWindows)
+            if (OperatingSystem.IsWindows())
                 this.AddCurrentDomainAndTrusts(paths);
 
             return paths.Select(p => new CredentialedDomain(p)).ToHashSet();
         }
+        [SupportedOSPlatform("windows")]
         private void AddCurrentDomainAndTrusts(HashSet<string> paths)
         {
             using var domain = Domain.GetCurrentDomain();
@@ -357,12 +355,12 @@ namespace Inedo.Extensions.UserDirectories
         {
             using var conn = GetClient();
             conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.UseLdaps, this.BypassLdapsCertificateValidation);
-            if (userName?.Contains("@") ?? false)
+            if (userName?.Contains('@') ?? false)
             {
                 var userNameSplit = userName.Split('@');
                 conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
             }
-            else if(userName?.Contains("\\") ?? false)
+            else if(userName?.Contains('\\') ?? false)
             {
                 var userNameSplit = userName.Split('\\');
                 conn.Bind(new NetworkCredential(userNameSplit[1], password, userNameSplit[0]));
@@ -375,14 +373,10 @@ namespace Inedo.Extensions.UserDirectories
         }
         private static LdapClient GetClient()
         {
-#if NET452
-            return new DirectoryServicesLdapClient();
-#else
-            if (InedoLib.NetCore && InedoLib.IsLinux)
+            if (OperatingSystem.IsLinux())
                 return new NovellLdapClient();
             else
                 return new DirectoryServicesLdapClient();
-#endif
         }
 
         [Flags]
