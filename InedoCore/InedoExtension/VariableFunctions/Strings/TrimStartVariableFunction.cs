@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Inedo.Documentation;
@@ -23,7 +24,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
 
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
-            var chars = (from s in this.CharactersToTrim ?? new string[0]
+            var chars = (from s in this.CharactersToTrim ?? Array.Empty<string>()
                          where s.Length == 1
                          select s[0]).ToArray();
 

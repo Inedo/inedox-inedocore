@@ -38,8 +38,7 @@ namespace Inedo.Extensions.VariableFunctions.Executions
             else
                 types = new[] { RuntimeValueType.Scalar, RuntimeValueType.Vector, RuntimeValueType.Map };
 
-            var execContext = context as IOperationExecutionContext;
-            if (execContext == null)
+            if (context is not IOperationExecutionContext execContext)
                 return null;
 
             foreach (var type in types)

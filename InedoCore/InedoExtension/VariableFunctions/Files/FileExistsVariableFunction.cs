@@ -1,9 +1,12 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
 using Inedo.Agents;
+using Inedo.Documentation;
+using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.VariableFunctions;
-using Inedo.Documentation;
 
 namespace Inedo.Extensions.VariableFunctions.Files
 {
@@ -11,22 +14,22 @@ namespace Inedo.Extensions.VariableFunctions.Files
     [Description("Returns \"true\" if the specified file exists on the current server.")]
     [Tag("files")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
-    public sealed class FileExistsVariableFunction : ScalarVariableFunction
+    public sealed class FileExistsVariableFunction : ScalarVariableFunction, IAsyncVariableFunction
     {
         [VariableFunctionParameter(0)]
         [ScriptAlias("name")]
         [Description("The path of the file.")]
         public string FileName { get; set; }
 
-        protected override object EvaluateScalar(IVariableFunctionContext context)
+        public async ValueTask<RuntimeValue> EvaluateAsync(IVariableFunctionContext context)
         {
-            var execContext = context as IOperationExecutionContext;
-            if (execContext == null)
+            if (context is not IOperationExecutionContext execContext)
                 throw new VariableFunctionException("Execution context is not available.");
 
-            return execContext.Agent
-                .GetService<IFileOperationsExecuter>()
-                .FileExists(execContext.ResolvePath(this.FileName));
+            return await (await execContext.Agent.GetServiceAsync<IFileOperationsExecuter>())
+                .FileExistsAsync(execContext.ResolvePath(this.FileName));
         }
+
+        protected override object EvaluateScalar(IVariableFunctionContext context) => throw new NotImplementedException();
     }
 }

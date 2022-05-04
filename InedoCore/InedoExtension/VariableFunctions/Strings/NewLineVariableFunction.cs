@@ -24,8 +24,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
             if (string.Equals(this.WindowsOrLinux, "windows", StringComparison.OrdinalIgnoreCase))
                 return "\r\n";
 
-            var operationContext = context as IOperationExecutionContext;
-            if (operationContext != null)
+            if (context is IOperationExecutionContext operationContext)
                 return operationContext.Agent.GetService<IFileOperationsExecuter>().NewLine;
 
             return System.Environment.NewLine;

@@ -36,7 +36,7 @@ namespace Inedo.Extensions.VariableFunctions.Strings
                 return string.Empty;
 
             if (this.Length == null || this.Length >= this.Text.Length - this.Offset)
-                return this.Text.Substring(this.Offset);
+                return this.Text[this.Offset..];
 
             return this.Text.Substring(this.Offset, (int)this.Length);
         }

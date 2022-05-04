@@ -12,7 +12,7 @@ namespace Inedo.Extensions
         /// <summary>
         /// No permissions.
         /// </summary>
-        public static readonly PosixFileMode Clear = new PosixFileMode();
+        public static readonly PosixFileMode Clear = new();
         /// <summary>
         /// All permissions (unrestricted).
         /// </summary>
@@ -54,13 +54,7 @@ namespace Inedo.Extensions
         public static bool Equals(PosixFileMode mode1, PosixFileMode mode2) => mode1.OctalValue == mode2.OctalValue;
 
         public bool Equals(PosixFileMode other) => Equals(this, other);
-        public override bool Equals(object obj)
-        {
-            if (obj is PosixFileMode)
-                return Equals(this, (PosixFileMode)obj);
-            else
-                return false;
-        }
+        public override bool Equals(object obj) => obj is PosixFileMode mode && Equals(this, mode);
         public override int GetHashCode() => this.OctalValue.GetHashCode();
         public override string ToString()
         {

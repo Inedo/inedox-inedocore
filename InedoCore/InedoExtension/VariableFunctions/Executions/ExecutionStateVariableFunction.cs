@@ -14,8 +14,7 @@ namespace Inedo.Extensions.VariableFunctions.Executions
     {
         protected override object EvaluateScalar(IVariableFunctionContext context)
         {
-            var execContext = context as IOperationExecutionContext;
-            if (execContext == null)
+            if (context is not IOperationExecutionContext execContext)
                 throw new VariableFunctionException("Execution context is not available.");
 
             if (execContext.ExecutionStatus == ExecutionStatus.Fault)
