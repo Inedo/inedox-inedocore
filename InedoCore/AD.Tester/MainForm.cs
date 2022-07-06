@@ -243,12 +243,10 @@ namespace AD.Tester
             public override Version ProductVersion => throw new NotImplementedException();
             public override Type SecuredTaskType => throw new NotImplementedException();
             public override string DefaultRaftName => throw new NotImplementedException();
-            public override UserDirectory CreateUserDirectory(int userDirectoryId) => throw new NotImplementedException();
             public override string GetConfigValue(string configKey) => throw new NotImplementedException();
             public override SDK.CredentialsInfo GetCredentialById(int id) => throw new NotImplementedException();
             public override ITaskChecker GetCurrentTaskChecker() => throw new NotImplementedException();
             public override IUserDirectoryUser GetCurrentUser() => throw new NotImplementedException();
-            public override UserDirectory GetCurrentUserDirectory() => throw new NotImplementedException();
             public override IEnumerable<SDK.EnvironmentInfo> GetEnvironments() => throw new NotImplementedException();
             public override IEnumerable<SDK.ProjectInfo> GetProjects() => throw new NotImplementedException();
             public override SDK.RaftItemInfo GetRaftItem(RaftItemType type, string itemId, object context) => throw new NotImplementedException();
@@ -259,7 +257,6 @@ namespace AD.Tester
             public override IEnumerable<SDK.ServerInfo> GetServers(bool includeInactive) => throw new NotImplementedException();
             public override IEnumerable<SDK.ServerInfo> GetServersInEnvironment(int environmentId) => throw new NotImplementedException();
             public override IEnumerable<SDK.ServerInfo> GetServersInRole(int roleId) => throw new NotImplementedException();
-            public override IEnumerable<SDK.UserDirectoryInfo> GetUserDirectories() => throw new NotImplementedException();
             public override HttpClient CreateHttpClient() => throw new NotImplementedException();
         }
 
