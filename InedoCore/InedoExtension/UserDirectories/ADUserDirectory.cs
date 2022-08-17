@@ -273,7 +273,7 @@ namespace Inedo.Extensions.UserDirectories
                 this.LogDebug($"Domain alias \"{principalId.DomainAlias}\" will be used.");
                 domains = new HashSet<CredentialedDomain>
                 {
-                    this.domainsToSearch.Value.FirstOrDefault(x => x.Name.Equals(principalId.DomainAlias)) ?? new CredentialedDomain(principalId.DomainAlias)
+                    this.domainsToSearch.Value.FirstOrDefault(x => x.Name.Equals(principalId.DomainAlias, StringComparison.OrdinalIgnoreCase)) ?? new CredentialedDomain(principalId.DomainAlias)
                 };
             }
 
