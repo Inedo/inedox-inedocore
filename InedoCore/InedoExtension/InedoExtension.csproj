@@ -13,7 +13,7 @@
     <PackageReference Include="Inedo.SDK" Version="2.0.0">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Inedo.UPack" Version="2.0.2-ci.4" />
+    <PackageReference Include="Inedo.UPack" Version="2.0.2-ci.5" />
     <PackageReference Include="System.DirectoryServices" Version="6.0.0" />
     <PackageReference Include="System.DirectoryServices.Protocols" Version="6.0.1" />
     <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="3.6.0" />
