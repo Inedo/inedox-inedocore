@@ -308,6 +308,7 @@ namespace Inedo.Extensions.Operations.ProGet
             private async Task<object> InstallFromFile(CancellationToken cancellationToken)
             {
                 this.SetProgress("installing package", cancellationToken: cancellationToken);
+                this.LogDebug($"Package size: {new FileInfo(this.Options.PackageFilePath).Length}");
                 this.LogDebug($"Installing package from \"{this.Options.PackageFilePath}\" to \"{this.Options.TargetPath}\"...");
                 using var package = new UniversalPackage(this.Options.PackageFilePath);
                 await package.ExtractContentItemsAsync(this.Options.TargetPath, cancellationToken);
