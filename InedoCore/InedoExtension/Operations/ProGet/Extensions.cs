@@ -197,7 +197,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 using var sourceStream = await client.GetPackageStreamAsync(packageToInstall.FullName, packageToInstall.Version);
                 await sourceStream.CopyToAsync(tempStream, 80 * 1024, context.CancellationToken, position => setProgress((int)(100 * position / size), "downloading package"));
 
-                log.LogDebug($"Package downloaded ({tempStream.Length})");
+                tempStream.Position = 0;
+                log.LogDebug($"Package downloaded ({tempStream.Length} bytes; sha1: {tempStream.ComputeHash()})");
 
                 var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
                 await fileOps.CreateDirectoryAsync(tempDirectoryName);
@@ -264,6 +265,14 @@ namespace Inedo.Extensions.Operations.ProGet
             }
         }
 
+        public static string ComputeHash(this Stream stream)
+        {
+            using var sha1 = System.Security.Cryptography.SHA1.Create();
+            var hash = sha1.ComputeHash(stream);
+            stream.Position = 0;
+            return Convert.ToHexString(hash);
+        }
+
         [SlimSerializable]
         private sealed class InstallPackageJobOptions
         {
@@ -307,10 +316,11 @@ namespace Inedo.Extensions.Operations.ProGet
             }
             private async Task<object> InstallFromFile(CancellationToken cancellationToken)
             {
+                using var stream = File.OpenRead(this.Options.PackageFilePath);
                 this.SetProgress("installing package", cancellationToken: cancellationToken);
-                this.LogDebug($"Package size: {new FileInfo(this.Options.PackageFilePath).Length}");
+                this.LogDebug($"Package size: {stream.Length}; sha1: {stream.ComputeHash()}");
                 this.LogDebug($"Installing package from \"{this.Options.PackageFilePath}\" to \"{this.Options.TargetPath}\"...");
-                using var package = new UniversalPackage(this.Options.PackageFilePath);
+                using var package = new UniversalPackage(stream);
                 await package.ExtractContentItemsAsync(this.Options.TargetPath, cancellationToken);
                 this.LogInformation("Package installed from file.");
                 return null;
