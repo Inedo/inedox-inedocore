@@ -191,10 +191,13 @@ namespace Inedo.Extensions.Operations.ProGet
                 var size = packageToInstall.Size == 0 ? 100 * 1024 * 1024 : packageToInstall.Size;
 
                 setProgress(0, "downloading package");
+                log.LogDebug($"Package size is {packageToInstall?.Size.ToString() ?? "unknown"}");
                 log.LogInformation("Downloading package...");
                 using var tempStream = TemporaryStream.Create(size);
                 using var sourceStream = await client.GetPackageStreamAsync(packageToInstall.FullName, packageToInstall.Version);
                 await sourceStream.CopyToAsync(tempStream, 80 * 1024, context.CancellationToken, position => setProgress((int)(100 * position / size), "downloading package"));
+
+                log.LogDebug($"Package downloaded ({tempStream.Length})");
 
                 var tempDirectoryName = fileOps.CombinePath(await fileOps.GetBaseWorkingDirectoryAsync().ConfigureAwait(false), Guid.NewGuid().ToString("N"));
                 await fileOps.CreateDirectoryAsync(tempDirectoryName);
@@ -208,7 +211,7 @@ namespace Inedo.Extensions.Operations.ProGet
                     await tempStream.CopyToAsync(remote, 81920, context.CancellationToken, position => setProgress((int)(100 * position / size), "copying package to agent"));
                 }
 
-                log.LogDebug($"Package will installed remotely.");
+                log.LogDebug("Package will be installed remotely.");
                 jobOptions.PackageFilePath = tempZipFileName;
             }
 
