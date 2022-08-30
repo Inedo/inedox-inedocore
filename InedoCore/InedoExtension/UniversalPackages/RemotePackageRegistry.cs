@@ -167,17 +167,13 @@ namespace Inedo.Extensions.UniversalPackages
                         description = await reader.ReadLineAsync().ConfigureAwait(false);
                         token = await reader.ReadLineAsync().ConfigureAwait(false);
                     }
-                    catch (IOException)
+                    catch
                     {
                     }
 
                     return (info, description, token);
                 }
-                catch (FileNotFoundException)
-                {
-                    return (null, null, null);
-                }
-                catch (DirectoryNotFoundException)
+                catch
                 {
                     return (null, null, null);
                 }
