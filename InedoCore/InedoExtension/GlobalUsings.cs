@@ -1,0 +1,11 @@
+﻿global using System.ComponentModel;
+global using Inedo.Diagnostics;
+global using Inedo.Documentation;
+global using Inedo.ExecutionEngine.Executer;
+global using Inedo.Extensibility;
+global using Inedo.Extensibility.Credentials;
+global using Inedo.Extensibility.Operations;
+global using Inedo.Extensions.Credentials;
+global using Inedo.Extensions.SecureResources;
+global using Inedo.IO;
+global using Inedo.Web;

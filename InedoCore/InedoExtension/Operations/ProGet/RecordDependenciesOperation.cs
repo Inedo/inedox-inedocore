@@ -1,22 +1,11 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Runtime.CompilerServices;
 using Inedo.Agents;
 using Inedo.DependencyScan;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.SecureResources;
-using Inedo.Extensions.SecureResources;
-using Inedo.IO;
-using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
+    [Obsolete("Use ProGet::Publish-Dependencies instead.")]
     [Tag("proget")]
     [ScriptAlias("Record-Dependencies")]
     [ScriptNamespace(Namespaces.ProGet)]
@@ -112,7 +101,7 @@ ProGet::Record-Dependencies
             this.LogInformation($"Looking for dependencies in {sourcePath}...");
             var scanner = DependencyScanner.GetScanner(sourcePath, this.ProjectType, new RemoteFileSystem(fileOps));
             this.LogDebug($"Project type is {scanner.Type}.");
-            var projects = await scanner.ResolveDependenciesAsync(context.CancellationToken).ConfigureAwait(false);
+            var projects = await scanner.ResolveDependenciesAsync(cancellationToken: context.CancellationToken).ConfigureAwait(false);
 
             string name = null;
             string group = null;
@@ -182,7 +171,18 @@ ProGet::Record-Dependencies
             public RemoteFileSystem(IFileOperationsExecuter fileOps) => this.fileOps = fileOps;
 
             public string Combine(string path1, string path2) => this.fileOps.CombinePath(path1, path2);
-            public Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken) => this.fileOps.FileExistsAsync(path);
+            public ValueTask<bool> FileExistsAsync(string path, CancellationToken cancellationToken) => new(this.fileOps.FileExistsAsync(path));
+            public async IAsyncEnumerable<SimpleFileInfo> FindFilesAsync(string path, string filter, bool recursive, [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                var include = recursive ? this.fileOps.CombinePath("**", filter) : filter;
+                var mask = new MaskingContext(new[] { include }, null);
+
+                foreach (var info in await this.fileOps.GetFileSystemInfosAsync(path, mask))
+                {
+                    if (info is SlimFileInfo)
+                        yield return new SimpleFileInfo(info.FullName, info.LastWriteTimeUtc);
+                }
+            }
             public string GetDirectoryName(string path) => PathEx.GetDirectoryName(path);
             public string GetFileName(string path) => PathEx.GetFileName(path);
             public string GetFileNameWithoutExtension(string path) => Path.GetFileNameWithoutExtension(path);
