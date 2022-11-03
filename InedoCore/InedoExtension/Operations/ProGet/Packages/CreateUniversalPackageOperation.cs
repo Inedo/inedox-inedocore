@@ -1,27 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
+﻿using System.Text;
 using Inedo.ExecutionEngine;
-using Inedo.ExecutionEngine.Executer;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensions.SecureResources;
+using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
-using Inedo.IO;
 using Inedo.UPack;
 using Inedo.UPack.Packaging;
-using Inedo.Web;
 
-namespace Inedo.Extensions.Operations.ProGet
+namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [Serializable]
     [ScriptAlias("Create-Package")]
     [DisplayName("Create Universal Package")]
     [Description("Creates a universal package from the specified directory and publishes to a feed.")]
@@ -32,12 +18,15 @@ namespace Inedo.Extensions.Operations.ProGet
     Name: MyAppPackage,
     Version: 3.4.2,
 
-    From :$WorkingDirectory,
-    PushTo: MyPackageSource    
+    From: $WorkingDirectory,
+    PushTo: MyPackageSource
 );
 ")]
-    public sealed class CreatePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
+    public sealed class CreateUniversalPackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
     {
+        private IPackageManager packageManager;
+        private string originalPackageSourceName;
+
         [Required]
         [ScriptAlias("Name")]
         [DisplayName("Package name")]
@@ -55,7 +44,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("PushTo")]
         [ScriptAlias("PackageSource")]
         [DisplayName("To package source")]
-        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public string PackageSourceName { get; set; }
 
         [Category("Packaging options")]
@@ -91,13 +80,12 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
         [PlaceholderText("Use Feed from package source")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
+        [ScriptAlias("EndpointUrl")]
+        [DisplayName("API endpoint URL")]
         [Category("Connection/Identity")]
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from package source")]
-        public string FeedUrl { get; set; }
+        [PlaceholderText("Use URL from package source")]
+        public string ApiUrl { get; set; }
         [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
         [DisplayName("ProGet user name")]
@@ -120,11 +108,9 @@ namespace Inedo.Extensions.Operations.ProGet
         [Undisclosed]
         [ScriptAlias("Group")]
         public string PackageGroup { get; set; }
-
-        [NonSerialized]
-        private IPackageManager packageManager;
-        [NonSerialized]
-        private string originalPackageSourceName;
+        [Undisclosed]
+        [ScriptAlias("FeedUrl")]
+        public string FeedUrl { get; set; }
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
@@ -139,8 +125,8 @@ namespace Inedo.Extensions.Operations.ProGet
             if (!string.IsNullOrEmpty(this.PackageGroup))
                 this.PackageName = this.PackageGroup + "/" + this.PackageName;
 
+            await this.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
             await this.ResolveAttachedPackageAsync(context);
-            this.PrepareCredentialPropertiesForRemote(context, false);
             this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
         }
 
@@ -202,7 +188,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
             using (var package = new UniversalPackageBuilder(new FileStream(outputFileName, this.Overwrite ? FileMode.Create : FileMode.CreateNew), metadata))
             {
-
                 this.LogDebug($"Adding {matches.Count} items to package...");
 
                 await package.AddContentsAsync(sourceDirectory, string.Empty, mask.Recurse, matches.Contains, context.CancellationToken);
@@ -212,7 +197,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             // when package source is specified, upload it
             if (!string.IsNullOrWhiteSpace(this.FeedUrl))
-                return await this.TryCreateProGetFeedClient(this, context.CancellationToken).UploadPackageAndComputeHashAsync(outputFileName);
+                return await this.TryCreateProGetFeedClient(cancellationToken: context.CancellationToken).UploadPackageAndComputeHashAsync(outputFileName);
 
             return null;
 
@@ -260,7 +245,7 @@ namespace Inedo.Extensions.Operations.ProGet
             return new ExtendedRichDescription(
                 new RichDescription(
                     "Create ",
-                    new Hilite((config[nameof(PackageName)]) + " " + config[nameof(PackageVersion)]),
+                    new Hilite(config[nameof(PackageName)] + " " + config[nameof(PackageVersion)]),
                     " universal package"
                 ),
                 new RichDescription(

@@ -5,7 +5,7 @@ using Inedo.Extensibility.SecureResources;
 
 namespace Inedo.Extensions.Operations.ProGet
 {
-    [Obsolete("Use ProGet::Publish-Dependencies instead.")]
+    [Obsolete("Use ProGet::Scan instead.")]
     [Tag("proget")]
     [ScriptAlias("Record-Dependencies")]
     [ScriptNamespace(Namespaces.ProGet)]

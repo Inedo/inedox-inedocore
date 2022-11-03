@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Inedo.Extensibility;
-using Inedo.Extensibility.RaftRepositories;
-using Inedo.Web;
+﻿using Inedo.Extensibility.RaftRepositories;
 
 namespace Inedo.Extensions.SuggestionProviders
 {

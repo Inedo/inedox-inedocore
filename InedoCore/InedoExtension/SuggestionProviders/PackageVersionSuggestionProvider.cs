@@ -1,11 +1,5 @@
-﻿using Inedo.Extensibility;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensions.Operations.ProGet;
+﻿using System.Runtime.CompilerServices;
 using Inedo.Extensions.UniversalPackages;
-using Inedo.Web;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
@@ -13,22 +7,34 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-            var packageName = config[nameof(IFeedPackageConfiguration.PackageName)];
+            var list = new List<string>();
+
+            await foreach (var p in this.GetSuggestionsAsync(string.Empty, config, default))
+                list.Add(p);
+
+            return list;
+        }
+        public async IAsyncEnumerable<string> GetSuggestionsAsync(string startsWith, IComponentConfiguration config, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            if (SDK.ProductName == "BuildMaster")
+                yield return "attached";
+
+            yield return "latest";
+            yield return "latest-stable";
+
+            var packageName = config["Name"];
             if (string.IsNullOrEmpty(packageName))
-                return Enumerable.Empty<string>();
+                yield break;
 
-            var client = config.TryCreateProGetFeedClient();
+            var client = await config.TryCreateProGetFeedClientAsync(cancellationToken);
             if (client == null)
-                return Enumerable.Empty<string>();
+                yield break;
 
-
-            var package = await client.ListPackageVersionsAsync(packageName).ConfigureAwait(false);
-
-            var options = SDK.ProductName == "BuildMaster"
-                ? new[] { "attached", "latest", "latest-stable" }
-                : new[] { "latest", "latest-stable" };
-
-            return options.Concat(package.OrderByDescending(p => p.Version).Select(v => v.Version.ToString()));
+            await foreach (var v in client.ListPackageVersionsAsync(packageName, cancellationToken))
+            {
+                if (string.IsNullOrEmpty(startsWith) || v.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase))
+                    yield return v;
+            }
         }
     }
 }

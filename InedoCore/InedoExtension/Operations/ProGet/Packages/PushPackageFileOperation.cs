@@ -1,25 +1,12 @@
-﻿using System;
-using System.ComponentModel;
-using System.IO;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
-using Inedo.ExecutionEngine.Executer;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensions.SecureResources;
-using Inedo.Extensions.SuggestionProviders;
+﻿using System.Text.Json.Nodes;
+using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.UniversalPackages;
-using Inedo.IO;
 using Inedo.Serialization;
 using Inedo.UPack;
 using Inedo.UPack.Packaging;
-using Inedo.Web;
 
-namespace Inedo.Extensions.Operations.ProGet
+namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [Serializable]
     [Tag("proget")]
     [ScriptAlias("Push-PackageFile")]
     [DefaultProperty(nameof(FilePath))]
@@ -33,6 +20,9 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
 );")]
     public sealed class PushPackageFileOperation : RemoteExecuteOperation, IFeedConfiguration
     {
+        private IPackageManager packageManager;
+        private string originalPackageSourceName;
+
         [Required]
         [ScriptAlias("FilePath")]
         [DisplayName("Package file path")]
@@ -41,21 +31,20 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         [ScriptAlias("To")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public string PackageSourceName { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
         [PlaceholderText("Use Feed from package source")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
+        [ScriptAlias("EndpointUrl")]
+        [DisplayName("API endpoint URL")]
         [Category("Connection/Identity")]
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from package source")]
-        public string FeedUrl { get; set; }
+        [PlaceholderText("Use URL from package source")]
+        public string ApiUrl { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
@@ -78,16 +67,15 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
         [Description("An API Key that can access this feed.")]
         public string ApiKey { get; set; }
 
-        [NonSerialized]
-        private IPackageManager packageManager;
-        [NonSerialized]
-        private string originalPackageSourceName;
+        [Undisclosed]
+        [ScriptAlias("FeedUrl")]
+        public string FeedUrl { get; set; }
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             this.originalPackageSourceName = this.PackageSourceName;
             this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
-            this.PrepareCredentialPropertiesForRemote(context);
+            await this.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
         }
 
         protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
@@ -100,7 +88,7 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             (var fullName, var version, bool vpack) = GetPackageInfo(fullPath);
             this.LogDebug($"Package verified. Name: {fullName}, Version: {version}");
 
-            var client = this.TryCreateProGetFeedClient(this, context.CancellationToken);
+            var client = this.TryCreateProGetFeedClient(cancellationToken: context.CancellationToken);
             byte[] hash;
             if (vpack)
                 hash = await client.UploadVirtualPackageAndComputeHashAsync(fullPath);
@@ -166,7 +154,6 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             }
         }
 
-        [Serializable]
         [SlimSerializable]
         private sealed class PackageInfo
         {

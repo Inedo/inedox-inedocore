@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Inedo.Extensibility;
-using Inedo.Web;
+﻿using System.Runtime.CompilerServices;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
@@ -10,12 +6,24 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-            var client = config.TryCreateProGetFeedClient();
-            if (client == null)
-                return Enumerable.Empty<string>();
+            var list = new List<string>();
 
-            var packages = await client.ListPackagesAsync().ConfigureAwait(false);
-            return packages.Select(p => p.FullName.ToString());
+            await foreach (var p in this.GetSuggestionsAsync(string.Empty, config, default))
+                list.Add(p);
+
+            return list;
+        }
+        public async IAsyncEnumerable<string> GetSuggestionsAsync(string startsWith, IComponentConfiguration config, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var client = await config.TryCreateProGetFeedClientAsync(cancellationToken);
+            if (client == null)
+                yield break;
+
+            await foreach (var p in client.ListPackagesAsync(cancellationToken))
+            {
+                if (string.IsNullOrEmpty(startsWith) || p.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase))
+                    yield return p;
+            }
         }
     }
 }

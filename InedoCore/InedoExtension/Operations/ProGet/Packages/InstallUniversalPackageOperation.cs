@@ -1,15 +1,8 @@
-﻿using System;
-using System.ComponentModel;
-using System.Threading.Tasks;
-using Inedo.Documentation;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensions.SecureResources;
+﻿using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
-using Inedo.Web;
 
-namespace Inedo.Extensions.Operations.ProGet
+namespace Inedo.Extensions.Operations.ProGet.Packages
 {
     [Serializable]
     [Tag("proget")]
@@ -26,7 +19,7 @@ namespace Inedo.Extensions.Operations.ProGet
     To: C:\MyApps\MyApp
 );
 ")]
-    public sealed class InstallPackageOperation : ExecuteOperation, IFeedPackageInstallationConfiguration
+    public sealed class InstallUniversalPackageOperation : ExecuteOperation, IFeedPackageInstallationConfiguration
     {
         private volatile OperationProgress progress;
 
@@ -34,7 +27,7 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
         [PlaceholderText("Infer from package name")]
-        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public string PackageSourceName { get; set; }
 
         [Required]
@@ -80,14 +73,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
         [PlaceholderText("Use Feed from package source")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
+        [ScriptAlias("EndpointUrl")]
+        [DisplayName("API endpoint URL")]
         [Category("Connection/Identity")]
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from package source")]
-        public string FeedUrl { get; set; }
+        [PlaceholderText("Use URL from package source")]
+        public string ApiUrl { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
@@ -110,8 +102,12 @@ namespace Inedo.Extensions.Operations.ProGet
         [Description("An API Key that can access this feed.")]
         public string ApiKey { get; set; }
 
+        [Undisclosed]
+        [ScriptAlias("FeedUrl")]
+        public string FeedUrl { get; set; }
+
         public override OperationProgress GetProgress() => this.progress;
- 
+
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
             if (string.IsNullOrWhiteSpace(this.PackageVersion))

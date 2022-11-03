@@ -1,23 +1,12 @@
-﻿using Inedo.Agents;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
+﻿using System.Collections;
+using Inedo.Agents;
 using Inedo.ExecutionEngine;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensions.SecureResources;
+using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.UPack.Packaging;
-using Inedo.Web;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Inedo.Extensions.Operations.ProGet
+namespace Inedo.Extensions.Operations.ProGet.Packages
 {
     [DisplayName("Query Package")]
     [ScriptAlias("Query-Package")]
@@ -49,12 +38,12 @@ Query-Package
 
 Log-Debug 'Package name is $(%packageData.name).';
 ")]
-    public sealed class QueryPackageOperation : ExecuteOperation, IFeedPackageConfiguration
+    public sealed class QueryUniversalPackageOperation : ExecuteOperation, IFeedPackageConfiguration
     {
         [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public string PackageSourceName { get; set; }
 
         [Required]
@@ -91,14 +80,13 @@ Log-Debug 'Package name is $(%packageData.name).';
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
         [PlaceholderText("Use Feed from package source")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
+        [ScriptAlias("EndpointUrl")]
+        [DisplayName("API endpoint URL")]
         [Category("Connection/Identity")]
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from package source")]
-        public string FeedUrl { get; set; }
+        [PlaceholderText("Use URL from package source")]
+        public string ApiUrl { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
@@ -136,9 +124,13 @@ Log-Debug 'Package name is $(%packageData.name).';
         [Description("When specified, this map variable will be assigned containing all of the package's metadata. If the package does not exist this value is not defined.")]
         public IDictionary<string, RuntimeValue> Metadata { get; set; }
 
+        [Undisclosed]
+        [ScriptAlias("FeedUrl")]
+        public string FeedUrl { get; set; }
+
         public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
-            if (!string.IsNullOrEmpty(PackageFile))
+            if (!string.IsNullOrEmpty(this.PackageFile))
             {
                 if (!string.IsNullOrWhiteSpace(this.FeedUrl))
                     this.LogWarning("FeedUrl is ignored when PackageFile is specified.");
@@ -178,6 +170,7 @@ Log-Debug 'Package name is $(%packageData.name).';
                     this.LogInformation("Package file not found.");
                     this.Exists = false;
                 }
+
                 return;
             }
 

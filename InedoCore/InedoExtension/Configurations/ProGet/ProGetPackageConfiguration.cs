@@ -1,19 +1,10 @@
-﻿using System;
-using System.ComponentModel;
-using Inedo.Documentation;
+﻿using Inedo.Extensibility.Configurations;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.Serialization;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Configurations;
-using Inedo.Extensibility.Credentials;
-using Inedo.Web;
-using System.Collections.Generic;
-using Inedo.Extensions.SecureResources;
 
 namespace Inedo.Extensions.Configurations.ProGet
 {
-    [Serializable]
     [DisplayName("Universal Package")]
     [PersistFrom("Inedo.Otter.Extensions.Configurations.ProGet.ProGetPackageConfiguration,OtterCoreEx")]
     public sealed class ProGetPackageConfiguration : PersistedConfiguration, IFeedPackageInstallationConfiguration, IExistential
@@ -110,14 +101,13 @@ namespace Inedo.Extensions.Configurations.ProGet
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
         [PlaceholderText("Use Feed from package source")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
+        [ScriptAlias("EndpointUrl")]
+        [DisplayName("API endpoint URL")]
         [Category("Connection/Identity")]
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from package source")]
-        public string FeedUrl { get; set; }
+        [PlaceholderText("Use URL from package source")]
+        public string ApiUrl { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
@@ -149,7 +139,8 @@ namespace Inedo.Extensions.Configurations.ProGet
         [Undisclosed]
         [ScriptAlias("Exclude")]
         public IEnumerable<string> Excludes { get; set; }
-
+        [ScriptAlias("FeedUrl")]
+        public string FeedUrl { get; set; }
 
         [Persistent]
         public bool DriftedFiles { get; set; }

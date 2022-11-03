@@ -1,38 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
-using Inedo.ExecutionEngine.Executer;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Credentials;
-using Inedo.Extensibility.Operations;
-using Inedo.Extensibility.SecureResources;
-using Inedo.Extensions.SecureResources;
+﻿using Inedo.Extensibility.SecureResources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
-using Inedo.Serialization;
-using Inedo.Web;
 
-namespace Inedo.Extensions.Operations.ProGet
+namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [Serializable]
     [Tag("proget")]
-    [ScriptAlias("Promote-Package")]
+    [ScriptAlias("Promote")]
+    [ScriptAlias("Promote-Package", Obsolete = true)]
     [DisplayName("Promote Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Description("Promotes a package from one feed to another in a ProGet instance.")]
-    public sealed class PromotePackageOperation : RemoteExecuteOperation, IFeedPackageConfiguration
+    public sealed class PromoteOperation : ExecuteOperation, IFeedPackageConfiguration
     {
-        [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
+        [ScriptAlias("From", Obsolete = true)]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        [SuggestableValue(typeof(RepackPromoteSourceSuggestionProvider))]
         public string PackageSourceName { get; set; }
 
         [Required]
@@ -52,14 +35,12 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("ToFeed")]
         [DisplayName("Promote to Feed")]
         [PlaceholderText("required if not set in Connection/Identity")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string TargetFeedName { get; set; }
 
         [ScriptAlias("Reason")]
         [DisplayName("Reason")]
         [PlaceholderText("Unspecified")]
         public string Reason { get; set; }
-
 
         [Category("Connection/Identity")]
         [DisplayName("To source")]
@@ -71,14 +52,13 @@ namespace Inedo.Extensions.Operations.ProGet
         [ScriptAlias("Feed")]
         [DisplayName("Feed name")]
         [PlaceholderText("Use Feed from package source")]
-        [SuggestableValue(typeof(FeedNameSuggestionProvider))]
         public string FeedName { get; set; }
 
+        [ScriptAlias("EndpointUrl")]
+        [DisplayName("API endpoint URL")]
         [Category("Connection/Identity")]
-        [ScriptAlias("FeedUrl")]
-        [DisplayName("ProGet server URL")]
-        [PlaceholderText("Use server URL from package source")]
-        public string FeedUrl { get; set; }
+        [PlaceholderText("Use URL from package source")]
+        public string ApiUrl { get; set; }
 
         [Category("Connection/Identity")]
         [ScriptAlias("UserName")]
@@ -104,23 +84,20 @@ namespace Inedo.Extensions.Operations.ProGet
         [Undisclosed]
         [ScriptAlias("Group")]
         public string PackageGroup { get; set; }
+        [Undisclosed]
+        [ScriptAlias("FeedUrl")]
+        public string FeedUrl { get; set; }
 
-        [NonSerialized]
-        private IPackageManager packageManager;
-        [NonSerialized]
-        private string originalPackageSourceName;
-        [NonSerialized]
-        private string originalTargetPackageSourceName;
-
-        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
+        public override async Task ExecuteAsync(IOperationExecutionContext context)
         {
-            this.originalPackageSourceName = this.PackageSourceName;
-            this.originalTargetPackageSourceName = this.TargetPackageSourceName;
-
             if (!string.IsNullOrEmpty(this.PackageGroup))
                 this.PackageName = this.PackageGroup + "/" + this.PackageName;
-            
-            if (!string.IsNullOrEmpty(this.TargetPackageSourceName))
+
+            await this.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
+
+            var client = new ProGetApiClient(this, this);
+
+            if (string.IsNullOrEmpty(this.TargetFeedName) && !string.IsNullOrEmpty(this.TargetPackageSourceName))
             {
                 string targetApiEndpointUrl;
                 var targetPackageSource = SecureResource.TryCreate(this.TargetPackageSourceName, context as ICredentialResolutionContext ?? CredentialResolutionContext.None);
@@ -131,62 +108,52 @@ namespace Inedo.Extensions.Operations.ProGet
                 else
                     throw new ExecutionFailureException($"No {nameof(UniversalPackageSource)} or {nameof(NuGetPackageSource)} with the name {this.TargetPackageSourceName} was found.");
 
-                var client = this.TryCreateProGetFeedClient(context);
-                var targetClient = new ProGetFeedClient(targetApiEndpointUrl);
-                if (targetClient.ProGetBaseUrl != client?.ProGetBaseUrl || targetClient.FeedType != client?.FeedType)
-                    throw new ExecutionFailureException($"Target Package Source does have the same feed type and base url as From package source.");
+                if (!Extensions.TryParseFeedUrl(targetApiEndpointUrl, out _, out _, out var targetFeedName))
+                    throw new ExecutionFailureException("Target Package Source does have the same feed type and base url as From package source.");
 
-                this.TargetFeedName = targetClient.FeedName;
-                this.TargetPackageSourceName = null;
+                this.TargetFeedName = targetFeedName;
             }
 
+            if (string.IsNullOrEmpty(this.TargetFeedName))
+                throw new ExecutionFailureException("ToFeed is required.");
+
             await this.ResolveAttachedPackageAsync(context);
-            this.PrepareCredentialPropertiesForRemote(context);
-            this.packageManager = await context.TryGetServiceAsync<IPackageManager>();
-        }
-        protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
-        {
+            var packageManager = await context.TryGetServiceAsync<IPackageManager>();
+
             this.LogInformation($"Promoting {this.PackageName} {this.PackageVersion} to {this.TargetFeedName}...");
 
             if (string.Equals(this.TargetFeedName, this.FeedName, StringComparison.OrdinalIgnoreCase))
             {
                 this.LogWarning("Target feed and source feed are the same; nothing to do.");
-                return null;
+                return;
             }
 
-            var client = this.TryCreateProGetFeedClient(log: this, token: context.CancellationToken);
-            await client.PromoteAsync(this, this.TargetFeedName, this.Reason);
-            return true;
-        }
-        protected override async Task AfterRemoteExecuteAsync(object result)
-        {
-            await base.AfterRemoteExecuteAsync(result);
+            await client.PromoteAsync(this.PackageName, this.PackageVersion, this.TargetFeedName, this.Reason, context.CancellationToken);
 
-            if (this.packageManager != null && result != null && !string.IsNullOrWhiteSpace(this.originalPackageSourceName))
+            if (packageManager != null && !string.IsNullOrWhiteSpace(this.PackageSourceName))
             {
                 AttachedPackage package = null;
 
-                foreach (var p in await this.packageManager.GetBuildPackagesAsync(default))
+                foreach (var p in await packageManager.GetBuildPackagesAsync(default))
                 {
-                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase) 
-                        && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase) 
-                        && string.Equals(p.PackageSource, this.originalPackageSourceName, StringComparison.OrdinalIgnoreCase))
+                    if (p.Active && string.Equals(p.Name, this.PackageName, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(p.Version, this.PackageVersion, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(p.PackageSource, this.PackageSourceName, StringComparison.OrdinalIgnoreCase))
                     {
                         package = p;
-                        await this.packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
+                        await packageManager.DeactivatePackageAsync(p.Name, p.Version, p.PackageSource);
                     }
                 }
 
                 if (package != null)
                 {
-                    await this.packageManager.AttachPackageToBuildAsync(
-                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, AH.CoalesceString(this.originalTargetPackageSourceName, this.originalPackageSourceName)),
-                        default
+                    await packageManager.AttachPackageToBuildAsync(
+                        new AttachedPackage(package.PackageType, package.Name, package.Version, package.Hash, AH.CoalesceString(this.TargetPackageSourceName, this.PackageSourceName)),
+                        context.CancellationToken
                     );
                 }
             }
         }
-
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
         {
