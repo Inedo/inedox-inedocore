@@ -104,11 +104,11 @@ public sealed class RepackageOperation : ExecuteOperation, IFeedPackageConfigura
             return;
         }
 
-        var client = new ProGetApiClient(this, this);
+        var client = new ProGetFeedClient(this, this);
 
         await client.RepackageAsync(this.PackageName!, this.PackageVersion!, this.NewVersion!, this.Reason, this.ToFeed, context.CancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(this.PackageSourceName))
+        if (packageManager != null && !string.IsNullOrWhiteSpace(this.PackageSourceName))
         {
             var packageType = AttachedPackageType.Universal;
 

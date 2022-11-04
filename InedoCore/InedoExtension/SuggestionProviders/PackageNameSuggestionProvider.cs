@@ -19,7 +19,7 @@ namespace Inedo.Extensions.SuggestionProviders
             if (client == null)
                 yield break;
 
-            await foreach (var p in client.ListPackagesAsync(cancellationToken))
+            await foreach (var p in client.ListPackagesAsync(cancellationToken: cancellationToken))
             {
                 if (string.IsNullOrEmpty(startsWith) || p.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase))
                     yield return p;

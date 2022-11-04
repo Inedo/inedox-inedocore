@@ -53,8 +53,8 @@ ProGet::Ensure-Package
             if (!this.ValidateConfiguration())
                 return null;
 
-            var client = this.Template.TryCreateProGetFeedClient(context);
-            this.LogInformation($"Connecting to {client.ProGetBaseUrl} to get metadata for {this.Template.PackageName}:{this.Template.PackageVersion}...");
+            var client = new ProGetFeedClient(this.Template, this);
+            this.LogInformation($"Connecting to {this.Template.ApiUrl} to get metadata for {this.Template.PackageName}:{this.Template.PackageVersion}...");
 
             var package = await client.FindPackageVersionAsync(this.Template.PackageName, this.Template.PackageVersion);
             if (package == null)
@@ -148,17 +148,11 @@ ProGet::Ensure-Package
                 this.LogDebug($"{this.Template.TargetDirectory} contains {remoteFiles.Count} file system entries.");
 
                 this.LogInformation($"Connecting to feed to get file metadata...");
-                var versionInfo = await client.GetPackageVersionWithFilesAsync(package.FullName, package.Version);
+                var versionInfoFileList = await client.GetPackageFilesAsync(package.FullName, package.Version, context.CancellationToken);
 
-                if (versionInfo.FileList == null)
-                {
-                    this.LogError("File list is unavailable for this package; it may be an orphaned entry.");
-                    return null;
-                }
+                this.LogDebug($"Package contains {versionInfoFileList.Count} file system entries.");
 
-                this.LogDebug($"Package contains {versionInfo.FileList.Length} file system entries.");
-
-                foreach (var entry in versionInfo.FileList)
+                foreach (var entry in versionInfoFileList)
                 {
                     var relativeName = entry.Name;
                     if (!mask.IsMatch(relativeName))
@@ -185,12 +179,12 @@ ProGet::Ensure-Package
                         }
                     }
                 }
+
                 if (collectedConfig.DriftedFileNames.Count > 0)
                     return collectedConfig;
 
                 this.LogInformation($"All package files and directories are present in {this.Template.TargetDirectory}.");
                 collectedConfig.DriftedFiles = false;
-
             }
 
             return collectedConfig;
@@ -200,6 +194,8 @@ ProGet::Ensure-Package
         {
             var diffs = new List<Difference>();
             var collectedConfig = (ProGetPackageConfiguration)other ?? new ProGetPackageConfiguration { Exists = false };
+
+            return Task.FromResult(compare());
 
             ComparisonResult compare()
             {
@@ -217,15 +213,14 @@ ProGet::Ensure-Package
 
                 return new ComparisonResult(diffs);
             };
-            return Task.FromResult(compare());
         }
 
-        public override Task ConfigureAsync(IOperationExecutionContext context)
+        public override async Task ConfigureAsync(IOperationExecutionContext context)
         {
             if (!this.ValidateConfiguration())
-                return InedoLib.NullTask;
+                return;
 
-            return this.Template.InstallPackageAsync(context, this.SetProgress);
+            await this.Template.InstallPackageAsync(this, context.ResolvePath(this.Template.TargetDirectory), context.CancellationToken);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

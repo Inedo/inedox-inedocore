@@ -174,8 +174,8 @@ Log-Debug 'Package name is $(%packageData.name).';
                 return;
             }
 
-            var client = this.TryCreateProGetFeedClient(context);
-            var package = await client.FindPackageVersionAsync(this);
+            var client = new ProGetFeedClient(this, this);
+            var package = await client.FindPackageVersionAsync(this.PackageName, this.PackageVersion, context.CancellationToken);
             if (package != null)
             {
                 this.LogInformation($"Package {package.FullName} {package.Version} found.");

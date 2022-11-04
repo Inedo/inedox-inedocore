@@ -95,7 +95,7 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
 
             await this.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
 
-            var client = new ProGetApiClient(this, this);
+            var client = new ProGetFeedClient(this, this);
 
             if (string.IsNullOrEmpty(this.TargetFeedName) && !string.IsNullOrEmpty(this.TargetPackageSourceName))
             {

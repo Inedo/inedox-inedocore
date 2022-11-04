@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Inedo.AssetDirectories" Version="1.0.1" />
     <PackageReference Include="Inedo.DependencyScan" Version="1.4.0" />
-    <PackageReference Include="Inedo.SDK" Version="2.2.0-ci.61">
+    <PackageReference Include="Inedo.SDK" Version="2.2.0-ci.67">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Inedo.UPack" Version="2.0.2" />

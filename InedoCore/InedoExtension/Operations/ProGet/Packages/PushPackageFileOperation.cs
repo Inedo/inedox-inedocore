@@ -88,7 +88,7 @@ ProGet::Push-PackageFile MyPackage.1.0.0.upack
             (var fullName, var version, bool vpack) = GetPackageInfo(fullPath);
             this.LogDebug($"Package verified. Name: {fullName}, Version: {version}");
 
-            var client = this.TryCreateProGetFeedClient(cancellationToken: context.CancellationToken);
+            var client = new ProGetFeedClient(this, this);
             byte[] hash;
             if (vpack)
                 hash = await client.UploadVirtualPackageAndComputeHashAsync(fullPath);

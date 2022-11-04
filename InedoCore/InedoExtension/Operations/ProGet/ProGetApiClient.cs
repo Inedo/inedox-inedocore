@@ -1,7 +1,11 @@
-﻿using System.Net;
+﻿using System.IO.Compression;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.UPack;
 using Inedo.UPack.Net;
@@ -10,14 +14,15 @@ using Inedo.UPack.Net;
 
 namespace Inedo.Extensions.Operations.ProGet;
 
-internal sealed class ProGetApiClient
+internal sealed class ProGetFeedClient
 {
+    private static readonly LazyRegex FindVersionRegex = new(@"^(?<1>[0-9]+)(\.(?<2>[0-9]+)(?<3>\.([0-9]+(-.+)?)?)?)?", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
     private readonly HttpClient http;
     private readonly string feedName;
     private readonly ILogSink? log;
     private readonly UniversalFeedClient upackClient;
 
-    public ProGetApiClient(IFeedConfiguration config, ILogSink? log = null)
+    public ProGetFeedClient(IFeedConfiguration config, ILogSink? log = null)
     {
         if (string.IsNullOrEmpty(config.ApiUrl))
             throw new ArgumentException("ApiUrl is required.");
@@ -77,7 +82,7 @@ internal sealed class ProGetApiClient
             return;
         }
 
-        this.log.LogInformation("Repackage was successful.");
+        this.log?.LogInformation("Repackage was successful.");
     }
     public async Task PromoteAsync(string packageId, string version, string newFeed, string? reason, CancellationToken cancellationToken = default)
     {
@@ -100,17 +105,123 @@ internal sealed class ProGetApiClient
             return;
         }
 
-        this.log.LogInformation("Promotion was successful.");
+        this.log?.LogInformation("Promotion was successful.");
     }
-    public async IAsyncEnumerable<string> ListPackagesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> ListPackagesAsync(string? group = null, int? maxCount = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await foreach (var p in this.upackClient.EnumeratePackagesAsync(null, null, cancellationToken))
+        await foreach (var p in this.upackClient.EnumeratePackagesAsync(group, maxCount, cancellationToken))
             yield return p.FullName.ToString();
     }
     public async IAsyncEnumerable<string> ListPackageVersionsAsync(string packageId, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         foreach (var v in await this.upackClient.ListPackageVersionsAsync(UniversalPackageId.Parse(packageId), cancellationToken: cancellationToken))
             yield return v.Version.ToString();
+    }
+
+    public async Task<RemoteUniversalPackageVersion?> FindPackageVersionAsync(string packageName, string packageVersion, CancellationToken cancellationToken = default)
+    {
+        var id = UniversalPackageId.Parse(packageName);
+        var versions = await this.upackClient.ListPackageVersionsAsync(id, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return FindPackageVersion(versions.OrderByDescending(v => v.Version), packageVersion);
+    }
+    public async Task<IReadOnlyList<ProGetPackageFileInfo>> GetPackageFilesAsync(UniversalPackageId id, UniversalPackageVersion version, CancellationToken cancellationToken = default)
+    {
+        var package = await this.upackClient.GetPackageVersionAsync(id, version, true, cancellationToken);
+        if (package == null)
+            throw new ExecutionFailureException($"Package {id} {version} not found.");
+
+        var files = new List<ProGetPackageFileInfo>();
+        var fileList = (object[])package.AllProperties["fileList"];
+        foreach (var f in fileList)
+        {
+            var dict = (IReadOnlyDictionary<string, object>)f;
+            var name = dict["name"].ToString();
+            long? size = null;
+            if (dict.TryGetValue("size", out var sizeObj))
+                size = long.Parse(sizeObj.ToString()!);
+            var date = DateTimeOffset.Parse(dict["date"].ToString()!);
+            files.Add(new ProGetPackageFileInfo { Name = name, Size = size, Date = date.UtcDateTime });
+        }
+
+        return files;
+    }
+
+    public async Task<byte[]> UploadPackageAndComputeHashAsync(string fileName, CancellationToken cancellationToken = default)
+    {
+        // start computing the hash in the background
+        var computeHashTask = Task.Factory.StartNew(computePackageHash, TaskCreationOptions.LongRunning, cancellationToken);
+
+        this.log?.LogDebug($"Package source URL: {this.upackClient.Endpoint.Uri}");
+
+        using (var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan | FileOptions.Asynchronous))
+        {
+            await this.upackClient.UploadPackageAsync(fileStream, cancellationToken);
+        }
+
+        this.log?.LogDebug("Package uploaded.");
+
+        this.log?.LogDebug("Waiting for package hash to be computed...");
+        var hash = await computeHashTask;
+        this.log?.LogDebug($"Package SHA1: {new HexString(hash)}");
+        return hash;
+
+        byte[] computePackageHash(object? arts)
+        {
+            using var fileStream = FileEx.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan);
+            using var sha1 = SHA1.Create();
+            return sha1.ComputeHash(fileStream);
+        }
+    }
+    public async Task<byte[]> UploadVirtualPackageAndComputeHashAsync(string fileName)
+    {
+        var tempFileName = Path.GetTempFileName();
+        try
+        {
+            using (var vpackStream = File.OpenRead(fileName))
+            using (var tempZip = new ZipArchive(File.Create(tempFileName), ZipArchiveMode.Create))
+            {
+                var upackEntry = tempZip.CreateEntry("upack.json");
+                using var upackStream = upackEntry.Open();
+                vpackStream.CopyTo(upackStream);
+            }
+
+            return await this.UploadPackageAndComputeHashAsync(tempFileName);
+        }
+        finally
+        {
+            File.Delete(tempFileName);
+        }
+    }
+
+    public async Task<Stream> GetPackageStreamAsync(string packageId, string version, CancellationToken cancellationToken = default)
+    {
+        return await (this.upackClient.GetPackageStreamAsync(UniversalPackageId.Parse(packageId), UniversalPackageVersion.Parse(version), cancellationToken))
+            ?? throw new ExecutionFailureException($"Package {packageId} {version} not found.");
+    }
+
+    private static RemoteUniversalPackageVersion? FindPackageVersion(IEnumerable<RemoteUniversalPackageVersion> packages, string packageVersion)
+    {
+        if (string.Equals(packageVersion, "latest", StringComparison.OrdinalIgnoreCase))
+            return packages.FirstOrDefault();
+        else if (string.Equals(packageVersion, "latest-stable", StringComparison.OrdinalIgnoreCase))
+            return packages.FirstOrDefault(v => string.IsNullOrEmpty(v.Version.Prerelease));
+
+        var match = FindVersionRegex.Match(packageVersion ?? string.Empty);
+        if (match.Groups[1].Success && !match.Groups[3].Success)
+        {
+            var major = BigInteger.Parse(match.Groups[1].Value);
+
+            if (match.Groups[2].Success)
+            {
+                var minor = BigInteger.Parse(match.Groups[2].Value);
+                return packages.FirstOrDefault(v => v.Version.Major == major && v.Version.Minor == minor);
+            }
+
+            return packages.FirstOrDefault(v => v.Version.Major == major);
+        }
+
+        var semver = UniversalPackageVersion.Parse(packageVersion);
+        return packages.FirstOrDefault(v => v.Version == semver);
     }
 
     private async Task LogHttpErrorAsync(HttpResponseMessage response)
@@ -121,6 +232,6 @@ internal sealed class ProGetApiClient
         else
             message = $"{response.ReasonPhrase}: {message}";
 
-        this.log.LogError(message);
+        this.log?.LogError(message!);
     }
 }

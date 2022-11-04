@@ -4,7 +4,6 @@ using Inedo.Extensions.UniversalPackages;
 
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [Serializable]
     [Tag("proget")]
     [ScriptAlias("Install-Package")]
     [DisplayName("Install Universal Package")]
@@ -15,16 +14,13 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
     From: MyPackageSource,
     Name: MyAppPackage,
     Version: 3.4.2,
-
     To: C:\MyApps\MyApp
 );
 ")]
-    public sealed class InstallUniversalPackageOperation : ExecuteOperation, IFeedPackageInstallationConfiguration
+    public sealed class InstallUniversalPackageOperation : RemoteExecuteOperation, IFeedPackageInstallationConfiguration
     {
-        private volatile OperationProgress progress;
-
-        [ScriptAlias("From")]
         [ScriptAlias("PackageSource")]
+        [ScriptAlias("From", Obsolete = true)]
         [DisplayName("Package source")]
         [PlaceholderText("Infer from package name")]
         [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
@@ -106,9 +102,7 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
         [ScriptAlias("FeedUrl")]
         public string FeedUrl { get; set; }
 
-        public override OperationProgress GetProgress() => this.progress;
-
-        public override async Task ExecuteAsync(IOperationExecutionContext context)
+        protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
             if (string.IsNullOrWhiteSpace(this.PackageVersion))
             {
@@ -118,9 +112,14 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
                     this.PackageVersion = "latest";
             }
 
+            await this.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
             await this.ResolveAttachedPackageAsync(context);
+        }
 
-            await this.InstallPackageAsync(context, this.SetProgress);
+        protected override async Task<object> RemoteExecuteAsync(IRemoteOperationExecutionContext context)
+        {
+            await this.InstallPackageAsync(this, context.ResolvePath(this.TargetDirectory), context.CancellationToken);
+            return null;
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
@@ -137,7 +136,5 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
                 )
             );
         }
-
-        private void SetProgress(OperationProgress p) => this.progress = p;
     }
 }
