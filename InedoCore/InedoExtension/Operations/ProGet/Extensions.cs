@@ -126,7 +126,6 @@ namespace Inedo.Extensions.Operations.ProGet
 
                 var match = (await packageManager.GetBuildPackagesAsync(context.CancellationToken))
                     .FirstOrDefault(p => p.Active
-                        && p.PackageType == AttachedPackageType.Universal
                         && string.Equals(p.Name, config.PackageName, StringComparison.OrdinalIgnoreCase)
                         && string.Equals(p.PackageSource, config.PackageSourceName, StringComparison.OrdinalIgnoreCase));
 
