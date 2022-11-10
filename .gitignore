@@ -242,3 +242,4 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 /InedoCore/Visual Studio 2017/Visualizers
+/.config/dotnet-tools.json
