@@ -16,9 +16,6 @@ namespace Inedo.Extensions.SuggestionProviders
         }
         public async IAsyncEnumerable<string> GetSuggestionsAsync(string startsWith, IComponentConfiguration config, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            if (SDK.ProductName == "BuildMaster")
-                yield return "attached";
-
             yield return "latest";
             yield return "latest-stable";
 

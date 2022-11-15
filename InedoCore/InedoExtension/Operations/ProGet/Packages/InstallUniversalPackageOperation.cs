@@ -34,7 +34,7 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
 
         [ScriptAlias("Version")]
         [DisplayName("Package version")]
-        [PlaceholderText("\"latest\" (Otter) or \"attached\" (BuildMaster)")]
+        [DefaultValue("latest")]
         [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
@@ -104,14 +104,6 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
 
         protected override async Task BeforeRemoteExecuteAsync(IOperationExecutionContext context)
         {
-            if (string.IsNullOrWhiteSpace(this.PackageVersion))
-            {
-                if (SDK.ProductName == "BuildMaster")
-                    this.PackageVersion = "attached";
-                else
-                    this.PackageVersion = "latest";
-            }
-
             await this.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
             await this.ResolveAttachedPackageAsync(context);
         }

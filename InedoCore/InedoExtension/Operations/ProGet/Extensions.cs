@@ -118,6 +118,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 if (SDK.ProductName != "BuildMaster")
                     throw new ExecutionFailureException("Setting \"attached\" for the package version is only supported in BuildMaster.");
 
+                context.Log.LogWarning("The value \"attached\" for package version is deprecated, and will be remove din a future version.");
                 context.Log.LogDebug("Searching for attached package version...");
 
                 var packageManager = await context.TryGetServiceAsync<IPackageManager>();
