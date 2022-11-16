@@ -10,29 +10,27 @@ namespace Inedo.Extensions.Operations.ProGet
 {
     internal static class Extensions
     {
-        public static async Task EnsureProGetConnectionInfoAsync(this IFeedConfiguration config, ICredentialResolutionContext context, CancellationToken cancellationToken)
+        public static Task EnsureProGetConnectionInfoAsync(this IFeedConfiguration config, ICredentialResolutionContext context, CancellationToken cancellationToken)
         {
             if (!string.IsNullOrWhiteSpace(config.PackageSourceName))
             {
-                var source = await AhPackages.GetPackageSourceAsync(new PackageSourceId(config.PackageSourceName), context, cancellationToken);
-                if (source == null)
-                    throw new ExecutionFailureException($"Package source {config.PackageSourceName} was not found.");
+                var id = new PackageSourceId(config.PackageSourceName);
 
-                switch (source.SourceId.Format)
+                switch (id.Format)
                 {
                     case PackageSourceIdFormat.SecureResource:
-                        if (!context.TryGetSecureResource(source.SourceId.GetResourceName(), out var secureResource))
-                            throw new ExecutionFailureException($"Secure resource {source.SourceId.GetResourceName()} was not found.");
+                        if (!context.TryGetSecureResource(id.GetResourceName(), out var secureResource))
+                            throw new ExecutionFailureException($"Secure resource {id.GetResourceName()} was not found.");
 
                         var feedUrl = secureResource switch
                         {
                             UniversalPackageSource ups => ups.ApiEndpointUrl,
                             NuGetPackageSource nps => nps.ApiEndpointUrl,
-                            _ => throw new ExecutionFailureException($"Secure resource {source.SourceId.GetResourceName()} was not a supported type.")
+                            _ => throw new ExecutionFailureException($"Secure resource {id.GetResourceName()} was not a supported type.")
                         };
 
                         if (!TryParseFeedUrl(feedUrl, out var serviceUrl, out _, out var feedName))
-                            throw new ExecutionFailureException($"Secure resource {source.SourceId.GetResourceName()} does not refer to a valid ProGet feed URL.");
+                            throw new ExecutionFailureException($"Secure resource {id.GetResourceName()} does not refer to a valid ProGet feed URL.");
 
                         if (string.IsNullOrEmpty(config.ApiUrl))
                             config.ApiUrl = serviceUrl;
@@ -54,11 +52,11 @@ namespace Inedo.Extensions.Operations.ProGet
                         break;
 
                     case PackageSourceIdFormat.ProGetFeed:
-                        var creds = SecureCredentials.TryCreate(source.SourceId.GetProGetServiceCredentialName(), context);
+                        var creds = SecureCredentials.TryCreate(id.GetProGetServiceCredentialName(), context);
                         if (creds == null)
-                            throw new ExecutionFailureException($"ProGet service credentials {source.SourceId.GetProGetServiceCredentialName()} not found.");
+                            throw new ExecutionFailureException($"ProGet service credentials {id.GetProGetServiceCredentialName()} not found.");
                         if (creds is not ProGetServiceCredentials svcCreds)
-                            throw new ExecutionFailureException($"{source.SourceId.GetProGetServiceCredentialName()} is not a ProGet service credential.");
+                            throw new ExecutionFailureException($"{id.GetProGetServiceCredentialName()} is not a ProGet service credential.");
 
                         if (string.IsNullOrEmpty(config.ApiUrl))
                             config.ApiUrl = svcCreds.ServiceUrl;
@@ -70,13 +68,13 @@ namespace Inedo.Extensions.Operations.ProGet
                             config.Password = svcCreds.Password;
 
                         if (string.IsNullOrEmpty(config.FeedName))
-                            config.FeedName = source.SourceId.GetFeedName();
+                            config.FeedName = id.GetFeedName();
 
                         break;
 
                     case PackageSourceIdFormat.Url:
                         if (string.IsNullOrEmpty(config.ApiUrl))
-                            config.ApiUrl = source.SourceId.GetUrl();
+                            config.ApiUrl = id.GetUrl();
                         break;
 
                     default:
@@ -92,6 +90,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 config.ApiUrl = serviceUrl;
                 config.FeedName = feedName;
             }
+
+            return Task.CompletedTask;
         }
 
         public static bool TryParseFeedUrl(string? feedUrl, [NotNullWhen(true)] out string? serviceUrl, [NotNullWhen(true)] out string? feedType, [NotNullWhen(true)] out string? feedName)
