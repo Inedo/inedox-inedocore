@@ -196,7 +196,7 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
             }
 
             // when package source is specified, upload it
-            if (!string.IsNullOrWhiteSpace(this.FeedUrl))
+            if (!string.IsNullOrWhiteSpace(this.ApiUrl))
                 return await new ProGetFeedClient(this, this).UploadPackageAndComputeHashAsync(outputFileName, context.CancellationToken);
 
             return null;
