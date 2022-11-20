@@ -52,6 +52,8 @@ ProGet::Ensure-Package
         {
             if (!this.ValidateConfiguration())
                 return null;
+            
+            await this.Template.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
 
             var client = new ProGetFeedClient(this.Template, this);
             this.LogInformation($"Connecting to {this.Template.ApiUrl} to get metadata for {this.Template.PackageName}:{this.Template.PackageVersion}...");
@@ -220,6 +222,7 @@ ProGet::Ensure-Package
             if (!this.ValidateConfiguration())
                 return;
 
+            await this.Template.EnsureProGetConnectionInfoAsync(context, context.CancellationToken);
             await this.Template.InstallPackageAsync(this, context.ResolvePath(this.Template.TargetDirectory), context.CancellationToken);
         }
 

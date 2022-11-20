@@ -1,4 +1,5 @@
 ﻿using Inedo.Extensibility.Configurations;
+using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.SuggestionProviders;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.Serialization;
@@ -23,10 +24,11 @@ namespace Inedo.Extensions.Configurations.ProGet
             }
         }
 
+        [ScriptAlias("PackageSource")]
         [ScriptAlias("From")]
         [ScriptAlias("Credentials")]
         [DisplayName("Package source")]
-        [SuggestableValue(typeof(SecureResourceSuggestionProvider<UniversalPackageSource>))]
+        [SuggestableValue(typeof(UniversalPackageSourceSuggestionProvider))]
         public string PackageSourceName { get; set; }
 
         [Required]
@@ -44,16 +46,14 @@ namespace Inedo.Extensions.Configurations.ProGet
         [SuggestableValue(typeof(PackageVersionSuggestionProvider))]
         public string PackageVersion { get; set; }
 
-        [Required]
         [Persistent]
         [ScriptAlias("To")]
         [ScriptAlias("Directory")]
         [DisplayName("Target directory")]
         [Description("The directory path on disk of the package contents.")]
-        [PlaceholderText("$WorkingDirectory")]
+        [DefaultValue("$WorkingDirectory")]
         public string TargetDirectory { get; set; }
 
-        [Required]
         [Persistent]
         [ScriptAlias("Exists")]
         [DefaultValue(true)]

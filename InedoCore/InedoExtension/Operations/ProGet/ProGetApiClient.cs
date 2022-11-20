@@ -193,10 +193,10 @@ internal sealed class ProGetFeedClient
         }
     }
 
-    public async Task<Stream> GetPackageStreamAsync(string packageId, string version, CancellationToken cancellationToken = default)
+    public async Task<Stream> GetPackageStreamAsync(RemoteUniversalPackageVersion version, CancellationToken cancellationToken = default)
     {
-        return await (this.upackClient.GetPackageStreamAsync(UniversalPackageId.Parse(packageId), UniversalPackageVersion.Parse(version), cancellationToken))
-            ?? throw new ExecutionFailureException($"Package {packageId} {version} not found.");
+        return await (this.upackClient.GetPackageStreamAsync(version.FullName, version.Version, cancellationToken))
+            ?? throw new ExecutionFailureException($"Package {version.FullName} {version.Version} not found.");
     }
 
     private static RemoteUniversalPackageVersion? FindPackageVersion(IEnumerable<RemoteUniversalPackageVersion> packages, string packageVersion)

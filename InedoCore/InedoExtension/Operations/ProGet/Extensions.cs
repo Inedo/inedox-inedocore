@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.UniversalPackages;
+using Inedo.UPack;
 using Inedo.UPack.Packaging;
 
 #nullable enable
@@ -73,8 +74,8 @@ namespace Inedo.Extensions.Operations.ProGet
                         break;
 
                     case PackageSourceIdFormat.Url:
-                        if (string.IsNullOrEmpty(config.ApiUrl))
-                            config.ApiUrl = id.GetUrl();
+                        if (string.IsNullOrEmpty(config.FeedUrl))
+                            config.FeedUrl = id.GetUrl();
                         break;
 
                     default:
@@ -141,7 +142,14 @@ namespace Inedo.Extensions.Operations.ProGet
         public static async Task InstallPackageAsync(this IFeedPackageInstallationConfiguration config, ILogSink log, string targetDirectory, CancellationToken cancellationToken)
         {
             var client = new ProGetFeedClient(config, log);
-            using var downloadStream = await client.GetPackageStreamAsync(config.PackageName!, config.PackageVersion!, cancellationToken);
+            var packageVersion = await client.FindPackageVersionAsync(config.PackageName!, config.PackageVersion!, cancellationToken);
+            if (packageVersion == null)
+            {
+                log.LogError($"Package {config.PackageName} does not have a version {config.PackageVersion}.");
+                return;
+            }
+
+            using var downloadStream = await client.GetPackageStreamAsync(packageVersion, cancellationToken);
             log.LogInformation("Downloading package...");
             using var tempStream = new TemporaryStream();
             await downloadStream.CopyToAsync(tempStream, cancellationToken);
