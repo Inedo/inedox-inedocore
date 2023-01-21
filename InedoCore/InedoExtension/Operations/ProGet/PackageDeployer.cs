@@ -305,6 +305,9 @@ namespace Inedo.Extensions.Operations.ProGet
                     index++;
                     this.SetProgress(cancellationToken, "moving files to target directory", 100 * index / this.ExpectedFiles.Length);
 
+                    sourcePath = PathEx.MakeCanonical(sourcePath, Path.DirectorySeparatorChar);
+                    targetPath = PathEx.MakeCanonical(targetPath, Path.DirectorySeparatorChar);
+                    this.LogDebug($"Moving {sourcePath} to {targetPath}...");
                     FileEx.Move(sourcePath, targetPath, true);
                 }
 
