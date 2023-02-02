@@ -109,7 +109,7 @@ namespace Inedo.Extensions.UserDirectories
                 }
             }
 
-            public override ISet<string> ExtractGroupNames()
+            public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
             {
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 try

@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace Inedo.Extensions.UserDirectories
 {
-    internal static class LDAP
+    internal static class LDAPV3
     {
         private static readonly LazyRegex LdapEscapeRegex = new LazyRegex(@"[,\\#+<>;""=]", RegexOptions.Compiled);
         private static readonly LazyRegex LdapUnescapeRegex = new LazyRegex(@"\\([,\\#+<>;""=])", RegexOptions.Compiled);

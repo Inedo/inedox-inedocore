@@ -17,8 +17,7 @@ namespace Inedo.Extensions.UserDirectories
             this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
             if (ldaps)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    this.connection.SessionOptions.SecureSocketLayer = true;
+                this.connection.SessionOptions.SecureSocketLayer = true;
 
                 if (bypassSslCertificate)
                     this.connection.SessionOptions.VerifyServerCertificate = new VerifyServerCertificateCallback((connection, certifacte) => true);
@@ -63,14 +62,14 @@ namespace Inedo.Extensions.UserDirectories
 
                 return propertyCollection[0]?.ToString() ?? string.Empty;
             }
-            public override ISet<string> ExtractGroupNames()
+            public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
             {
 
                 Logger.Log(MessageLevel.Debug, "Begin ExtractGroupNames", "AD User Directory");
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
-                    var memberOfAttr = this.result.Attributes["memberof"];
+                    var memberOfAttr = this.result.Attributes[AH.NullIf(memberOfPropertyName, string.Empty) ?? "memberof"];
                     if (memberOfAttr == null)
                         return groups;
 

@@ -13,6 +13,7 @@ using Inedo.Extensibility.Credentials;
 using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
 using UsernamePasswordCredentials = Inedo.Extensions.Credentials.UsernamePasswordCredentials;
+using LDAP = Inedo.Extensions.UserDirectories.LDAPV3;
 
 namespace Inedo.Extensions.UserDirectories
 {

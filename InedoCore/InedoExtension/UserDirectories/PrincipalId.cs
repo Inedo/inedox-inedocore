@@ -31,6 +31,7 @@ namespace Inedo.Extensions.UserDirectories
 
         public string DomainAlias { get; }
         public string Principal { get; }
+        public string DistinguishedName { get; set; }
 
         public string ToFullyQualifiedName() => $"{this.Principal}@{this.DomainAlias}";
         public string GetDomainSearchPath() => "DC=" + this.DomainAlias.Replace(".", ",DC=");
@@ -70,9 +71,9 @@ namespace Inedo.Extensions.UserDirectories
             }
 
             if (isUser || isGmsa)
-                return new UserId(principalName, domain);
+                return new UserId(principalName, domain) { DistinguishedName = result.GetPropertyValue("distinguishedName") };
             else
-                return new GroupId(principalName, domain);
+                return new GroupId(principalName, domain) { DistinguishedName = result.GetPropertyValue("distinguishedName") };
         }       
 
         public bool Equals(PrincipalId other)
