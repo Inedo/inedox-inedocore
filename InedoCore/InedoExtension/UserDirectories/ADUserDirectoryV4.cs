@@ -567,7 +567,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 conn.Bind(new NetworkCredential(userName, password));
             }
-            return conn.Search(dn, filter, scope).ToList();
+            return conn.Search(dn, filter, scope);
         }
 
 

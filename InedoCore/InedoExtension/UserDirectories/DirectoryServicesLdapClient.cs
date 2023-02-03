@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.DirectoryServices.Protocols;
-using System.Linq;
+﻿using System.DirectoryServices.Protocols;
 using System.Net;
-using System.Runtime.InteropServices;
-using Inedo.Diagnostics;
 
 namespace Inedo.Extensions.UserDirectories
 {
