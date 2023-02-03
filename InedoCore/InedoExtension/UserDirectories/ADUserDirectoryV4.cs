@@ -246,6 +246,8 @@ namespace Inedo.Extensions.UserDirectories
 
         private static LdapClient GetClient()
         {
+            if (OperatingSystem.IsLinux())
+                return new NovellLdapClient();
             return new DirectoryServicesLdapClient();
         }
 
@@ -567,6 +569,8 @@ namespace Inedo.Extensions.UserDirectories
             {
                 conn.Bind(new NetworkCredential(userName, password));
             }
+            if(OperatingSystem.IsLinux())
+                return conn.Search(dn, filter, scope).ToList();
             return conn.Search(dn, filter, scope);
         }
 

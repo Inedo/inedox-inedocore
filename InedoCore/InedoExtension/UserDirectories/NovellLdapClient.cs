@@ -114,7 +114,7 @@ namespace Inedo.Extensions.UserDirectories
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
-                    foreach (var memberOf in this.entry.GetAttribute("memberof")?.StringValueArray ?? Array.Empty<string>())
+                    foreach (var memberOf in this.entry.GetAttribute(AH.NullIf(memberOfPropertyName, string.Empty) ?? "memberof")?.StringValueArray ?? Array.Empty<string>())
                     {
                         var groupNames = from part in memberOf.Split(',')
                                          where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
