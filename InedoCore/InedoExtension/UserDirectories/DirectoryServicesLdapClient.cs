@@ -12,6 +12,7 @@ namespace Inedo.Extensions.UserDirectories
             this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
             if (ldaps)
             {
+                if(OperatingSystem.IsWindows())
                 this.connection.SessionOptions.SecureSocketLayer = true;
 
                 if (bypassSslCertificate)

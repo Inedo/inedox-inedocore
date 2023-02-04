@@ -431,35 +431,43 @@ namespace Inedo.Extensions.UserDirectories
             if (this.NetBiosNameMapsDict.Value.TryGetValue(netbiosName, out string overridden))
                 return overridden;
 
-            var port = AH.ParseInt(this.Port);
-            
-            using var conn = new LdapConnection(
-                this.LdapConnection != LdapConnectionType.Ldap || port != null 
-                    ? new LdapDirectoryIdentifier(AH.NullIf(this.Domain?.Trim(), string.Empty), port ?? 636) 
-                    : new LdapDirectoryIdentifier(AH.NullIf(this.Domain?.Trim(), string.Empty))
-                );
-
-            if (!string.IsNullOrWhiteSpace(this.Username))
-                conn.Bind(new NetworkCredential(this.Username, this.Password));
-
-            if (this.LdapConnection != LdapConnectionType.Ldap)
+            try
             {
-                conn.SessionOptions.SecureSocketLayer = true;
-                if (this.LdapConnection != LdapConnectionType.LdapsWithBypass)
-                    conn.SessionOptions.VerifyServerCertificate = new VerifyServerCertificateCallback((connection, certifacte) => true);
-            }
-            var response = conn.SendRequest(new SearchRequest("", "(&(objectClass=*))", SearchScope.Base));
-            if (response is SearchResponse sr && sr.Entries.Count > 0)
-            {
-                var cfg = sr.Entries[0].GetValue("configurationNamingContext");
+                using var conn = GetClient();
+                conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
 
-                var response2 = conn.SendRequest(new SearchRequest("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, SearchScope.Subtree));
-                if (response2 is SearchResponse sr2 && sr2.Entries.Count > 0)
+                if (this.Username?.Contains('@') ?? false)
                 {
-                    var root = sr2.Entries[0].GetValue("dnsRoot");
-                    this.NetBiosNameMapsDict.Value.Add(netbiosName, root);
-                    return root;
+                    var userNameSplit = this.Username.Split('@');
+                    conn.Bind(new NetworkCredential(userNameSplit[0], this.Password, userNameSplit[1]));
                 }
+                else if (this.Username?.Contains('\\') ?? false)
+                {
+                    var userNameSplit = this.Username.Split('\\');
+                    conn.Bind(new NetworkCredential(userNameSplit[1], this.Password, userNameSplit[0]));
+                }
+                else
+                {
+                    conn.Bind(new NetworkCredential(this.Username, this.Password));
+                }
+
+                var response = conn.Search("", "(&(objectClass=*))", LdapClientSearchScope.Base).FirstOrDefault();
+                if (response != null)
+                {
+                    var cfg = response.GetPropertyValue("configurationNamingContext");
+
+                    var response2 = conn.Search("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapClientSearchScope.Subtree).FirstOrDefault();
+                    if (response2 != null)
+                    {
+                        var root = response2.GetPropertyValue("dnsRoot");
+                        this.NetBiosNameMapsDict.Value.Add(netbiosName, root);
+                        return root;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Log(MessageLevel.Error, ex.Message, "LdapV4", ex.ToString(), ex);
             }
 
             return null;
