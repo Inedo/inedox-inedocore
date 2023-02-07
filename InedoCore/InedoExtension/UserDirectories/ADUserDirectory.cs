@@ -17,7 +17,7 @@ using LDAP = Inedo.Extensions.UserDirectories.LDAPV3;
 
 namespace Inedo.Extensions.UserDirectories
 {
-    [DisplayName("Active Directory (LDAP)")]
+    [DisplayName("V3: Active Directory (LDAP)")]
     [Description("Queries the current domain, global catalog for trusted domains, or a specific list of domains for users and group membership.")]
     public sealed class ADUserDirectory : UserDirectory
     {
