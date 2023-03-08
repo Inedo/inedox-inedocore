@@ -149,9 +149,8 @@ namespace Inedo.Extensions.Operations.ProGet
                 feedConfig.Password = null;
             }
         }
-        public static async Task InstallPackageAsync(this IFeedPackageInstallationConfiguration config, IOperationExecutionContext context, Action<OperationProgress> reportProgress)
+        public static async Task InstallPackageAsync(this IFeedPackageInstallationConfiguration config, IOperationExecutionContext context, ILogSink log, Action<OperationProgress> reportProgress)
         {
-            var log = context.Log;
             void setProgress(int? percent, string message) => reportProgress(new OperationProgress(percent, message));
 
             var client = config.TryCreateProGetFeedClient(context);

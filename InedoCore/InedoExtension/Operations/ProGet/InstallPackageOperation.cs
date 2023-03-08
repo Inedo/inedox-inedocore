@@ -124,7 +124,7 @@ namespace Inedo.Extensions.Operations.ProGet
 
             await this.ResolveAttachedPackageAsync(context);
 
-            await this.InstallPackageAsync(context, this.SetProgress);
+            await this.InstallPackageAsync(context, this, this.SetProgress);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)

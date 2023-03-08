@@ -238,7 +238,7 @@ ProGet::Ensure-Package
             if (!this.ValidateConfiguration())
                 return InedoLib.NullTask;
 
-            return this.Template.InstallPackageAsync(context, this.SetProgress);
+            return this.Template.InstallPackageAsync(context, this, this.SetProgress);
         }
 
         protected override ExtendedRichDescription GetDescription(IOperationConfiguration config)
