@@ -135,30 +135,24 @@ namespace Inedo.Extensions.Operations.HTTP
 
         protected HttpClient CreateClient()
         {
-            HttpClient client;
-            if (!string.IsNullOrWhiteSpace(this.UserName))
+            var handler = new HttpClientHandler();
+            if (this.IgnoreSslErrors)
+                IgnoreSslErrorsOnHttpClientHandler(handler);
+
+            var client = new HttpClient(handler)
             {
-                this.LogDebug($"Making request as {this.UserName}...");
-                var handler = new HttpClientHandler { Credentials = new NetworkCredential(this.UserName, this.Password ?? string.Empty) };
-                if (this.IgnoreSslErrors)
-                    IgnoreSslErrorsOnHttpClientHandler(handler);
-
-                client = new HttpClient(handler);
-            }
-            else
-            {
-                var handler = new HttpClientHandler();
-                if (this.IgnoreSslErrors)
-                    IgnoreSslErrorsOnHttpClientHandler(handler);
-
-                client = new HttpClient(handler);
-            }
-
-            client.Timeout = Timeout.InfiniteTimeSpan;
+                Timeout = Timeout.InfiniteTimeSpan
+            };
 
             client.DefaultRequestHeaders.UserAgent.Clear();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(typeof(Operation).Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product, typeof(Operation).Assembly.GetName().Version.ToString()));
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("InedoCore", typeof(HttpOperationBase).Assembly.GetName().Version.ToString()));
+
+            if (!string.IsNullOrWhiteSpace(this.UserName))
+            {
+                this.LogDebug($"Making request as {this.UserName}...");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("basic", Convert.ToBase64String(InedoLib.UTF8Encoding.GetBytes($"{this.UserName}:{this.Password}")));
+            }
 
             if (this.RequestHeaders != null)
             {
