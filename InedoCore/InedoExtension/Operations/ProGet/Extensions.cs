@@ -154,7 +154,7 @@ namespace Inedo.Extensions.Operations.ProGet
             using var tempStream = new TemporaryStream();
             await downloadStream.CopyToAsync(tempStream, cancellationToken);
 
-            log.LogDebug($"Package downloaded ({tempStream.Length} bytes.");
+            log.LogDebug($"Package downloaded ({AH.FormatSize(tempStream.Length)} bytes.");
 
             log.LogInformation($"Installing package to {targetDirectory}...");
             tempStream.Position = 0;
