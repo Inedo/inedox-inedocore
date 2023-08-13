@@ -12,6 +12,7 @@ namespace Inedo.Extensions.VariableFunctions.Server
     [Description("Returns a list of all the servers in the specified role and environment name.")]
     [Tag("servers")]
     [AppliesTo(InedoProduct.BuildMaster | InedoProduct.Otter)]
+    [Note("When the specified environment contains child environments, all servers in the heirarchy will be returned.")]
     public sealed class ServersInRoleAndEnvironmentVariableFunction : VectorVariableFunction
     {
         [DisplayName("roleName")]
