@@ -100,7 +100,7 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
             if (string.IsNullOrEmpty(this.TargetFeedName) && !string.IsNullOrEmpty(this.TargetPackageSourceName))
             {
                 string targetApiEndpointUrl;
-                var targetPackageSource = SecureResource.TryCreate(this.TargetPackageSourceName, context as ICredentialResolutionContext ?? CredentialResolutionContext.None);
+                var targetPackageSource = SecureResource.TryCreate(SecureResourceType.General, this.TargetPackageSourceName, context as ICredentialResolutionContext ?? CredentialResolutionContext.None);
                 if (targetPackageSource is UniversalPackageSource utargetPackageSource)
                     targetApiEndpointUrl = utargetPackageSource.ApiEndpointUrl;
                 else if (targetPackageSource is NuGetPackageSource ntargetPackageSource)

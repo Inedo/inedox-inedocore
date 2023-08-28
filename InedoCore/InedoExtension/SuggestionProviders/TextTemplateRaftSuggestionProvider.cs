@@ -6,7 +6,7 @@ namespace Inedo.Extensions.SuggestionProviders
     {
         public Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
         {
-            return Task.FromResult(SDK.GetRaftItems(RaftItemType.TextTemplate, config.EditorContext).Select(i => i.Id));
+            return Task.FromResult(SDK.GetRaftItems(RaftItemType.TextFile, config.EditorContext).Select(i => i.Id));
         }
     }
 }

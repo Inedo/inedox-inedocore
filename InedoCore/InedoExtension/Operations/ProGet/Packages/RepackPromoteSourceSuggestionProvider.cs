@@ -31,6 +31,8 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
         {
             yield return new NuGetPackageSourceSuggestionProvider();
             yield return new UniversalPackageSourceSuggestionProvider();
+            yield return new NpmPackageSourceSuggestionProvider();
+            yield return new PyPiPackageSourceSuggestionProvider();
         }
     }
 }

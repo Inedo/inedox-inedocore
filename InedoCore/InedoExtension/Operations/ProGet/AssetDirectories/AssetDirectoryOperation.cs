@@ -1,4 +1,5 @@
 ﻿using Inedo.AssetDirectories;
+using Inedo.Extensibility.SecureResources;
 using Inedo.Extensions.PackageSources;
 
 #nullable enable
@@ -95,7 +96,7 @@ namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
 
         private void GetLegacySecureResource(ICredentialResolutionContext context, string secureResourceName)
         {
-            if (!context.TryGetSecureResource(secureResourceName, out var r) || r is not ProGetAssetDirectorySecureResource resource)
+            if (!context.TryGetSecureResource(SecureResourceType.General, secureResourceName, out var r) || r is not ProGetAssetDirectorySecureResource resource)
                 throw new ExecutionFailureException($"Resource {secureResourceName} is not a ProGet secure resource.");
 
             if (string.IsNullOrWhiteSpace(this.ApiUrl))

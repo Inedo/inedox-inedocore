@@ -126,7 +126,7 @@ Apply-Template hdars
 
                 if (!string.IsNullOrEmpty(this.Asset))
                 {
-                    var raftItem = SDK.GetRaftItem(RaftItemType.TextTemplate, this.Asset, context);
+                    var raftItem = SDK.GetRaftItem(RaftItemType.TextFile, this.Asset, context);
                     if (raftItem == null)
                         throw new ExecutionFailureException($"Template \"{this.Asset}\" not found.");
 

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Inedo.Extensibility.SecureResources;
 using Inedo.Extensions.PackageSources;
 using Inedo.Extensions.UniversalPackages;
 using Inedo.UPack;
@@ -20,7 +21,7 @@ namespace Inedo.Extensions.Operations.ProGet
                 switch (id.Format)
                 {
                     case PackageSourceIdFormat.SecureResource:
-                        if (!context.TryGetSecureResource(id.GetResourceName(), out var secureResource))
+                        if (!context.TryGetSecureResource(SecureResourceType.General, id.GetResourceName(), out var secureResource))
                             throw new ExecutionFailureException($"Secure resource {id.GetResourceName()} was not found.");
 
                         var feedUrl = secureResource switch
