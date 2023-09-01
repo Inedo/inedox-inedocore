@@ -14,10 +14,8 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Network
 {
-    [DisplayName("Ensure Hosts Entry")]
     [Description("Ensures an entry in the hosts file on a server.")]
     [ScriptAlias("Ensure-HostsEntry")]
-    [Tag("network")]
     [ScriptNamespace(Namespaces.Network, PreferUnqualified = true)]
     [Example(@"
 # bind otter.localhost to local ip

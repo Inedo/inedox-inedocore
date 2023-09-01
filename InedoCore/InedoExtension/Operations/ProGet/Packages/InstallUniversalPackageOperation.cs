@@ -4,9 +4,7 @@ using Inedo.Extensions.UniversalPackages;
 
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [Tag("proget")]
     [ScriptAlias("Install-Package")]
-    [DisplayName("Install Universal Package")]
     [Description("Installs a universal package to the specified location using a Package Source.")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Example(@"ProGet::Install-Package

@@ -1,25 +1,13 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading.Tasks;
-using Inedo.Agents;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
+﻿using Inedo.Agents;
 using Inedo.ExecutionEngine;
-using Inedo.ExecutionEngine.Executer;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
 using Inedo.Extensibility.RaftRepositories;
 using Inedo.Extensions.SuggestionProviders;
-using Inedo.IO;
-using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.General
 {
     [DefaultProperty(nameof(Asset))]
     [Description("Applies full template transformation on a literal, a file, or a template asset.")]
-    [DisplayName("Apply Template")]
     [ScriptAlias("Apply-Template")]
-    [Tag("variables")]
     [Example(@"
 # applies the a literal template and stores the result in $text
 Apply-Template

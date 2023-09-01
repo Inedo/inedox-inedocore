@@ -5,10 +5,8 @@ using Inedo.Extensions.UniversalPackages;
 
 namespace Inedo.Extensions.Operations.ProGet.Packages;
 
-[Tag("proget")]
 [ScriptAlias("Repackage")]
 [ScriptAlias("Repack-Package", Obsolete = true)]
-[DisplayName("Repackage")]
 [ScriptNamespace(Namespaces.ProGet)]
 [Description("Connects to ProGet to repackage an unstable (pre-release) package into a new package with the same contents.")]
 public sealed class RepackageOperation : ExecuteOperation, IFeedPackageConfiguration

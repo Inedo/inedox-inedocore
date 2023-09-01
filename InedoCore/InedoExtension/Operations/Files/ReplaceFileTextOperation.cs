@@ -14,9 +14,7 @@ using Inedo.IO;
 
 namespace Inedo.Extensions.Operations.Files
 {
-    [DisplayName("Search/Replace File Contents")]
     [Description("Searches a text file for a specified string and replaces it.")]
-    [Tag("files")]
     [ScriptAlias("Replace-Text")]
     [ScriptNamespace("Files", PreferUnqualified = true)]
     [Example(@"# Replaces the product version in an example vdproj file with the BuildMaster release number

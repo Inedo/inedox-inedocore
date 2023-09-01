@@ -9,10 +9,8 @@ using Inedo.UPack.Packaging;
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
     [ScriptAlias("Create-Package")]
-    [DisplayName("Create Universal Package")]
     [Description("Creates a universal package from the specified directory and publishes to a feed.")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [Tag("proget")]
     [Example(@"ProGet::Create-Package
 (
     Name: MyAppPackage,

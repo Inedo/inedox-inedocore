@@ -15,9 +15,7 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
-    [DisplayName("HTTP POST to URL")]
     [Description("Executes an HTTP POST/PUT/PATCH request to a URL, typically used for RESTful operations.")]
-    [Tag("http")]
     [ScriptAlias("Post-Http")]
     [ScriptNamespace("HTTP", PreferUnqualified = true)]
     [DefaultProperty(nameof(Url))]

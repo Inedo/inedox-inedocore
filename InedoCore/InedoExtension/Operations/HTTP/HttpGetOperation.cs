@@ -11,9 +11,7 @@ using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
-    [DisplayName("HTTP GET Request")]
     [Description("Executes an HTTP GET, DELETE, or HEAD request against a URL, typically used for RESTful operations.")]
-    [Tag("http")]
     [ScriptAlias("Get-Http")]
     [ScriptNamespace("HTTP", PreferUnqualified = true)]
     [DefaultProperty(nameof(Url))]

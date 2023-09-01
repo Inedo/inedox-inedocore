@@ -5,11 +5,9 @@ using Inedo.Extensions.UniversalPackages;
 
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [DisplayName("Ensure Universal Package Installed")]
     [Description("Ensures that the specified universal package is installed in the specified directory.")]
     [ScriptAlias("Ensure-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
-    [Tag("proget")]
     [Note("To determine if a package is installed, the local package registry and package files are both checked. You can control these with LocalRegistry and FileCompare options.")]
     [Example(@"#Ensure that FooBarApp is Installed
 ProGet::Ensure-Package

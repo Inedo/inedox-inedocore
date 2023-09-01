@@ -8,7 +8,6 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.General
 {
-    [DisplayName("Sleep")]
     [Description("Halts the execution of operations for the specified number of seconds.")]
     [ScriptAlias("Sleep")]
     [ScriptAlias("Wait")]

@@ -15,7 +15,6 @@ using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
-    [DisplayName("Upload File to URL")]
     [Description("Uploads a file to a specified URL using an HTTP POST or PUT.")]
     [ScriptAlias("Upload-Http")]
     [ScriptNamespace("HTTP", PreferUnqualified = true)]

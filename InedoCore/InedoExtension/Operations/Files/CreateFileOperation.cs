@@ -12,11 +12,9 @@ using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.Files
 {
-    [DisplayName("Create File")]
     [Description("Creates a file on a server.")]
     [ScriptAlias("Create-File")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag("files")]
     [DefaultProperty(nameof(FileName))]
     [Example(@"
 # write the name of the current working directory to my desktop

@@ -5,7 +5,6 @@ using Inedo.Extensions.UniversalPackages;
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
     [ScriptAlias("Collect-InstalledPackages")]
-    [DisplayName("Universal packages")]
     [Description("Collect list of installed universal packages")]
     [ScriptNamespace(Namespaces.ProGet)]
     public sealed class CollectUniversalPackagesOperation : CollectPackagesOperation

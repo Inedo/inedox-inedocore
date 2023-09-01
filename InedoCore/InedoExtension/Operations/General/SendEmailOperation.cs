@@ -1,25 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
 using Inedo.Agents;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
-using Inedo.IO;
-using Inedo.Web;
 
 namespace Inedo.Extensions.Operations.General
 {
-    [DisplayName("Send Email")]
     [Description("Sends an email message.")]
     [ScriptAlias("Send-Email")]
-    [Tag("email")]
     [Example(@"
 Send-Email (
     To: @(someone@example.org, someone-else@example.org),

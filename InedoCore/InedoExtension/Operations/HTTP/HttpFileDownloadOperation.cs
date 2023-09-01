@@ -14,7 +14,6 @@ using Inedo.Serialization;
 
 namespace Inedo.Extensions.Operations.HTTP
 {
-    [DisplayName("Download File from URL")]
     [Description("Downloads a file from a specified URL using an HTTP GET.")]
     [ScriptAlias("Download-Http")]
     [ScriptNamespace("HTTP", PreferUnqualified = true)]

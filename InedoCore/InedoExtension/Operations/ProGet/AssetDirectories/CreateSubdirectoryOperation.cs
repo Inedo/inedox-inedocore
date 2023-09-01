@@ -8,11 +8,9 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
 {
-    [Tag("assets")]
     [ScriptNamespace("ProGet")]
     [DefaultProperty(nameof(Path))]
     [ScriptAlias("Create-Directory")]
-    [DisplayName("Create Asset Directory Folder")]
     [Description("Ensures that a subdirectory exists in a ProGet Asset Directory.")]
     [Example(@"
 # ensures that the my/folder/path directory exists in the ProGet Asset Directory specified by the MyAssetDirResource secure resource

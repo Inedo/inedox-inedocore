@@ -8,12 +8,9 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Otter
 {
-    [DisplayName("Set Variable Value in Otter")]
     [Description("Creates or assigns a configuration variable in Otter.")]
     [ScriptAlias("Set-Variable")]
     [ScriptNamespace(Namespaces.Otter)]
-    [Tag("otter")]
-    [Tag("variables")]
     [Example(@"
 # sets the variable for the hdars-web-1k-tokyo server to the name of the current application
 Otter::Set-Variable

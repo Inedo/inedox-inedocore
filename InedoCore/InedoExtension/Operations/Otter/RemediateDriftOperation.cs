@@ -10,11 +10,9 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Otter
 {
-    [DisplayName("Remediate Drift")]
     [Description("Checks configuration status and if drifted, triggers a remediation job in Otter.")]
     [ScriptAlias("Remediate-Drift")]
     [ScriptNamespace(Namespaces.Otter)]
-    [Tag("otter")]
     [Example(@"
 # triggers Otter to remediate drift for hdars web server roles
 Otter::Remediate-Drift

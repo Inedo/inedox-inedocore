@@ -13,11 +13,9 @@ using Inedo.Extensibility.Configurations;
 
 namespace Inedo.Extensions.Operations.Files
 {
-    [DisplayName("Ensure File")]
     [Description("Ensures the existence of a file on a server.")]
     [ScriptAlias("Ensure-File")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag("files")]
     [Example(@"
 # ensures the otter.txt file exists on the server and is marked readonly
 Ensure-File(

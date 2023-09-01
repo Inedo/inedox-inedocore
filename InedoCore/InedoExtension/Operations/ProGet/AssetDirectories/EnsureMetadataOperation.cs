@@ -11,10 +11,8 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
 {
-    [Tag("assets")]
     [ScriptNamespace("ProGet")]
     [ScriptAlias("Ensure-Metadata")]
-    [DisplayName("Ensure Asset Directory Item Metadata")]
     [Description("Ensures that metadata exists on an Asset Directory item.")]
     [Example(@"
 # ensures that the my/folder/path directory exists in the ProGet Asset Directory specified by the MyAssetDirResource secure resource

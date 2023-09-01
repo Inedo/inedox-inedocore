@@ -10,10 +10,8 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
 {
-    [Tag("assets")]
     [ScriptNamespace("ProGet")]
     [ScriptAlias("Upload-Assets")]
-    [DisplayName("Upload Assets to ProGet")]
     [Description("Uploads files to a ProGet Asset Directory.")]
     [Example(@"
 # upload all .zip files from the working directory to the remotedir/subdir directory on the MyAssetDirResource asset directory

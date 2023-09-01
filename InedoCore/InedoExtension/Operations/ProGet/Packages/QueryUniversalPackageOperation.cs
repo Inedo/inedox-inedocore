@@ -8,11 +8,9 @@ using Inedo.UPack.Packaging;
 
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [DisplayName("Query Package")]
     [ScriptAlias("Query-Package")]
     [ScriptNamespace(Namespaces.UPack, PreferUnqualified = false)]
     [Description("Tests whether a universal package exists and optionally extracts its metadata.")]
-    [Tag("upack")]
     [Example(@"
 # test whether a package exists in a feed and capture its metadata
 Query-Package

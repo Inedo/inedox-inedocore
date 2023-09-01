@@ -7,11 +7,9 @@ using Inedo.UPack.Packaging;
 
 namespace Inedo.Extensions.Operations.ProGet.Packages
 {
-    [Tag("proget")]
     [ScriptAlias("Push-PackageFile")]
     [DefaultProperty(nameof(FilePath))]
     [ScriptNamespace(Namespaces.ProGet)]
-    [DisplayName("Push Universal Package File")]
     [Description("Uploads a universal package file to a package source.")]
     [Example(@"# Uploads the MyPackage.1.0.0.upack file to the InternalFeed package source
 ProGet::Push-PackageFile MyPackage.1.0.0.upack

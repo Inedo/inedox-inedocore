@@ -8,7 +8,6 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Files
 {
-    [DisplayName("Extract Zip File")]
     [Description("Extracts a zip file on a server.")]
     [ScriptAlias("Extract-ZipFile")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]

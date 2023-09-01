@@ -11,11 +11,9 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Files
 {
-    [DisplayName("Ensure Directory")]
     [Description("Ensures the existence of a directory on a server.")]
     [ScriptAlias("Ensure-Directory")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag("files")]
     [Example(@"
 # ensures the Logs directory for the website exists and that it's writable
 Ensure-Directory(

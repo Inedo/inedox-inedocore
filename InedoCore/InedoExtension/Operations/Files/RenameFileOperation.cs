@@ -9,12 +9,10 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.Files
 {
-    [DisplayName("Rename File")]
     [Description("Renames a file on a server.")]
     [ScriptAlias("Rename-File")]
     [Note("To rename multiple files at once, running a PowerShell script is recommended.")]
     [ScriptNamespace(Namespaces.Files, PreferUnqualified = true)]
-    [Tag("files")]
     [Example(@"
 # renames logs.txt to include the environment name in context
 Rename-File (

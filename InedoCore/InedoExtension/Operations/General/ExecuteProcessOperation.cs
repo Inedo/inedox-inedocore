@@ -1,17 +1,8 @@
-﻿using System;
-using System.ComponentModel;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 using Inedo.Agents;
-using Inedo.Diagnostics;
-using Inedo.Documentation;
-using Inedo.Extensibility;
-using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.General
 {
-    [DisplayName("Execute Process")]
     [Description("Executes a process, logs its output, and waits until it exits.")]
     [ScriptAlias("Exec")]
     [ScriptAlias("Execute-Process")]

@@ -10,11 +10,9 @@ using Inedo.Extensibility.Operations;
 
 namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
 {
-    [Tag("assets")]
     [ScriptNamespace("ProGet")]
     [DefaultProperty(nameof(Path))]
     [ScriptAlias("Download-Asset")]
-    [DisplayName("Download Asset from ProGet")]
     [Description("Downloads a file from a ProGet Asset Directory.")]
     [Example(@"
 # download dir/info.txt to the current working directory from the MyAssetDirResource asset directory
