@@ -1,4 +1,5 @@
-﻿using Inedo.Agents;
+﻿using System.Text.RegularExpressions;
+using Inedo.Agents;
 using Inedo.ExecutionEngine;
 using Inedo.Extensibility.RaftRepositories;
 using Inedo.Extensions.SuggestionProviders;
@@ -65,6 +66,12 @@ Apply-Template hdars
         [DisplayName("New lines")]
         [Category("Advanced")]
         [DefaultValue(TemplateNewLineMode.Auto)]
+        [Description("""
+            Specifies how to handle new lines in the output. When set to "Auto", it will attempt to match
+            the format to the operating system of the server in context. Setting "Windows" or "Linux" will
+            force newlines to match each format respectively. Setting "None" will pass through all new line
+            characters unmodified.
+            """)]
         public TemplateNewLineMode NewLineMode { get; set; }
 
         public override async Task ExecuteAsync(IOperationExecutionContext context)
@@ -76,7 +83,9 @@ Apply-Template hdars
             this.LogInformation("Template applied.");
 
             if (this.NewLineMode == TemplateNewLineMode.Windows)
-                result = result.Replace("\n", "\r\n");
+                result = Regex.Replace(result, @"\r?\n", "\r\n");
+            else if (this.NewLineMode == TemplateNewLineMode.Linux)
+                result = Regex.Replace(result, @"\r?\n", "\n");
 
             if (!string.IsNullOrWhiteSpace(this.OutputFile))
             {
@@ -84,7 +93,7 @@ Apply-Template hdars
                 this.LogDebug($"Writing output to {path}...");
                 var fileOps = await context.Agent.GetServiceAsync<IFileOperationsExecuter>().ConfigureAwait(false);
                 if (this.NewLineMode == TemplateNewLineMode.Auto)
-                    result = result.Replace("\n", fileOps.NewLine);
+                    result = Regex.Replace(result, @"\r?\n", fileOps.NewLine);
 
                 await fileOps.CreateDirectoryAsync(PathEx.GetDirectoryName(path));
                 await fileOps.WriteAllTextAsync(path, result).ConfigureAwait(false);
@@ -181,6 +190,7 @@ Apply-Template hdars
     {
         Auto,
         Windows,
-        Linux
+        Linux,
+        None
     }
 }
