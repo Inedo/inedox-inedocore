@@ -294,7 +294,7 @@ namespace Inedo.Extensions.UserDirectories
             //Closes the &
             searchString.Append(")");
 
-            var principal = this.SearchDomain(searchString.ToString()).FirstOrDefault();
+            var principal = this.SearchDomain(searchString.ToString()).Where(p => principalId?.DomainAlias == null || (principalId?.DomainAlias?.Equals(p.GetDomainPath(), StringComparison.OrdinalIgnoreCase) ?? true)).FirstOrDefault();
             if(principal == null)
                 this.LogDebug("Principal not found.");
             return principal;
