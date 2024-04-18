@@ -23,7 +23,7 @@ namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
                 p =>
                 {
                     DirectoryEx.Create(p);
-                    return InedoLib.CompletedTask;
+                    return Task.CompletedTask;
                 },
                 s => Task.FromResult<Stream>(FileEx.Open(s, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.Asynchronous | FileOptions.SequentialScan)),
                 this.ReportProgress,
