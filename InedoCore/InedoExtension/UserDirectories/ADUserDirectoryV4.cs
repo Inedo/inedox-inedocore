@@ -241,7 +241,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         return null;
     }
 
-    private static LdapClient GetClient() => new DirectoryServicesLdapClient();
+    private static LdapClient GetClient() => OperatingSystem.IsWindows() ? new DirectoryServicesLdapClient() : new NovellLdapClient();
 
     [Flags]
     private enum PrincipalSearchType
@@ -569,6 +569,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         {
             conn.Bind(new NetworkCredential(userName, password));
         }
+
+        if (OperatingSystem.IsLinux())
+            return conn.Search(dn, filter, scope).ToList();
         return conn.Search(dn, filter, scope);
     }
 
