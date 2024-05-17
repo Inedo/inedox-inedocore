@@ -16,6 +16,7 @@ Exec c:\tools\7za.exe (
     public sealed class ExecuteProcessOperation : ExecuteOperation
     {
         private readonly Lazy<Regex> warnRegex;
+        private readonly Lazy<Regex> debugRegex;
         private readonly Lazy<Regex> progressRegex;
         private readonly Lazy<Regex> outputFilterRegex;
         private volatile int percent;
@@ -24,6 +25,7 @@ Exec c:\tools\7za.exe (
         public ExecuteProcessOperation()
         {
             this.warnRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.WarningTextRegex) ? new Regex(this.WarningTextRegex) : null);
+            this.debugRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.DebugTextRegex) ? new Regex(this.DebugTextRegex) : null);
             this.progressRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.ReportProgressRegex) ? new Regex(this.ReportProgressRegex) : null);
             this.outputFilterRegex = new Lazy<Regex>(() => !string.IsNullOrWhiteSpace(this.OutputTextRegex) ? new Regex(this.OutputTextRegex) : null);
         }
@@ -62,6 +64,11 @@ Exec c:\tools\7za.exe (
         [DisplayName("Warning regex")]
         [Description("When set to a valid regular expression string, output messages which are matched will be logged as warnings. To log only part of the message, use a group with name \"m\".")]
         public string WarningTextRegex { get; set; }
+        [Category("Logging")]
+        [ScriptAlias("DebugRegex")]
+        [DisplayName("Debug regex")]
+        [Description("When set to a valid regular expression string, output messages which are matched will be logged as debug. To log only part of the message, use a group with name \"m\".")]
+        public string DebugTextRegex { get; set; }
         [Category("Logging")]
         [ScriptAlias("LogArguments")]
         [DisplayName("Log arguments")]
@@ -226,6 +233,17 @@ Exec c:\tools\7za.exe (
                 if (match.Success)
                 {
                     this.LogWarning(AH.CoalesceString(match.Groups["m"]?.Value, e.Data));
+                    return;
+                }
+            }
+
+            var debugRegex = this.debugRegex.Value;
+            if (debugRegex != null)
+            {
+                var match = debugRegex.Match(e.Data);
+                if (match.Success)
+                {
+                    this.LogDebug(AH.CoalesceString(match.Groups["m"]?.Value, e.Data));
                     return;
                 }
             }
