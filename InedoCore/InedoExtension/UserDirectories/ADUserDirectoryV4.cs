@@ -10,7 +10,7 @@ using LDAP = Inedo.Extensions.UserDirectories.LdapHelperV4;
 
 namespace Inedo.Extensions.UserDirectories;
 
-[DisplayName("V4: Active Directory/LDAP (Preview)")]
+[DisplayName("V4: Active Directory/LDAP")]
 [Description("Queries the current domain, global catalog for trusted domains, or a specific list of domains for users and group membership.")]
 
 public sealed class ADUserDirectoryV4 : UserDirectory
