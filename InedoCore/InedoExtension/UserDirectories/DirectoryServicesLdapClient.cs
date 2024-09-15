@@ -6,10 +6,24 @@ namespace Inedo.Extensions.UserDirectories;
 internal sealed class DirectoryServicesLdapClient : LdapClient
 {
     private LdapConnection connection;
+    private readonly AuthType? authType;
+    private readonly string[] attributes;
+
+    /// <inheritdoc />
+    public DirectoryServicesLdapClient(AuthType? authType = null, string[] attributes = null)
+    {
+        this.authType = authType;
+        this.attributes = attributes;
+    }
 
     public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate)
     {
         this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
+        if (authType != null)
+        {
+            connection.AuthType = authType.Value;
+        }
+
         if (ldaps)
         {
             this.connection.SessionOptions.SecureSocketLayer = true;
@@ -25,6 +39,11 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
     public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope);
+        if (attributes != null)
+        {
+            request.Attributes.AddRange(attributes);
+        }
+
         var response = this.connection.SendRequest(request);
 
         if (response is SearchResponse sr)
@@ -55,9 +74,8 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
 
             return propertyCollection[0]?.ToString() ?? string.Empty;
         }
-        public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
+        public override ISet<string> ExtractGroupNames(string memberOfPropertyName = "memberof", string groupNamePropertyName = "CN", bool includeDomainPath = false)
         {
-
             Logger.Log(MessageLevel.Debug, "Begin ExtractGroupNames", "AD User Directory");
             var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
@@ -86,12 +104,20 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
                     if (!string.IsNullOrWhiteSpace(memberOf))
                     {
                         var groupNames = from part in memberOf.Split(',')
-                                         where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                         let name = part["CN=".Length..]
+                                         where part.StartsWith($"{groupNamePropertyName}=", StringComparison.OrdinalIgnoreCase)
+                                         let name = part[$"{groupNamePropertyName}=".Length..]
                                          where !string.IsNullOrWhiteSpace(name)
                                          select name;
+                        foreach (var groupName in groupNames)
+                        {
+                            string groupNameToAdd = groupName;
+                            if (includeDomainPath)
+                            {
+                                groupNameToAdd = $"{groupName}@{GetDomainPath(memberOf)}";
+                            }
 
-                        groups.UnionWith(groupNames);
+                            groups.Add(groupNameToAdd);
+                        }
                     }
                 }
             }

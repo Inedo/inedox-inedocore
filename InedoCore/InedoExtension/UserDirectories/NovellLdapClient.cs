@@ -12,8 +12,15 @@ namespace Inedo.Extensions.UserDirectories
 {
     internal sealed class NovellLdapClient : LdapClient
     {
+        private readonly string[] attributes;
         private LdapConnection connection;
 
+        /// <inheritdoc />
+        public NovellLdapClient(string[] attributes = null)
+        {
+            this.attributes = attributes;
+        }
+        
         public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate)
         {
             this.connection = new LdapConnection();
@@ -36,7 +43,7 @@ namespace Inedo.Extensions.UserDirectories
         }
         public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
         {
-            return getResults(this.connection.Search(distinguishedName, (int)scope, filter, null, false, this.connection.SearchConstraints));
+            return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, connection.SearchConstraints));
 
             static IEnumerable<LdapClientEntry> getResults(ILdapSearchResults results)
             {
@@ -109,7 +116,7 @@ namespace Inedo.Extensions.UserDirectories
                 }
             }
 
-            public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
+            public override ISet<string> ExtractGroupNames(string memberOfPropertyName = "memberof", string groupNamePropertyName = "CN", bool includeDomainPath = false)
             {
                 var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 try
@@ -117,12 +124,21 @@ namespace Inedo.Extensions.UserDirectories
                     foreach (var memberOf in this.entry.GetAttribute(AH.NullIf(memberOfPropertyName, string.Empty) ?? "memberof")?.StringValueArray ?? Array.Empty<string>())
                     {
                         var groupNames = from part in memberOf.Split(',')
-                                         where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
-                                         let name = part["CN=".Length..]
+                                         where part.StartsWith($"{groupNamePropertyName}=", StringComparison.OrdinalIgnoreCase)
+                                         let name = part[$"{groupNamePropertyName}=".Length..]
                                          where !string.IsNullOrWhiteSpace(name)
                                          select name;
 
-                        groups.UnionWith(groupNames);
+                        foreach (var groupName in groupNames)
+                        {
+                            string groupNameToAdd = groupName;
+                            if (includeDomainPath)
+                            {
+                                groupNameToAdd = $"{groupName}@{GetDomainPath(memberOf)}";
+                            }
+
+                            groups.Add(groupNameToAdd);
+                        }
                     }
                 }
                 catch
