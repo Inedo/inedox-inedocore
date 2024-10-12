@@ -125,19 +125,19 @@ namespace Inedo.Extensions.Operations.ProGet.AssetDirectories
             if (creds is not ProGetServiceCredentials credentials)
                 throw new ExecutionFailureException($"Credential {credentialName} is not a ProGet service credential.");
 
-            if (!string.IsNullOrEmpty(this.ApiUrl) && !string.IsNullOrEmpty(credentials.ServiceUrl))
-                this.ApiUrl = PathEx.Combine('/', credentials.ServiceUrl, Uri.EscapeDataString(feedName));
+            if (string.IsNullOrEmpty(this.ApiUrl) && !string.IsNullOrEmpty(credentials.ServiceUrl))
+                this.ApiUrl = $"{credentials.ServiceUrl.TrimEnd('/')}/endpoints/{Uri.EscapeDataString(feedName)}";
 
-            if (!string.IsNullOrEmpty(this.ApiKey))
+            if (string.IsNullOrEmpty(this.ApiKey))
                 this.ApiKey = credentials.APIKey;
 
-            if (!string.IsNullOrEmpty(this.UserName))
+            if (string.IsNullOrEmpty(this.UserName))
                 this.UserName = credentials.UserName;
 
-            if (!string.IsNullOrEmpty(this.Password))
+            if (string.IsNullOrEmpty(this.Password))
                 this.Password = credentials.Password;
 
             return true;
         }
-    }
+    }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
 }
