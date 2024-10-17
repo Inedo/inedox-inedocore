@@ -24,6 +24,7 @@ internal interface IFeedPackageInstallationConfiguration : IFeedPackageConfigura
     string? TargetDirectory { get; set; }
     bool DirectDownload { get; set; }
     LocalRegistryOptions LocalRegistry { get; set; }
+    bool ClearTargetDirectory { get; set; }
 }
 
 public enum LocalRegistryOptions

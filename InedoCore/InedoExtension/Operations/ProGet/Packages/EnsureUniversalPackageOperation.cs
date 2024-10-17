@@ -9,15 +9,17 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
     [ScriptAlias("Ensure-Package")]
     [ScriptNamespace(Namespaces.ProGet)]
     [Note("To determine if a package is installed, the local package registry and package files are both checked. You can control these with LocalRegistry and FileCompare options.")]
-    [Example(@"#Ensure that FooBarApp is Installed
-ProGet::Ensure-Package
-(
-    From: MyPackageSource,
-    Name: FooBarApp,
-    Version: $FooBarVersion,
-    To: D:\WebApps\FooBar.App,
-    Ignore: web.config
-);"
+    [Example("""
+        #Ensure that FooBarApp is Installed
+        ProGet::Ensure-Package
+        (
+            From: MyPackageSource,
+            Name: FooBarApp,
+            Version: $FooBarVersion,
+            To: D:\WebApps\FooBar.App,
+            Ignore: web.config
+        );
+        """
     )]
     public sealed class EnsureUniversalPackageOperation : EnsureOperation<ProGetPackageConfiguration>
     {
@@ -27,13 +29,10 @@ ProGet::Ensure-Package
 
         private bool ValidateConfiguration()
         {
-            if (this.Template.Includes?.Any() == true
-                || this.Template.Excludes?.Any() == true
-                || this.Template.DeleteExtra == true)
+            if (this.Template.ClearTargetDirectory && this.Template.IgnoreFiles?.Any() == true)
             {
-                this.LogError($"Includes/Excludes and DeleteExtra options are no longer supported.");
+                this.LogError("IgnoreFiles cannot be specified ClearTarget is true.");
                 return false;
-
             }
 
             if (this.Template.FileCompare == FileCompareOptions.DoNotCompare && this.Template.LocalRegistry == LocalRegistryOptions.None)
@@ -126,7 +125,7 @@ ProGet::Ensure-Package
                 }
                 collectedConfig.TargetDirectory = this.Template.TargetDirectory;
 
-                var mask = new MaskingContext(new[] { "**" }, this.Template.IgnoreFiles);
+                var mask = new MaskingContext(["**"], this.Template.IgnoreFiles);
 
                 this.LogInformation(this.Template.TargetDirectory + " exists; getting remote file list...");
 

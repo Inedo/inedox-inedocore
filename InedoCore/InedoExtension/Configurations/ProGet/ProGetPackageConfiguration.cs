@@ -55,6 +55,11 @@ namespace Inedo.Extensions.Configurations.ProGet
         public string TargetDirectory { get; set; }
 
         [Persistent]
+        [ScriptAlias("ClearTarget")]
+        [DisplayName("Clear target directory")]
+        public bool ClearTargetDirectory { get; set; }
+
+        [Persistent]
         [ScriptAlias("Exists")]
         [DefaultValue(true)]
         [PlaceholderText("true")]
@@ -130,15 +135,6 @@ namespace Inedo.Extensions.Configurations.ProGet
         [Description("An API Key that can access this feed.")]
         public string ApiKey { get; set; }
 
-        [Undisclosed]
-        [ScriptAlias("DeleteExtra")]
-        public bool DeleteExtra { get; set; }
-        [Undisclosed]
-        [ScriptAlias("Include")]
-        public IEnumerable<string> Includes { get; set; }
-        [Undisclosed]
-        [ScriptAlias("Exclude")]
-        public IEnumerable<string> Excludes { get; set; }
         [ScriptAlias("FeedUrl")]
         public string FeedUrl { get; set; }
 
