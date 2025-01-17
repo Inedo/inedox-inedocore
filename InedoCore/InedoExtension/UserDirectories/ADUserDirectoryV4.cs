@@ -527,7 +527,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             foreach (var result in this.Search(baseDn, searchString.ToString(), scope: scope, userName: this.Username?.GetDomainQualifiedName(this.Domain), password: this.Password))
                 yield return result;
         }
-        else
+        else if (this.localTrusts.Value.Count > 0)
         {
             foreach (var domain in this.localTrusts.Value)
             {
@@ -537,6 +537,11 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 foreach (var result in this.Search(baseDn, searchString.ToString()))
                     yield return result;
             }
+        }
+        else
+        {
+            foreach (var result in this.Search(this.SearchRootPath, searchString.ToString(), scope: scope, userName: this.Username, password: this.Password))
+                yield return result;
         }
 
         yield break;
