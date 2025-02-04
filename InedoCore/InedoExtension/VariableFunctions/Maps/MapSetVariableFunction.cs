@@ -7,7 +7,7 @@ using Inedo.Extensibility.VariableFunctions;
 namespace Inedo.Extensions.VariableFunctions.Maps
 {
     [ScriptAlias("MapSet")]
-    [Description("Adds a key-value pair to a map.")]
+    [Description("Updates the map element with the given key to a new value.  If the existing key does not exist, it is added")]
     [Tag("maps")]
     public sealed class MapSetVariableFunction : VariableFunction
     {
@@ -23,7 +23,7 @@ namespace Inedo.Extensions.VariableFunctions.Maps
 
         [VariableFunctionParameter(2)]
         [DisplayName("value")]
-        [Description("The value to add.")]
+        [Description("The new value.")]
         public RuntimeValue Value { get; set; }
 
         public override RuntimeValue Evaluate(IVariableFunctionContext context)
