@@ -5,6 +5,8 @@ using Inedo.ExecutionEngine;
 using Inedo.Extensibility;
 using Inedo.Extensibility.VariableFunctions;
 
+#nullable enable
+
 namespace Inedo.Extensions.VariableFunctions.Lists
 {
     [ScriptAlias("ListSet")]
