@@ -60,9 +60,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     [Persistent]
     [Category("Connection")]
     [DisplayName("LDAP Connection")]
-    [DefaultValue(LdapConnectionType.Ldap)]
+    [DefaultValue(LdapDomains.LdapConnectionType.Ldap)]
     [Description("When connecting to your local Active Directory, connect via LDAP, LDAP over SSL, or LDAP over SSL and bypass certificate errors.")]
-    public LdapConnectionType LdapConnection { get; set; }
+    public LdapDomains.LdapConnectionType LdapConnection { get; set; }
 
     [Persistent]
     [Category("Connection")]
@@ -154,9 +154,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     [Persistent]
     [Category("Advanced")]
     [DisplayName("Search Group Method")]
-    [DefaultValue(GroupSearchType.NoRecursion)]
+    [DefaultValue(LdapDomains.GroupSearchType.NoRecursion)]
     [Description("Choose to recursively check group memberships or only check for the groups that a user is directly a member of. This may cause reduced performance.")]
-    public GroupSearchType GroupSearchType { get; set; }
+    public LdapDomains.GroupSearchType GroupSearchType { get; set; }
 
     [Persistent]
     [Category("Advanced")]
@@ -191,7 +191,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         try
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
             if (userName?.Contains('@') ?? false)
             {
                 var userNameSplit = userName.Split('@');
@@ -308,7 +308,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             yield return principal;
     }
 
-    private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
+    private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree)
     {
         var userSearchQuery = this.UsersFilterBase;
         if (this.IncludeGroupManagedServiceAccounts)
@@ -427,7 +427,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         try
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
 
             if (this.Username?.Contains('@') ?? false)
             {
@@ -444,12 +444,12 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 conn.Bind(new NetworkCredential(this.Username, this.Password));
             }
 
-            var response = conn.Search("", "(&(objectClass=*))", LdapClientSearchScope.Base).FirstOrDefault();
+            var response = conn.Search("", "(&(objectClass=*))", LdapDomains.LdapClientSearchScope.Base).FirstOrDefault();
             if (response != null)
             {
                 var cfg = response.GetPropertyValue("configurationNamingContext");
 
-                var response2 = conn.Search("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapClientSearchScope.Subtree).FirstOrDefault();
+                var response2 = conn.Search("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapDomains.LdapClientSearchScope.Subtree).FirstOrDefault();
                 if (response2 != null)
                 {
                     var root = response2.GetPropertyValue("dnsRoot");
@@ -516,7 +516,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// <param name="searchString">LDAP query to search for</param>
     /// <returns>IEnumerable of <see cref="LdapClientEntry"/></returns>
     /// <exception cref="InvalidOperationException">If CredentialName is not <see cref="UsernamePasswordCredentials"/></exception>
-    private IEnumerable<LdapClientEntry> SearchDomain(string searchString, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
+    private IEnumerable<LdapClientEntry> SearchDomain(string searchString, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree)
     {
         this.LogDebug($"Search string is \"{searchString}\"...");
 
@@ -552,10 +552,10 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// <param name="userName">Username to connect to the domain wtih</param>
     /// <param name="password">Password to connect to the domain with</param>
     /// <returns></returns>
-    private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
+    private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
     {
         using var conn = GetClient();
-        conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+        conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
         if (userName?.Contains('@') ?? false)
         {
             var userNameSplit = userName.Split('@');
@@ -600,7 +600,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             {
                 ISet<string> groups;
                 // Old Group Search way
-                if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
+                if (this.directory.GroupSearchType != LdapDomains.GroupSearchType.RecursiveSearchActiveDirectory) {
                     if (groupNames == null)
                     {
                         var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
@@ -610,7 +610,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                     {
                         groups = groupNames;
                     }
-                    if (this.directory.GroupSearchType == GroupSearchType.RecursiveSearch)
+                    if (this.directory.GroupSearchType == LdapDomains.GroupSearchType.RecursiveSearch)
                     {
                         var groupsToSearch = new Queue<string>(groups);
                         while (groupsToSearch.Count > 0)
@@ -690,7 +690,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             {
                 ISet<string> groups;
                 //Old Group searching way
-                if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory)
+                if (this.directory.GroupSearchType != LdapDomains.GroupSearchType.RecursiveSearchActiveDirectory)
                 {
                     if (groupNames == null)
                     {
@@ -701,7 +701,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                     {
                         groups = groupNames;
                     }
-                    if (this.directory.GroupSearchType == GroupSearchType.RecursiveSearch)
+                    if (this.directory.GroupSearchType == LdapDomains.GroupSearchType.RecursiveSearch)
                     {
                         var groupsToSearch = new Queue<string>(groups);
                         while (groupsToSearch.Count > 0)
@@ -760,9 +760,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         internal IEnumerable<IUserDirectoryUser> GetMembers()
         {
             Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup GetMembers", "AD User Directory");
-            if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
+            if (this.directory.GroupSearchType != LdapDomains.GroupSearchType.RecursiveSearchActiveDirectory) {
                 var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
-                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
+                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapDomains.LdapClientSearchScope.Subtree);
 
                 foreach (var user in users)
                 {
@@ -790,24 +790,4 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         public override int GetHashCode() => this.groupId.GetHashCode();
         public override string ToString() => this.groupId.Principal;
     }
-}
-
-public enum GroupSearchType
-{
-    [Description("No Recursion")]
-    NoRecursion = 1,
-    [Description("Recursive Search (LDAP/Non-Active Directory)")]
-    RecursiveSearch,
-    [Description("Recursive Search (Active Directory Only)")]
-    RecursiveSearchActiveDirectory
-}
-
-public enum LdapConnectionType
-{
-    [Description("Use LDAP")]
-    Ldap = 1,
-    [Description("Use LDAPS")]
-    Ldaps,
-    [Description("Use LDAPS and bypass certificate errors")]
-    LdapsWithBypass
 }

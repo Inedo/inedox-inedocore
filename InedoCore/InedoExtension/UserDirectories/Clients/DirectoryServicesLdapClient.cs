@@ -29,7 +29,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
         Bind(new NetworkCredential(bindDn, password));
     }
 
-    public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
+    public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope);
         var response = this.connection.SendRequest(request);
@@ -39,7 +39,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
         else
             return Enumerable.Empty<Entry>();
     }
-    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope, params string[] attributes)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope, attributes);
         var response = this.connection.SendRequest(request);

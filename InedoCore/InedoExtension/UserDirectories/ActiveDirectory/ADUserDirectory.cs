@@ -303,7 +303,7 @@ namespace Inedo.Extensions.UserDirectories
                 yield return principal;
             }
         }
-        private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)//, ReferralChasingOption? referralChasingOption = null)
+        private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree)//, ReferralChasingOption? referralChasingOption = null)
         {
           
             var userSearchQuery = "objectCategory=user";
@@ -353,7 +353,7 @@ namespace Inedo.Extensions.UserDirectories
                 return new ActiveDirectoryGroup(this, (GroupId)principalId);
             }
         }
-        private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
+        private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
         {
             using var conn = GetClient();
             conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.UseLdaps, this.BypassLdapsCertificateValidation);
@@ -552,7 +552,7 @@ namespace Inedo.Extensions.UserDirectories
             {
                 Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup GetMembers", "AD User Directory");
                 var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
-                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
+                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"(memberOf={groupSearch.GetPropertyValue("distinguishedName")})", LdapDomains.LdapClientSearchScope.Subtree);
 
                 foreach (var user in users)
                 {

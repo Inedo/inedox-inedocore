@@ -36,7 +36,7 @@ namespace Inedo.Extensions.UserDirectories.Clients
             this.connection.Bind(bindDn, password);
         }
 
-        public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
+        public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope)
         {
             return getResults(this.connection.Search(distinguishedName, (int)scope, filter, null, false, this.connection.SearchConstraints));
 
@@ -83,7 +83,7 @@ namespace Inedo.Extensions.UserDirectories.Clients
             }
         }
 
-        public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+        public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope, params string[] attributes)
         {
             return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, this.connection.SearchConstraints));
 

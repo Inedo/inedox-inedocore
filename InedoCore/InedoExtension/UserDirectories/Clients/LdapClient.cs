@@ -13,8 +13,8 @@ namespace Inedo.Extensions.UserDirectories.Clients
         public abstract void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate);
         public abstract void Bind(NetworkCredential credentials);
         public abstract void Bind(string bindDn, string password);
-        public abstract IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope);
-        public abstract IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes);
+        public abstract IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope);
+        public abstract IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope, params string[] attributes);
 
         public void Dispose() => Dispose(true);
 
