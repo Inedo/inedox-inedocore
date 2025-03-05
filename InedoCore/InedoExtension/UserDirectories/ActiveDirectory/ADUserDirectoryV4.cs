@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using Inedo.Extensibility.UserDirectories;
+using Inedo.Extensions.UserDirectories.Clients;
 using Inedo.Serialization;
 using ActiveDirectory = System.DirectoryServices.ActiveDirectory;
 using LDAP = Inedo.Extensions.UserDirectories.LdapHelperV4;

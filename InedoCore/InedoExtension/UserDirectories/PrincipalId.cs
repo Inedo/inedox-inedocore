@@ -1,5 +1,6 @@
 ﻿using System;
 using System.DirectoryServices.Protocols;
+using Inedo.Extensions.UserDirectories.Clients;
 
 namespace Inedo.Extensions.UserDirectories
 {

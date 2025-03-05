@@ -1,14 +1,10 @@
 ﻿#if !NET452
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Text.Json;
-using Inedo.Diagnostics;
 using Novell.Directory.Ldap;
 using Logger = Inedo.Diagnostics.Logger;
 
-namespace Inedo.Extensions.UserDirectories
+namespace Inedo.Extensions.UserDirectories.Clients
 {
     internal sealed class NovellLdapClient : LdapClient
     {
@@ -27,13 +23,19 @@ namespace Inedo.Extensions.UserDirectories
 #pragma warning restore CS0618 // Type or member is obsolete
                 }
             }
-            this.connection.Connect(server, port ?? (ldaps ? 636 : 389));            
+            this.connection.Connect(server, port ?? (ldaps ? 636 : 389));
         }
 
         public override void Bind(NetworkCredential credentials)
         {
-            this.connection.Bind($"{credentials.UserName}{(string.IsNullOrWhiteSpace(credentials.Domain) ? string.Empty : "@" + credentials.Domain)}", credentials.Password);
+            Bind($"{credentials.UserName}{(string.IsNullOrWhiteSpace(credentials.Domain) ? string.Empty : "@" + credentials.Domain)}", credentials.Password);
         }
+
+        public override void Bind(string bindDn, string password)
+        {
+            this.connection.Bind(bindDn, password);
+        }
+
         public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
         {
             return getResults(this.connection.Search(distinguishedName, (int)scope, filter, null, false, this.connection.SearchConstraints));
@@ -54,7 +56,7 @@ namespace Inedo.Extensions.UserDirectories
                         Logger.Log(MessageLevel.Debug, "LdapReferralException", "AD User Directory", lrex.ToString(), lrex);
                         entry = null;
                     }
-                    catch(LdapException lex)
+                    catch (LdapException lex)
                     {
                         Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", lex.ToString(), lex);
                         try
@@ -68,7 +70,54 @@ namespace Inedo.Extensions.UserDirectories
 
                         throw;
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
+                    {
+                        Logger.Log(MessageLevel.Debug, ex.GetType().Name, "AD User Directory", ex.ToString(), ex);
+                        throw;
+                    }
+
+                    if (entry != null)
+                        yield return new Entry(entry);
+                }
+                Logger.Log(MessageLevel.Debug, "End LDAP Get Search Results", "AD User Directory");
+            }
+        }
+
+        public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+        {
+            return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, this.connection.SearchConstraints));
+
+            static IEnumerable<LdapClientEntry> getResults(ILdapSearchResults results)
+            {
+                Logger.Log(MessageLevel.Debug, "Begin LDAP Get Search Results", "AD User Directory");
+                while (results.HasMore())
+                {
+                    LdapEntry entry;
+                    try
+                    {
+                        entry = results.Next();
+                    }
+                    catch (LdapReferralException lrex)
+                    {
+                        //Logger.Log(MessageLevel.Debug, $"Referral chasing enabled: {connection.SearchConstraints.ReferralFollowing}", "AD User Directory");
+                        Logger.Log(MessageLevel.Debug, "LdapReferralException", "AD User Directory", lrex.ToString(), lrex);
+                        entry = null;
+                    }
+                    catch (LdapException lex)
+                    {
+                        Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", lex.ToString(), lex);
+                        try
+                        {
+                            Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", JsonSerializer.Serialize(lex));
+                        }
+                        catch
+                        {
+                            Logger.Log(MessageLevel.Debug, "Couldn't serialize LdapException", "AD User Directory");
+                        }
+
+                        throw;
+                    }
+                    catch (Exception ex)
                     {
                         Logger.Log(MessageLevel.Debug, ex.GetType().Name, "AD User Directory", ex.ToString(), ex);
                         throw;

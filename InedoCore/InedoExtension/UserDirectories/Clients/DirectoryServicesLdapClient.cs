@@ -1,7 +1,7 @@
 ﻿using System.DirectoryServices.Protocols;
 using System.Net;
 
-namespace Inedo.Extensions.UserDirectories;
+namespace Inedo.Extensions.UserDirectories.Clients;
 
 internal sealed class DirectoryServicesLdapClient : LdapClient
 {
@@ -22,9 +22,26 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
     {
         this.connection.Bind(credentials);
     }
+
+    public override void Bind(string bindDn, string password)
+    {
+        this.connection.AuthType = AuthType.Basic;
+        Bind(new NetworkCredential(bindDn, password));
+    }
+
     public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope);
+        var response = this.connection.SendRequest(request);
+
+        if (response is SearchResponse sr)
+            return sr.Entries.Cast<SearchResultEntry>().Select(r => new Entry(r));
+        else
+            return Enumerable.Empty<Entry>();
+    }
+    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+    {
+        var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope, attributes);
         var response = this.connection.SendRequest(request);
 
         if (response is SearchResponse sr)
@@ -95,7 +112,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.Log(MessageLevel.Error, "Error extracting Group Names", "AD User Directory", null, ex);
             }

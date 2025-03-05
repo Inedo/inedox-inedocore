@@ -1,4 +1,4 @@
-﻿namespace Inedo.Extensions.UserDirectories
+﻿namespace Inedo.Extensions.UserDirectories.Clients
 {
     internal enum LdapClientSearchScope
     {
