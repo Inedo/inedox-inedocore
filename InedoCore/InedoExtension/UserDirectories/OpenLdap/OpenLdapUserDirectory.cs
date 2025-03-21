@@ -9,9 +9,9 @@ namespace Inedo.Extensions.UserDirectories.LdapUserDirectories;
 
 [DisplayName("Generic LDAP")]
 [Description("Queries an LDAP server for users and group membership.")]
-public sealed partial class GenericLdapUserDirectory : UserDirectory
+public sealed partial class OpenLdapUserDirectory : UserDirectory
 {
-    public GenericLdapUserDirectory()
+    public OpenLdapUserDirectory()
     {
         this.NetBiosNameMapsDict = new(this.BuildNetBiosNameMaps);
     }
@@ -374,7 +374,7 @@ public sealed partial class GenericLdapUserDirectory : UserDirectory
     ****************************************************************************************************/
     private sealed class GenericLdapUser : GenericLdapPrincipal, IUserDirectoryUser
     {
-        public GenericLdapUser(GenericLdapUserDirectory directory, UserId userId, string displayName, string emailAddress) : base(directory, userId)
+        public GenericLdapUser(OpenLdapUserDirectory directory, UserId userId, string displayName, string emailAddress) : base(directory, userId)
         {
             this.EmailAddress = emailAddress;
             this.DisplayName = AH.CoalesceString(displayName, userId.Principal);
@@ -389,7 +389,7 @@ public sealed partial class GenericLdapUserDirectory : UserDirectory
     private sealed class GenericLdapGroup : GenericLdapPrincipal, IUserDirectoryGroup
     {
 
-        public GenericLdapGroup(GenericLdapUserDirectory directory, GroupId groupId) : base(directory, groupId)
+        public GenericLdapGroup(OpenLdapUserDirectory directory, GroupId groupId) : base(directory, groupId)
         {
         }
 
@@ -399,11 +399,11 @@ public sealed partial class GenericLdapUserDirectory : UserDirectory
     private abstract class GenericLdapPrincipal : IUserDirectoryPrincipal, IEquatable<GenericLdapPrincipal>
     {
         protected readonly PrincipalId principalId;
-        protected readonly GenericLdapUserDirectory directory;
+        protected readonly OpenLdapUserDirectory directory;
         protected readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
         protected readonly Lazy<ISet<string>> groups;
 
-        public GenericLdapPrincipal(GenericLdapUserDirectory directory, PrincipalId principalId)
+        public GenericLdapPrincipal(OpenLdapUserDirectory directory, PrincipalId principalId)
         {
             this.directory = directory;
             this.principalId = principalId ?? throw new ArgumentNullException(nameof(principalId));
