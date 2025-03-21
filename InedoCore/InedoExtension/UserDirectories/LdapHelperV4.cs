@@ -56,7 +56,13 @@ namespace Inedo.Extensions.UserDirectories
                 select p.Substring("DC=".Length)
             );
         }
-        
+
+        /// <summary>
+        /// Returns a distinguished name for the specified fully qualified domain name.
+        /// </summary>
+        /// <param name="domain">The FQDN for the domain</param>
+        public static string GetDomainDistinguishedName(string domain) => string.Join(",", domain.Split('.').Select(s => $"DC={s}"));
+
         public static string GetValue(this SearchResultEntry sr, string propertyName)
         {
             if (sr == null)

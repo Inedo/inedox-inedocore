@@ -85,7 +85,7 @@ namespace Inedo.Extensions.UserDirectories.Clients
 
         public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope, params string[] attributes)
         {
-            return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, this.connection.SearchConstraints));
+            return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, this.connection.SearchConstraints)).ToList();
 
             static IEnumerable<LdapClientEntry> getResults(ILdapSearchResults results)
             {
@@ -155,6 +155,25 @@ namespace Inedo.Extensions.UserDirectories.Clients
                 catch
                 {
                     return null;
+                }
+            }
+
+            public override ISet<string> GetPropertyValues(string propertyName)
+            {
+                ISet<string> values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                try
+                {
+                    foreach(var value in this.entry.GetAttribute(propertyName).StringValueArray)
+                    {
+                        if(!string.IsNullOrWhiteSpace(value))
+                            values.Add(value);
+                    }
+                    return values;
+                }
+                catch
+                {
+                    return values;
                 }
             }
 

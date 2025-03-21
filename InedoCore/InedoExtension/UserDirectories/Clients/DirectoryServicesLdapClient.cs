@@ -26,6 +26,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
     public override void Bind(string bindDn, string password)
     {
         this.connection.AuthType = AuthType.Basic;
+        this.connection.SessionOptions.ProtocolVersion = 3;
         Bind(new NetworkCredential(bindDn, password));
     }
 
@@ -71,6 +72,20 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
                 return string.Empty;
 
             return propertyCollection[0]?.ToString() ?? string.Empty;
+        }
+        public override ISet<string> GetPropertyValues(string propertyName)
+        {
+            ISet<string> values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var propertyCollection = this.result.Attributes?[propertyName];
+            if (propertyCollection == null || propertyCollection.Count == 0)
+                return values;
+
+            foreach (var value in propertyCollection)
+            {
+                if(value != null)
+                    values.Add(value?.ToString());
+            }
+            return values;
         }
         public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
         {

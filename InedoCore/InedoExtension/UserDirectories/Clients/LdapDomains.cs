@@ -29,5 +29,14 @@
             [Description("Use LDAPS and bypass certificate errors")]
             LdapsWithBypass
         }
+
+        [Flags]
+        public enum PrincipalSearchType
+        {
+            None = 0,
+            Users = 1,
+            Groups = 2,
+            UsersAndGroups = Users | Groups
+        }
     }
 }
