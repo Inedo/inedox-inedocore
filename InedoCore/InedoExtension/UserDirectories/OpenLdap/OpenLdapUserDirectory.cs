@@ -1,14 +1,12 @@
-﻿using System.Net;
-using System.Security;
-using System.Text.RegularExpressions;
+﻿using System.Security;
 using Inedo.Extensibility.UserDirectories;
 using Inedo.Extensions.UserDirectories.Clients;
 using Inedo.Serialization;
 
-namespace Inedo.Extensions.UserDirectories.LdapUserDirectories;
+namespace Inedo.Extensions.UserDirectories.OpenLdap;
 
-[DisplayName("Generic LDAP")]
-[Description("Queries an LDAP server for users and group membership.")]
+[DisplayName("OpenLDAP/Generic LDAP")]
+[Description("Queries an OpenLDAP server or other generic LDAP server for users and group membership.")]
 public sealed partial class OpenLdapUserDirectory : UserDirectory
 {
     public OpenLdapUserDirectory()
@@ -46,7 +44,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
 
     /****************************************************************************************************
-    * LDAP Queries
+    * LDAP User Queries
     ****************************************************************************************************/
     [Persistent]
     [Category("LDAP User Filters")]
@@ -74,6 +72,9 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     public string UserGroupsFilter { get; set; } = "(|(&(objectClass=groupOfNames)(member=%s))(&(objectClass=groupOfUniqueNames)(uniqueMember=%s)))";
 
 
+    /****************************************************************************************************
+    * LDAP Group Queries
+    ****************************************************************************************************/
     [Persistent]
     [Category("LDAP Group Filters")]
     [DisplayName("Group Search Base")]
@@ -134,7 +135,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     [Persistent]
     [Category("Advanced")]
     [DisplayName("NETBIOS name mapping")]
-    [PlaceholderText("Requires \"@host-FQDN\" syntax")]
+    [PlaceholderText("Don't use NETBIOS names")]
     [Description("A list of key/value pairs that map NETBIOS names to domain names (one per line); e.g. KRAMUS=us.kramerica.local")]
     public string[] NetBiosNameMaps { get; set; }
 
@@ -212,10 +213,18 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     * Internal Methods
     ****************************************************************************************************/
 
+    /// <summary>
+    /// Returns or generates the User Base DN
+    /// </summary>
     private string UserBaseDn => string.IsNullOrEmpty(this.UserSearchRootPath) ? LdapHelperV4.GetDomainDistinguishedName(this.Host) : this.UserSearchRootPath;
+    /// <summary>
+    /// Returns or generates the Group Base DN
+    /// </summary>
     private string GroupBaseDn => string.IsNullOrEmpty(this.GroupSearchRootPath) ? LdapHelperV4.GetDomainDistinguishedName(this.Host) : this.GroupSearchRootPath;
 
-
+    /// <summary>
+    /// Cached map of NetBios Names, if configured.  Mainly used to integrated auth and AD LDAP directories
+    /// </summary>
     private readonly Lazy<IDictionary<string, string>> NetBiosNameMapsDict;
 
     /// <summary>
@@ -252,6 +261,11 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         return null;
     }
 
+    /// <summary>
+    /// Parses the login name in the format of domain\user to return as user@domain
+    /// </summary>
+    /// <param name="logonUser">Username in the format of domain\user</param>
+    /// <returns>NULL if parsed else username@domain</returns>
     private string TryParseLoginUserName(string logonUser)
     {
         if (logonUser.Contains('\\'))
@@ -268,6 +282,11 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         return null;
     }
 
+    /// <summary>
+    /// Gets client and connects to the LDAP server.
+    /// </summary>
+    /// <param name="bind">True if the connection should also bind using the Bind DN</param>
+    /// <returns>An LDAP Client</returns>
     private LdapClient GetClientAndConnect(bool bind)
     {
         LdapClient ldapClient = OperatingSystem.IsWindows() ? new DirectoryServicesLdapClient() : new NovellLdapClient();
@@ -277,9 +296,12 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         return ldapClient;
     }
 
-    [GeneratedRegex(@"\((objectClass)=(?<1>[^)]+)\)")]
-    private static partial Regex ObjectClassRegex();
-
+    /// <summary>
+    /// Searches the LDAP server for users and groups
+    /// </summary>
+    /// <param name="searchType">LDAP object type to search for</param>
+    /// <param name="searchTerm">search string</param>
+    /// <returns>An array of LDAP Users and/or Groups</returns>
     private IEnumerable<IUserDirectoryPrincipal> Search(LdapDomains.PrincipalSearchType searchType, string searchTerm)
     {
         using var ldapClient = this.GetClientAndConnect(true);
@@ -302,10 +324,15 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         }
     }
 
-    private ISet<string> GetGroupNames(PrincipalId principalId)
+    /// <summary>
+    /// Get's group names for a user or group principal
+    /// </summary>
+    /// <param name="principalId">Principal object</param>
+    /// <returns>A list of group names</returns>
+    private HashSet<string> GetGroupNames(PrincipalId principalId)
     {
         using var ldapClient = this.GetClientAndConnect(true);
-        ISet<string> groups = new HashSet<string>();
+        var groups = new HashSet<string>();
 
         var groupFilter = this.UserGroupsFilter.Replace("%s", principalId.DistinguishedName);
         var groupEntries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapDomains.LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]).ToList();
@@ -319,6 +346,11 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         return groups;
     }
 
+    /// <summary>
+    /// Get members of a group
+    /// </summary>
+    /// <param name="principalId">Group Principal</param>
+    /// <returns>A list of LDAP Users</returns>
     private IEnumerable<IUserDirectoryUser> GetMembers(PrincipalId principalId)
     {
         using var ldapClient = this.GetClientAndConnect(true);
@@ -328,6 +360,12 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         return memberEntries;
     }
 
+    /// <summary>
+    /// Converts an LdapClientEntry to a User or Group Principal
+    /// </summary>
+    /// <param name="result">LdapClientEntry</param>
+    /// <param name="isUser">True if User and False if Group</param>
+    /// <returns>User or Group Principal</returns>
     private IUserDirectoryPrincipal CreatePrincipal(LdapClientEntry result, bool isUser)
     {
         var principalId = CreatePrincipleId(result, isUser);
@@ -346,6 +384,12 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     }
 
     //Copy pasta from PrincipalId.cs, but uses configured LDAP filters
+    /// <summary>
+    /// Creates a PrincipalId from an LdapClientEntry
+    /// </summary>
+    /// <param name="result">LdapClientEntry</param>
+    /// <param name="isUser">True if User and False if Group</param>
+    /// <returns>PrincipalId representing the LDAP user or group</returns>
     private PrincipalId CreatePrincipleId(LdapClientEntry result, bool isUser)
     {
         if (result == null)
@@ -372,27 +416,17 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /****************************************************************************************************
     * User and Group Classes
     ****************************************************************************************************/
-    private sealed class GenericLdapUser : GenericLdapPrincipal, IUserDirectoryUser
+    private sealed class GenericLdapUser(OpenLdapUserDirectory directory, UserId userId, string displayName, string emailAddress) : GenericLdapPrincipal(directory, userId), IUserDirectoryUser
     {
-        public GenericLdapUser(OpenLdapUserDirectory directory, UserId userId, string displayName, string emailAddress) : base(directory, userId)
-        {
-            this.EmailAddress = emailAddress;
-            this.DisplayName = AH.CoalesceString(displayName, userId.Principal);
-        }
+        public string EmailAddress { get; } = emailAddress;
 
-        public string EmailAddress { get; }
-        public override string DisplayName { get; }
+        public override string DisplayName { get; } = AH.CoalesceString(displayName, userId.Principal);
 
         public bool Equals(IUserDirectoryUser other) => this.Equals(other as GenericLdapPrincipal);
     }
 
-    private sealed class GenericLdapGroup : GenericLdapPrincipal, IUserDirectoryGroup
+    private sealed class GenericLdapGroup(OpenLdapUserDirectory directory, GroupId groupId) : GenericLdapPrincipal(directory, groupId), IUserDirectoryGroup
     {
-
-        public GenericLdapGroup(OpenLdapUserDirectory directory, GroupId groupId) : base(directory, groupId)
-        {
-        }
-
         internal IEnumerable<IUserDirectoryUser> GetMembers() => this.directory.GetMembers(this.principalId);
     }
 
@@ -401,13 +435,13 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         protected readonly PrincipalId principalId;
         protected readonly OpenLdapUserDirectory directory;
         protected readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
-        protected readonly Lazy<ISet<string>> groups;
+        protected readonly Lazy<HashSet<string>> groups;
 
         public GenericLdapPrincipal(OpenLdapUserDirectory directory, PrincipalId principalId)
         {
             this.directory = directory;
             this.principalId = principalId ?? throw new ArgumentNullException(nameof(principalId));
-            this.groups = new Lazy<ISet<string>>(() => this.directory.GetGroupNames(this.principalId));
+            this.groups = new Lazy<HashSet<string>>(() => this.directory.GetGroupNames(this.principalId));
         }
 
         internal PrincipalId PrincipalId => this.principalId;
@@ -426,19 +460,14 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
 
-            Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
-
             ArgumentNullException.ThrowIfNull(groupName);
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if (this.groups.Value.Contains(compareName))
             {
-                Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
                 this.isMemberOfGroupCache.Add(groupName);
                 return true;
             }
-
-            Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
             return false;
         }
