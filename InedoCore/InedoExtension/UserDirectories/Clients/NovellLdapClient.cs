@@ -81,6 +81,57 @@ namespace Inedo.Extensions.UserDirectories
             }
         }
 
+        public override void BindUsingDn(string bindDn, string password)
+        {
+            this.connection.Bind(bindDn, password);
+        }
+        public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+        {
+            return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, this.connection.SearchConstraints)).ToList();
+
+            static IEnumerable<LdapClientEntry> getResults(ILdapSearchResults results)
+            {
+                Logger.Log(MessageLevel.Debug, "Begin LDAP Get Search Results", "AD User Directory");
+                while (results.HasMore())
+                {
+                    LdapEntry entry;
+                    try
+                    {
+                        entry = results.Next();
+                    }
+                    catch (LdapReferralException lrex)
+                    {
+                        //Logger.Log(MessageLevel.Debug, $"Referral chasing enabled: {connection.SearchConstraints.ReferralFollowing}", "AD User Directory");
+                        Logger.Log(MessageLevel.Debug, "LdapReferralException", "AD User Directory", lrex.ToString(), lrex);
+                        entry = null;
+                    }
+                    catch (LdapException lex)
+                    {
+                        Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", lex.ToString(), lex);
+                        try
+                        {
+                            Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", JsonSerializer.Serialize(lex));
+                        }
+                        catch
+                        {
+                            Logger.Log(MessageLevel.Debug, "Couldn't serialize LdapException", "AD User Directory");
+                        }
+
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log(MessageLevel.Debug, ex.GetType().Name, "AD User Directory", ex.ToString(), ex);
+                        throw;
+                    }
+
+                    if (entry != null)
+                        yield return new Entry(entry);
+                }
+                Logger.Log(MessageLevel.Debug, "End LDAP Get Search Results", "AD User Directory");
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

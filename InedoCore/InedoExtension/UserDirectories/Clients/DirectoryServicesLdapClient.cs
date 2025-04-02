@@ -32,7 +32,22 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
         else
             return Enumerable.Empty<Entry>();
     }
+    public override void BindUsingDn(string bindDn, string password)
+    {
+        this.connection.AuthType = AuthType.Basic;
+        this.connection.SessionOptions.ProtocolVersion = 3;
+        this.connection.Bind(new NetworkCredential(bindDn, password));
+    }
+    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+    {
+        var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope, attributes);
+        var response = this.connection.SendRequest(request);
 
+        if (response is SearchResponse sr)
+            return sr.Entries.Cast<SearchResultEntry>().Select(r => new Entry(r));
+        else
+            return Enumerable.Empty<Entry>();
+    }
     protected override void Dispose(bool disposing)
     {
         if (disposing)
