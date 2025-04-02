@@ -40,8 +40,6 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     [Description("Password for LDAP credentials that have READ access to the domain")]
     public SecureString BindPassword { get; set; }
 
-
-
     /****************************************************************************************************
     * LDAP User Queries
     ****************************************************************************************************/
@@ -52,14 +50,12 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     [Description("When not specified, this will convert the host into a root path. For example: kramerica.local will covert to \"DC=kramerica,DC=local\", but if you wanted to use only the OU Users, you would specify \"CN=Users,DC=kramerica,DC=local\"")]
     public string UserSearchRootPath { get; set; }
 
-
     [Persistent]
     [Category("LDAP User Filters")]
     [DisplayName("Users")]
     [Description("`%s` will be replaced with the search string or username for a user")]
     [DefaultValue("(&(objectClass=inetOrgPerson)(uid=%s))")]
     [PlaceholderText("(&(objectClass=inetOrgPerson)(uid=%s))")]
-
     public string UsersFilter { get; set; } = "(&(objectClass=inetOrgPerson)(uid=%s))";
 
     [Persistent]
@@ -69,7 +65,6 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     [DefaultValue("(|(&(objectClass=groupOfNames)(member=%s))(&(objectClass=groupOfUniqueNames)(uniqueMember=%s)))")]
     [PlaceholderText("(|(&(objectClass=groupOfNames)(member=%s))(&(objectClass=groupOfUniqueNames)(uniqueMember=%s)))")]
     public string UserGroupsFilter { get; set; } = "(|(&(objectClass=groupOfNames)(member=%s))(&(objectClass=groupOfUniqueNames)(uniqueMember=%s)))";
-
 
     /****************************************************************************************************
     * LDAP Group Queries
@@ -174,7 +169,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
             return null;
 
         using var ldapClient = GetClientAndConnect(false);
-        ldapClient.BindV2(user.DistinguishedName, password);
+        ldapClient.BindUsingDn(user.DistinguishedName, password);
 
         return user;
     }
@@ -221,7 +216,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// </summary>
     private string GroupBaseDn => string.IsNullOrEmpty(this.GroupSearchRootPath) ? GetDomainDistinguishedName(this.Host) : this.GroupSearchRootPath;
 
-    private string GetDomainDistinguishedName(string domain) => string.Join(",", domain.Split('.').Select(s => $"DC={s}"));
+    private string GetDomainDistinguishedName(string domain) => string.Join(",", domain.Split('.').Select(static s => $"DC={s}"));
 
     /// <summary>
     /// Cached map of NetBios Names, if configured.  Mainly used to integrated auth and AD LDAP directories
@@ -293,7 +288,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         LdapClient ldapClient = OperatingSystem.IsWindows() ? new DirectoryServicesLdapClient() : new NovellLdapClient();
         ldapClient.Connect(this.Host, int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
         if(bind)
-            ldapClient.BindV2(this.BindDn, AH.Unprotect(this.BindPassword));
+            ldapClient.BindUsingDn(this.BindDn, AH.Unprotect(this.BindPassword));
         return ldapClient;
     }
 

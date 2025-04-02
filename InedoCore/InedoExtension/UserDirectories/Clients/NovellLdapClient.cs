@@ -81,7 +81,7 @@ namespace Inedo.Extensions.UserDirectories
             }
         }
 
-        public override void BindV2(string bindDn, string password)
+        public override void BindUsingDn(string bindDn, string password)
         {
             this.connection.Bind(bindDn, password);
         }

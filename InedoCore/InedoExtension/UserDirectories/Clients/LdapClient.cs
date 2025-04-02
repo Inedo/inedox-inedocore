@@ -15,7 +15,7 @@ namespace Inedo.Extensions.UserDirectories
         public abstract IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope);
         
         // these are used by OpenLdap for now; when refactoring, should be combined
-        public abstract void BindV2(string bindDn, string password);
+        public abstract void BindUsingDn(string bindDn, string password);
         public abstract IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes);
 
         public void Dispose() => this.Dispose(true);
