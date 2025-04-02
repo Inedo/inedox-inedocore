@@ -1,7 +1,7 @@
 ﻿using System.DirectoryServices.Protocols;
 using System.Net;
 
-namespace Inedo.Extensions.UserDirectories.Clients;
+namespace Inedo.Extensions.UserDirectories;
 
 internal sealed class DirectoryServicesLdapClient : LdapClient
 {
@@ -22,15 +22,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
     {
         this.connection.Bind(credentials);
     }
-
-    public override void Bind(string bindDn, string password)
-    {
-        this.connection.AuthType = AuthType.Basic;
-        this.connection.SessionOptions.ProtocolVersion = 3;
-        Bind(new NetworkCredential(bindDn, password));
-    }
-
-    public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope)
+    public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope);
         var response = this.connection.SendRequest(request);
@@ -40,7 +32,12 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
         else
             return Enumerable.Empty<Entry>();
     }
-    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope, params string[] attributes)
+    public override void BindV2(string bindDn, string password)
+    {
+        this.connection.AuthType = AuthType.Basic;
+        this.connection.SessionOptions.ProtocolVersion = 3;
+    }
+    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope, attributes);
         var response = this.connection.SendRequest(request);
@@ -50,7 +47,6 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
         else
             return Enumerable.Empty<Entry>();
     }
-
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -72,20 +68,6 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
                 return string.Empty;
 
             return propertyCollection[0]?.ToString() ?? string.Empty;
-        }
-        public override ISet<string> GetPropertyValues(string propertyName)
-        {
-            ISet<string> values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var propertyCollection = this.result.Attributes?[propertyName];
-            if (propertyCollection == null || propertyCollection.Count == 0)
-                return values;
-
-            foreach (var value in propertyCollection)
-            {
-                if(value != null)
-                    values.Add(value?.ToString());
-            }
-            return values;
         }
         public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
         {
@@ -127,7 +109,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
                     }
                 }
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 Logger.Log(MessageLevel.Error, "Error extracting Group Names", "AD User Directory", null, ex);
             }

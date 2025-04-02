@@ -9,9 +9,9 @@ namespace Inedo.Extensions.UserDirectories
     ****************************************************************************************************/
     internal static class LdapHelperV4
     {
-        private static readonly LazyRegex LdapEscapeRegex = new(@"[,\\#+<>;""=]", RegexOptions.Compiled);
-        private static readonly LazyRegex LdapUnescapeRegex = new(@"\\([,\\#+<>;""=])", RegexOptions.Compiled);
-        private static readonly LazyRegex LdapSplitRegex = new(@"(?<!\\),", RegexOptions.Compiled);
+        private static readonly LazyRegex LdapEscapeRegex = new LazyRegex(@"[,\\#+<>;""=]", RegexOptions.Compiled);
+        private static readonly LazyRegex LdapUnescapeRegex = new LazyRegex(@"\\([,\\#+<>;""=])", RegexOptions.Compiled);
+        private static readonly LazyRegex LdapSplitRegex = new LazyRegex(@"(?<!\\),", RegexOptions.Compiled);
 
         public static string Escape(string s)
         {
@@ -56,13 +56,7 @@ namespace Inedo.Extensions.UserDirectories
                 select p.Substring("DC=".Length)
             );
         }
-
-        /// <summary>
-        /// Returns a distinguished name for the specified fully qualified domain name.
-        /// </summary>
-        /// <param name="domain">The FQDN for the domain</param>
-        public static string GetDomainDistinguishedName(string domain) => string.Join(",", domain.Split('.').Select(s => $"DC={s}"));
-
+        
         public static string GetValue(this SearchResultEntry sr, string propertyName)
         {
             if (sr == null)

@@ -1,6 +1,5 @@
 ﻿using System.Security;
 using Inedo.Extensibility.UserDirectories;
-using Inedo.Extensions.UserDirectories.Clients;
 using Inedo.Serialization;
 
 namespace Inedo.Extensions.UserDirectories.OpenLdap;
@@ -20,9 +19,9 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
     [Persistent]
     [DisplayName("LDAP Connection")]
-    [DefaultValue(LdapDomains.LdapConnectionType.Ldap)]
+    [DefaultValue(LdapConnectionType.Ldap)]
     [Description("When connecting to your local LDAP Server, connect via LDAP, LDAP over SSL, or LDAP over SSL and bypass certificate errors.")]
-    public LdapDomains.LdapConnectionType LdapConnection { get; set; }
+    public LdapConnectionType LdapConnection { get; set; }
 
     [Persistent]
     [Required]
@@ -149,7 +148,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /****************************************************************************************************
     * User Directory Methods
     ****************************************************************************************************/
-    public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.Search(LdapDomains.PrincipalSearchType.UsersAndGroups, $"{LdapHelperV4.Escape(searchTerm)}*");
+    public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.Search(PrincipalSearchType.UsersAndGroups, $"{LdapHelperV4.Escape(searchTerm)}*");
 
     public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
     {
@@ -175,7 +174,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
             return null;
 
         using var ldapClient = GetClientAndConnect(false);
-        ldapClient.Bind(user.DistinguishedName, password);
+        ldapClient.BindV2(user.DistinguishedName, password);
 
         return user;
     }
@@ -183,7 +182,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     public override IUserDirectoryGroup TryGetGroup(string groupName)
     {
         var principalId = GroupId.Parse(groupName);
-        var groups = this.Search(LdapDomains.PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(principalId?.Principal ?? groupName)}");
+        var groups = this.Search(PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(principalId?.Principal ?? groupName)}");
         if (!string.IsNullOrWhiteSpace(principalId?.DomainAlias) && groups.Count() > 1)
             groups = groups.OfType<GenericLdapGroup>().OrderBy(u => u.PrincipalId.DomainAlias.Equals(principalId.DomainAlias, StringComparison.OrdinalIgnoreCase) ? 0 : 1);
         return (IUserDirectoryGroup)groups.FirstOrDefault();
@@ -192,7 +191,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     public override IUserDirectoryUser TryGetUser(string userName)
     {
         var principalId = UserId.Parse(userName);
-        var users = this.Search(LdapDomains.PrincipalSearchType.Users, $"{LdapHelperV4.Escape(principalId?.Principal ?? userName)}");
+        var users = this.Search(PrincipalSearchType.Users, $"{LdapHelperV4.Escape(principalId?.Principal ?? userName)}");
         if (!string.IsNullOrWhiteSpace(principalId?.DomainAlias) && users.Count() > 1)
             users = users.OfType<GenericLdapUser>().OrderBy(u => u.PrincipalId.DomainAlias.Equals(principalId.DomainAlias, StringComparison.OrdinalIgnoreCase) ? 0 : 1);
         return (IUserDirectoryUser)users.FirstOrDefault();
@@ -216,11 +215,13 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// <summary>
     /// Returns or generates the User Base DN
     /// </summary>
-    private string UserBaseDn => string.IsNullOrEmpty(this.UserSearchRootPath) ? LdapHelperV4.GetDomainDistinguishedName(this.Host) : this.UserSearchRootPath;
+    private string UserBaseDn => string.IsNullOrEmpty(this.UserSearchRootPath) ? GetDomainDistinguishedName(this.Host) : this.UserSearchRootPath;
     /// <summary>
     /// Returns or generates the Group Base DN
     /// </summary>
-    private string GroupBaseDn => string.IsNullOrEmpty(this.GroupSearchRootPath) ? LdapHelperV4.GetDomainDistinguishedName(this.Host) : this.GroupSearchRootPath;
+    private string GroupBaseDn => string.IsNullOrEmpty(this.GroupSearchRootPath) ? GetDomainDistinguishedName(this.Host) : this.GroupSearchRootPath;
+
+    private string GetDomainDistinguishedName(string domain) => string.Join(",", domain.Split('.').Select(s => $"DC={s}"));
 
     /// <summary>
     /// Cached map of NetBios Names, if configured.  Mainly used to integrated auth and AD LDAP directories
@@ -290,9 +291,9 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     private LdapClient GetClientAndConnect(bool bind)
     {
         LdapClient ldapClient = OperatingSystem.IsWindows() ? new DirectoryServicesLdapClient() : new NovellLdapClient();
-        ldapClient.Connect(this.Host, int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
+        ldapClient.Connect(this.Host, int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
         if(bind)
-            ldapClient.Bind(this.BindDn, AH.Unprotect(this.BindPassword));
+            ldapClient.BindV2(this.BindDn, AH.Unprotect(this.BindPassword));
         return ldapClient;
     }
 
@@ -302,23 +303,23 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// <param name="searchType">LDAP object type to search for</param>
     /// <param name="searchTerm">search string</param>
     /// <returns>An array of LDAP Users and/or Groups</returns>
-    private IEnumerable<IUserDirectoryPrincipal> Search(LdapDomains.PrincipalSearchType searchType, string searchTerm)
+    private IEnumerable<IUserDirectoryPrincipal> Search(PrincipalSearchType searchType, string searchTerm)
     {
         using var ldapClient = this.GetClientAndConnect(true);
         
-        if(searchType.HasFlag(LdapDomains.PrincipalSearchType.Users))
+        if(searchType.HasFlag(PrincipalSearchType.Users))
         {
             var userFilter = this.UsersFilter.Replace("%s", searchTerm);
             string[] attributes = ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName];
-            var entries = ldapClient.SearchV2(this.UserBaseDn, userFilter, LdapDomains.LdapClientSearchScope.Subtree, attributes);
+            var entries = ldapClient.SearchV2(this.UserBaseDn, userFilter, LdapClientSearchScope.Subtree, attributes);
             foreach(var user in entries)
                 yield return CreatePrincipal(user, true);
         }
-        if(searchType.HasFlag(LdapDomains.PrincipalSearchType.Groups))
+        if(searchType.HasFlag(PrincipalSearchType.Groups))
         {
             var groupFilter = this.GroupsFilter.Replace("%s", searchTerm);
             string[] attributes = ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName];
-            var entries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapDomains.LdapClientSearchScope.Subtree, attributes);
+            var entries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, attributes);
             foreach (var group in entries)
                 yield return CreatePrincipal(group, false);
         }
@@ -335,7 +336,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         var groups = new HashSet<string>();
 
         var groupFilter = this.UserGroupsFilter.Replace("%s", principalId.DistinguishedName);
-        var groupEntries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapDomains.LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]).ToList();
+        var groupEntries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]).ToList();
         foreach(var groupEntry in groupEntries)
         {
             var groupName = groupEntry.GetPropertyValue(this.GroupNamePropertyName);
@@ -356,7 +357,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         using var ldapClient = this.GetClientAndConnect(true);
         var memberFilter = this.GroupMembersFilter.Replace("%s", principalId.DistinguishedName);
 
-        var memberEntries = ldapClient.SearchV2(this.UserBaseDn, memberFilter, LdapDomains.LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName]).Select(u => CreatePrincipal(u, true)).OfType<IUserDirectoryUser>();
+        var memberEntries = ldapClient.SearchV2(this.UserBaseDn, memberFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName]).Select(u => CreatePrincipal(u, true)).OfType<IUserDirectoryUser>();
         return memberEntries;
     }
 
@@ -474,6 +475,14 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
         public override string ToString() => this.principalId.Principal;
     }
-
+    
+    [Flags]
+    private enum PrincipalSearchType
+    {
+        None = 0,
+        Users = 1,
+        Groups = 2,
+        UsersAndGroups = Users | Groups
+    }
 }
 

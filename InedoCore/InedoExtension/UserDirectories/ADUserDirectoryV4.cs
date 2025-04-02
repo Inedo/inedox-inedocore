@@ -4,7 +4,6 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using Inedo.Extensibility.UserDirectories;
-using Inedo.Extensions.UserDirectories.Clients;
 using Inedo.Serialization;
 using ActiveDirectory = System.DirectoryServices.ActiveDirectory;
 using LDAP = Inedo.Extensions.UserDirectories.LdapHelperV4;
@@ -60,9 +59,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     [Persistent]
     [Category("Connection")]
     [DisplayName("LDAP Connection")]
-    [DefaultValue(LdapDomains.LdapConnectionType.Ldap)]
+    [DefaultValue(LdapConnectionType.Ldap)]
     [Description("When connecting to your local Active Directory, connect via LDAP, LDAP over SSL, or LDAP over SSL and bypass certificate errors.")]
-    public LdapDomains.LdapConnectionType LdapConnection { get; set; }
+    public LdapConnectionType LdapConnection { get; set; }
 
     [Persistent]
     [Category("Connection")]
@@ -154,9 +153,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     [Persistent]
     [Category("Advanced")]
     [DisplayName("Search Group Method")]
-    [DefaultValue(LdapDomains.GroupSearchType.NoRecursion)]
+    [DefaultValue(GroupSearchType.NoRecursion)]
     [Description("Choose to recursively check group memberships or only check for the groups that a user is directly a member of. This may cause reduced performance.")]
-    public LdapDomains.GroupSearchType GroupSearchType { get; set; }
+    public GroupSearchType GroupSearchType { get; set; }
 
     [Persistent]
     [Category("Advanced")]
@@ -169,7 +168,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     * UserDirectory
     ****************************************************************************************************/
 
-    public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(LdapDomains.PrincipalSearchType.UsersAndGroups, searchTerm);
+    public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
     public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
     {
         var group = (ActiveDirectoryGroup)this.TryGetGroup(groupName);
@@ -184,14 +183,14 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 return null;
         }
 
-        var result = this.TryGetPrincipal(LdapDomains.PrincipalSearchType.Users, userName);
+        var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
         if (result == null)
             return null;
 
         try
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
+            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
             if (userName?.Contains('@') ?? false)
             {
                 var userNameSplit = userName.Split('@');
@@ -210,8 +209,8 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             return null;
         }
     }
-    public override IUserDirectoryUser TryGetUser(string userName) => this.CreatePrincipal(this.TryGetPrincipal(LdapDomains.PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
-    public override IUserDirectoryGroup TryGetGroup(string groupName) => this.CreatePrincipal(this.TryGetPrincipal(LdapDomains.PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
+    public override IUserDirectoryUser TryGetUser(string userName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
+    public override IUserDirectoryGroup TryGetGroup(string groupName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
     public override IUserDirectoryUser TryParseLogonUser(string logonUser)
     {
         if (string.IsNullOrEmpty(logonUser))
@@ -244,10 +243,19 @@ public sealed class ADUserDirectoryV4 : UserDirectory
 
     private static LdapClient GetClient() => OperatingSystem.IsWindows() ? new DirectoryServicesLdapClient() : new NovellLdapClient();
 
+    [Flags]
+    private enum PrincipalSearchType
+    {
+        None = 0,
+        Users = 1,
+        Groups = 2,
+        UsersAndGroups = Users | Groups
+    }
+
     /****************************************************************************************************
     * Get/Create Principals Methods
     ****************************************************************************************************/
-    private LdapClientEntry TryGetPrincipal(LdapDomains.PrincipalSearchType searchType, string principalName)
+    private LdapClientEntry TryGetPrincipal(PrincipalSearchType searchType, string principalName)
     {
         if (string.IsNullOrEmpty(principalName))
             return null;
@@ -258,21 +266,21 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         if (this.IncludeGroupManagedServiceAccounts)
             userSearchQuery = $"(|{UsersFilterBase}{this.GroupManagedServiceAccountFilterBase})";
 
-        var categoryFilter = AH.Switch<LdapDomains.PrincipalSearchType, string>(searchType)
-            .Case(LdapDomains.PrincipalSearchType.UsersAndGroups, $"(|{userSearchQuery}{this.GroupsFilterBase})")
-            .Case(LdapDomains.PrincipalSearchType.Groups, this.GroupsFilterBase)
-            .Case(LdapDomains.PrincipalSearchType.Users, userSearchQuery)
+        var categoryFilter = AH.Switch<PrincipalSearchType, string>(searchType)
+            .Case(PrincipalSearchType.UsersAndGroups, $"(|{userSearchQuery}{this.GroupsFilterBase})")
+            .Case(PrincipalSearchType.Groups, this.GroupsFilterBase)
+            .Case(PrincipalSearchType.Users, userSearchQuery)
             .End();
 
-        PrincipalId principalId = searchType.HasFlag(LdapDomains.PrincipalSearchType.Users) ? UserId.Parse(principalName) : GroupId.Parse(principalName);
+        PrincipalId principalId = searchType.HasFlag(PrincipalSearchType.Users) ? UserId.Parse(principalName) : GroupId.Parse(principalName);
         var searchString = new StringBuilder();
 
 
         searchString.Append($"(&{categoryFilter}");
-        if (searchType.HasFlag(LdapDomains.PrincipalSearchType.Groups))
+        if (searchType.HasFlag(PrincipalSearchType.Groups))
             searchString.Append("(|");
         searchString.Append($"({this.UserNamePropertyName}={LDAP.Escape(principalId?.Principal ?? principalName)})");
-        if (searchType.HasFlag(LdapDomains.PrincipalSearchType.Groups))
+        if (searchType.HasFlag(PrincipalSearchType.Groups))
         {
             searchString.Append($"({this.GroupNamePropertyName}={LDAP.Escape(principalId?.Principal ?? principalName)})");
             //Closes the |
@@ -286,7 +294,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             this.LogDebug("Principal not found.");
         return principal;
     }
-    private IEnumerable<IUserDirectoryPrincipal> FindPrincipals(LdapDomains.PrincipalSearchType searchType, string searchTerm)
+    private IEnumerable<IUserDirectoryPrincipal> FindPrincipals(PrincipalSearchType searchType, string searchTerm)
     {
         if (string.IsNullOrEmpty(searchTerm))
             yield break;
@@ -299,16 +307,16 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             yield return principal;
     }
 
-    private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(LdapDomains.PrincipalSearchType searchType, string ldapSearch = null, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree)
+    private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
     {
         var userSearchQuery = this.UsersFilterBase;
         if (this.IncludeGroupManagedServiceAccounts)
             userSearchQuery = $"(|{UsersFilterBase}{this.GroupManagedServiceAccountFilterBase})";
 
-        var categoryFilter = AH.Switch<LdapDomains.PrincipalSearchType, string>(searchType)
-            .Case(LdapDomains.PrincipalSearchType.UsersAndGroups, $"(|{userSearchQuery}{this.GroupsFilterBase})")
-            .Case(LdapDomains.PrincipalSearchType.Groups, this.GroupsFilterBase)
-            .Case(LdapDomains.PrincipalSearchType.Users, userSearchQuery)
+        var categoryFilter = AH.Switch<PrincipalSearchType, string>(searchType)
+            .Case(PrincipalSearchType.UsersAndGroups, $"(|{userSearchQuery}{this.GroupsFilterBase})")
+            .Case(PrincipalSearchType.Groups, this.GroupsFilterBase)
+            .Case(PrincipalSearchType.Users, userSearchQuery)
             .End();
 
         var filter = $"(&{categoryFilter}{ldapSearch ?? string.Empty})";
@@ -418,7 +426,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         try
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
+            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
 
             if (this.Username?.Contains('@') ?? false)
             {
@@ -435,12 +443,12 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 conn.Bind(new NetworkCredential(this.Username, this.Password));
             }
 
-            var response = conn.Search("", "(&(objectClass=*))", LdapDomains.LdapClientSearchScope.Base).FirstOrDefault();
+            var response = conn.Search("", "(&(objectClass=*))", LdapClientSearchScope.Base).FirstOrDefault();
             if (response != null)
             {
                 var cfg = response.GetPropertyValue("configurationNamingContext");
 
-                var response2 = conn.Search("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapDomains.LdapClientSearchScope.Subtree).FirstOrDefault();
+                var response2 = conn.Search("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapClientSearchScope.Subtree).FirstOrDefault();
                 if (response2 != null)
                 {
                     var root = response2.GetPropertyValue("dnsRoot");
@@ -507,7 +515,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// <param name="searchString">LDAP query to search for</param>
     /// <returns>IEnumerable of <see cref="LdapClientEntry"/></returns>
     /// <exception cref="InvalidOperationException">If CredentialName is not <see cref="UsernamePasswordCredentials"/></exception>
-    private IEnumerable<LdapClientEntry> SearchDomain(string searchString, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree)
+    private IEnumerable<LdapClientEntry> SearchDomain(string searchString, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
     {
         this.LogDebug($"Search string is \"{searchString}\"...");
 
@@ -543,10 +551,10 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// <param name="userName">Username to connect to the domain wtih</param>
     /// <param name="password">Password to connect to the domain with</param>
     /// <returns></returns>
-    private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapDomains.LdapClientSearchScope scope = LdapDomains.LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
+    private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
     {
         using var conn = GetClient();
-        conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapDomains.LdapConnectionType.Ldap, this.LdapConnection == LdapDomains.LdapConnectionType.LdapsWithBypass);
+        conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
         if (userName?.Contains('@') ?? false)
         {
             var userNameSplit = userName.Split('@');
@@ -566,6 +574,8 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             return conn.Search(dn, filter, scope).ToList();
         return conn.Search(dn, filter, scope);
     }
+
+
 
     /****************************************************************************************************
     * User and Group Classes
@@ -589,23 +599,23 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             {
                 ISet<string> groups;
                 // Old Group Search way
-                if (this.directory.GroupSearchType != LdapDomains.GroupSearchType.RecursiveSearchActiveDirectory) {
+                if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
                     if (groupNames == null)
                     {
-                        var userSearchResult = this.directory.TryGetPrincipal(LdapDomains.PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
+                        var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
                         groups = userSearchResult == null ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : userSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
                     }
                     else
                     {
                         groups = groupNames;
                     }
-                    if (this.directory.GroupSearchType == LdapDomains.GroupSearchType.RecursiveSearch)
+                    if (this.directory.GroupSearchType == GroupSearchType.RecursiveSearch)
                     {
                         var groupsToSearch = new Queue<string>(groups);
                         while (groupsToSearch.Count > 0)
                         {
                             var nextGroup = groupsToSearch.Dequeue();
-                            var groupSearchResult = this.directory.TryGetPrincipal(LdapDomains.PrincipalSearchType.Groups, nextGroup);
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
                             if (groupSearchResult != null)
                             {
                                 var groupNames = groupSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
@@ -679,24 +689,24 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             {
                 ISet<string> groups;
                 //Old Group searching way
-                if (this.directory.GroupSearchType != LdapDomains.GroupSearchType.RecursiveSearchActiveDirectory)
+                if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory)
                 {
                     if (groupNames == null)
                     {
-                        var rootGroupSearchResult = this.directory.TryGetPrincipal(LdapDomains.PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                        var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
                         groups = rootGroupSearchResult == null ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : rootGroupSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
                     }
                     else
                     {
                         groups = groupNames;
                     }
-                    if (this.directory.GroupSearchType == LdapDomains.GroupSearchType.RecursiveSearch)
+                    if (this.directory.GroupSearchType == GroupSearchType.RecursiveSearch)
                     {
                         var groupsToSearch = new Queue<string>(groups);
                         while (groupsToSearch.Count > 0)
                         {
                             var nextGroup = groupsToSearch.Dequeue();
-                            var groupSearchResult = this.directory.TryGetPrincipal(LdapDomains.PrincipalSearchType.Groups, nextGroup);
+                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
                             if (groupSearchResult != null)
                             {
                                 var groupNames = groupSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
@@ -749,9 +759,9 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         internal IEnumerable<IUserDirectoryUser> GetMembers()
         {
             Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup GetMembers", "AD User Directory");
-            if (this.directory.GroupSearchType != LdapDomains.GroupSearchType.RecursiveSearchActiveDirectory) {
-                var groupSearch = this.directory.TryGetPrincipal(LdapDomains.PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
-                var users = this.directory.FindPrincipalsUsingLdap(LdapDomains.PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapDomains.LdapClientSearchScope.Subtree);
+            if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
+                var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
 
                 foreach (var user in users)
                 {
@@ -779,4 +789,24 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         public override int GetHashCode() => this.groupId.GetHashCode();
         public override string ToString() => this.groupId.Principal;
     }
+}
+
+public enum GroupSearchType
+{
+    [Description("No Recursion")]
+    NoRecursion = 1,
+    [Description("Recursive Search (LDAP/Non-Active Directory)")]
+    RecursiveSearch,
+    [Description("Recursive Search (Active Directory Only)")]
+    RecursiveSearchActiveDirectory
+}
+
+public enum LdapConnectionType
+{
+    [Description("Use LDAP")]
+    Ldap = 1,
+    [Description("Use LDAPS")]
+    Ldaps,
+    [Description("Use LDAPS and bypass certificate errors")]
+    LdapsWithBypass
 }

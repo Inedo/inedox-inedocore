@@ -1,10 +1,14 @@
 ﻿#if !NET452
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text.Json;
+using Inedo.Diagnostics;
 using Novell.Directory.Ldap;
 using Logger = Inedo.Diagnostics.Logger;
 
-namespace Inedo.Extensions.UserDirectories.Clients
+namespace Inedo.Extensions.UserDirectories
 {
     internal sealed class NovellLdapClient : LdapClient
     {
@@ -23,20 +27,14 @@ namespace Inedo.Extensions.UserDirectories.Clients
 #pragma warning restore CS0618 // Type or member is obsolete
                 }
             }
-            this.connection.Connect(server, port ?? (ldaps ? 636 : 389));
+            this.connection.Connect(server, port ?? (ldaps ? 636 : 389));            
         }
 
         public override void Bind(NetworkCredential credentials)
         {
-            Bind($"{credentials.UserName}{(string.IsNullOrWhiteSpace(credentials.Domain) ? string.Empty : "@" + credentials.Domain)}", credentials.Password);
+            this.connection.Bind($"{credentials.UserName}{(string.IsNullOrWhiteSpace(credentials.Domain) ? string.Empty : "@" + credentials.Domain)}", credentials.Password);
         }
-
-        public override void Bind(string bindDn, string password)
-        {
-            this.connection.Bind(bindDn, password);
-        }
-
-        public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope)
+        public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
         {
             return getResults(this.connection.Search(distinguishedName, (int)scope, filter, null, false, this.connection.SearchConstraints));
 
@@ -56,7 +54,7 @@ namespace Inedo.Extensions.UserDirectories.Clients
                         Logger.Log(MessageLevel.Debug, "LdapReferralException", "AD User Directory", lrex.ToString(), lrex);
                         entry = null;
                     }
-                    catch (LdapException lex)
+                    catch(LdapException lex)
                     {
                         Logger.Log(MessageLevel.Debug, "LdapException", "AD User Directory", lex.ToString(), lex);
                         try
@@ -70,7 +68,7 @@ namespace Inedo.Extensions.UserDirectories.Clients
 
                         throw;
                     }
-                    catch (Exception ex)
+                    catch(Exception ex)
                     {
                         Logger.Log(MessageLevel.Debug, ex.GetType().Name, "AD User Directory", ex.ToString(), ex);
                         throw;
@@ -83,7 +81,11 @@ namespace Inedo.Extensions.UserDirectories.Clients
             }
         }
 
-        public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapDomains.LdapClientSearchScope scope, params string[] attributes)
+        public override void BindV2(string bindDn, string password)
+        {
+            this.connection.Bind(bindDn, password);
+        }
+        public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
         {
             return getResults(this.connection.Search(distinguishedName, (int)scope, filter, attributes, false, this.connection.SearchConstraints)).ToList();
 
@@ -155,25 +157,6 @@ namespace Inedo.Extensions.UserDirectories.Clients
                 catch
                 {
                     return null;
-                }
-            }
-
-            public override ISet<string> GetPropertyValues(string propertyName)
-            {
-                ISet<string> values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                try
-                {
-                    foreach(var value in this.entry.GetAttribute(propertyName).StringValueArray)
-                    {
-                        if(!string.IsNullOrWhiteSpace(value))
-                            values.Add(value);
-                    }
-                    return values;
-                }
-                catch
-                {
-                    return values;
                 }
             }
 
