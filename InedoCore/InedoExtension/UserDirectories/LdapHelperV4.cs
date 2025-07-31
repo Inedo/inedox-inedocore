@@ -76,5 +76,13 @@ namespace Inedo.Extensions.UserDirectories
             else
                 return username + "@" + domainName;
         }
+
+        public static string GetDomainQualifiedNameV2(this string username, string domainName)
+        {
+            if (username.IndexOfAny(new[] { '\\', '@' }) >= 0 || string.IsNullOrWhiteSpace(domainName))
+                return username;
+            else
+                return username + "@" + domainName;
+        }
     }
 }

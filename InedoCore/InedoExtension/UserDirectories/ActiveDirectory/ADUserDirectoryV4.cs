@@ -474,7 +474,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     private HashSet<string> GetCurrentDomainAndTrusts()
     {
         HashSet<string> paths = [];
-        using var domain = ActiveDirectory.Domain.GetCurrentDomain();
+        using var domain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain();
         paths.Add(domain.Name);
         this.LogDebug($"Domain \"{domain.Name}\" added.");
 
