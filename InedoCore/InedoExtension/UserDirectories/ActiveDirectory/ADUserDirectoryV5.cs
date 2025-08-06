@@ -8,7 +8,7 @@ using Inedo.Serialization;
 namespace Inedo.Extensions.UserDirectories.ActiveDirectory;
 
 [DisplayName("V5: Active Directory")]
-[Description("Queries the current domain, global catalog for trusted domains, or a specific list of domains for users and group membership. Optimized for Microsoft Active Directory.")]
+[Description("Queries the current Active Directory domain, global catalog for trusted domains, or a specific list of domains for users and group membership. Optimized for Microsoft Active Directory.")]
 public sealed partial class ADUserDirectoryV5 : UserDirectory
 {
     private readonly Lazy<HashSet<string>> localTrusts;
@@ -74,6 +74,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
     [Category("LDAP Overrides")]
     [PlaceholderText("Root of the directory")]
     [Description("This will currently use the domain. For example: kramerica.local's root path is \"DC=kramerica,DC=local\", but if you wanted to use only the OU Users, you would specify \"CN=Users,DC=kramerica,DC=local\"")]
+    [Undisclosed]
     public string SearchRootPath { get; set; }
 
     [Persistent]
@@ -97,6 +98,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
     [DisplayName("User Name Property Value")]
     [DefaultValue("sAMAccountName")]
     [PlaceholderText("sAMAccountName")]
+    [Undisclosed]
     public string UserNamePropertyName { get; set; } = "sAMAccountName";
 
 
@@ -105,6 +107,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
     [DisplayName("Display Name Value")]
     [DefaultValue("displayName")]
     [PlaceholderText("displayName")]
+    [Undisclosed]
     public string DisplayNamePropertyName { get; set; } = "displayName";
 
     [Persistent]
@@ -112,6 +115,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
     [DisplayName("Email Property Value")]
     [DefaultValue("mail")]
     [PlaceholderText("mail")]
+    [Undisclosed]
     public string EmailAddressPropertyName { get; set; } = "mail";
 
     [Persistent]
@@ -127,6 +131,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
     [DisplayName("Group Name Property Value")]
     [DefaultValue("name")]
     [PlaceholderText("name")]
+    [Undisclosed]
     public string GroupNamePropertyName { get; set; } = "name";
 
     /****************************************************************************************************
