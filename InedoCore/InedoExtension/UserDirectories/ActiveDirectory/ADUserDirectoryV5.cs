@@ -304,10 +304,9 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
         if (result == null)
             return null;
 
-        var principalName = result.GetPropertyValue(this.UserNamePropertyName);
-
-        if (isUser != true && string.IsNullOrWhiteSpace(principalName))
-            principalName = result.GetPropertyValue(this.GroupNamePropertyName);
+        var principalName = isUser == true 
+            ? result.GetPropertyValue(this.UserNamePropertyName)
+            : result.GetPropertyValue(this.GroupNamePropertyName);
 
         if (string.IsNullOrWhiteSpace(principalName))
             return null;
