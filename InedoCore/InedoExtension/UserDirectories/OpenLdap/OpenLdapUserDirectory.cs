@@ -176,19 +176,13 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
     public override IUserDirectoryGroup TryGetGroup(string groupName)
     {
-        var principalId = GroupId.Parse(groupName);
-        var groups = this.Search(PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(principalId?.Principal ?? groupName)}");
-        if (!string.IsNullOrWhiteSpace(principalId?.DomainAlias) && groups.Count() > 1)
-            groups = groups.OfType<GenericLdapGroup>().OrderBy(u => u.PrincipalId.DomainAlias.Equals(principalId.DomainAlias, StringComparison.OrdinalIgnoreCase) ? 0 : 1);
+        var groups = this.Search(PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(groupName)}");
         return (IUserDirectoryGroup)groups.FirstOrDefault();
     }
 
     public override IUserDirectoryUser TryGetUser(string userName)
     {
-        var principalId = UserId.Parse(userName);
-        var users = this.Search(PrincipalSearchType.Users, $"{LdapHelperV4.Escape(principalId?.Principal ?? userName)}");
-        if (!string.IsNullOrWhiteSpace(principalId?.DomainAlias) && users.Count() > 1)
-            users = users.OfType<GenericLdapUser>().OrderBy(u => u.PrincipalId.DomainAlias.Equals(principalId.DomainAlias, StringComparison.OrdinalIgnoreCase) ? 0 : 1);
+        var users = this.Search(PrincipalSearchType.Users, $"{LdapHelperV4.Escape(userName)}");
         return (IUserDirectoryUser)users.FirstOrDefault();
     }
 
@@ -441,7 +435,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         }
 
         internal PrincipalId PrincipalId => this.principalId;
-        public string Name => this.principalId.ToFullyQualifiedName();
+        public string Name => this.principalId.Principal;
         public virtual string DisplayName => this.principalId.Principal;
         public string DistinguishedName => this.principalId.DistinguishedName;
 
