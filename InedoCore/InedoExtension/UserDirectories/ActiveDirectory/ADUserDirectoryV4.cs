@@ -5,7 +5,6 @@ using System.Security;
 using System.Text;
 using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
-using ActiveDirectory = System.DirectoryServices.ActiveDirectory;
 using LDAP = Inedo.Extensions.UserDirectories.LdapHelperV4;
 
 namespace Inedo.Extensions.UserDirectories;
@@ -650,18 +649,12 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
 
-            Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
-            ArgumentNullException.ThrowIfNull(groupName);
-
-
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if (this.groups.Value.Contains(compareName))
             {
-                Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                 this.isMemberOfGroupCache.Add(groupName);
                 return true;
             }
-            Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
 
             return false;
         }
@@ -736,29 +729,23 @@ public sealed class ADUserDirectoryV4 : UserDirectory
 
         public bool IsMemberOfGroup(string groupName)
         {
+            ArgumentNullException.ThrowIfNull(groupName);
+
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
-
-            Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
-
-            ArgumentNullException.ThrowIfNull(groupName);
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if (this.groups.Value.Contains(compareName))
             {
-                Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
                 this.isMemberOfGroupCache.Add(groupName);
                 return true;
             }
-
-            Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
 
             return false;
         }
 
         internal IEnumerable<IUserDirectoryUser> GetMembers()
         {
-            Logger.Log(MessageLevel.Debug, "Begin ActiveDirectoryGroup GetMembers", "AD User Directory");
             if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
                 var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
                 var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
@@ -779,7 +766,6 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                     continue;
                 }
             }
-            Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup GetMembers", "AD User Directory");
         }
 
         public bool Equals(ActiveDirectoryGroup other) => this.groupId.Equals(other?.groupId);
