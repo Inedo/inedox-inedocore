@@ -18,10 +18,7 @@ namespace Inedo.Extensions.ListVariableSources
         [DisplayName("Show only in group")]
         public string Group { get; set; }
 
-        public override Task<IEnumerable<string>> EnumerateListValuesAsync(VariableTemplateContext context)
-        {
-            return Task.FromResult(Enumerable.Empty<string>());
-        }
+        public override IAsyncEnumerable<string> EnumerateListValuesAsync(VariableTemplateContext context) => AsyncEnumerable.Empty<string>();
         public override RichDescription GetDescription()
         {
             if (string.IsNullOrEmpty(this.Group))

@@ -7,7 +7,7 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
 {
     private LdapConnection connection;
 
-    public override void Connect(string server, int? port, bool ldaps, bool bypassSslCertificate)
+    public override Task ConnectAsync(string server, int? port, bool ldaps, bool bypassSslCertificate)
     {
         this.connection = new LdapConnection(new LdapDirectoryIdentifier(server, port ?? (ldaps ? 636 : 389)));
         if (ldaps)
@@ -17,36 +17,40 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
             if (bypassSslCertificate)
                 this.connection.SessionOptions.VerifyServerCertificate = new VerifyServerCertificateCallback((connection, certifacte) => true);
         }
+
+        return Task.CompletedTask;
     }
-    public override void Bind(NetworkCredential credentials)
+    public override Task BindAsync(NetworkCredential credentials)
     {
         this.connection.Bind(credentials);
+        return Task.CompletedTask;
     }
-    public override IEnumerable<LdapClientEntry> Search(string distinguishedName, string filter, LdapClientSearchScope scope)
+    public override IAsyncEnumerable<LdapClientEntry> SearchAsync(string distinguishedName, string filter, LdapClientSearchScope scope)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope);
         var response = this.connection.SendRequest(request);
 
         if (response is SearchResponse sr)
-            return sr.Entries.Cast<SearchResultEntry>().Select(r => new Entry(r));
+            return sr.Entries.Cast<SearchResultEntry>().Select(r => new Entry(r)).ToAsyncEnumerable();
         else
-            return Enumerable.Empty<Entry>();
+            return AsyncEnumerable.Empty<Entry>();
     }
-    public override void BindUsingDn(string bindDn, string password)
+    public override Task BindUsingDnAsync(string bindDn, string password)
     {
         this.connection.AuthType = AuthType.Basic;
         this.connection.SessionOptions.ProtocolVersion = 3;
         this.connection.Bind(new NetworkCredential(bindDn, password));
+        return Task.CompletedTask;
     }
-    public override IEnumerable<LdapClientEntry> SearchV2(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
+    public override IAsyncEnumerable<LdapClientEntry> SearchV2Async(string distinguishedName, string filter, LdapClientSearchScope scope, params string[] attributes)
     {
         var request = new SearchRequest(distinguishedName, filter, (SearchScope)scope, attributes);
         var response = this.connection.SendRequest(request);
 
         if (response is SearchResponse sr)
-            return sr.Entries.Cast<SearchResultEntry>().Select(r => new Entry(r));
+            return sr.Entries.Cast<SearchResultEntry>().Select(r => new Entry(r)).ToAsyncEnumerable();
         else
-            return Enumerable.Empty<Entry>();
+            return AsyncEnumerable.Empty<Entry>();
     }
     protected override void Dispose(bool disposing)
     {
@@ -70,9 +74,8 @@ internal sealed class DirectoryServicesLdapClient : LdapClient
 
             return propertyCollection[0]?.ToString() ?? string.Empty;
         }
-        public override ISet<string> ExtractGroupNames(string memberOfPropertyName = null)
+        public override HashSet<string> ExtractGroupNames(string memberOfPropertyName = null)
         {
-
             Logger.Log(MessageLevel.Debug, "Begin ExtractGroupNames", "AD User Directory");
             var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
