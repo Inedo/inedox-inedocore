@@ -5,20 +5,12 @@ namespace Inedo.Extensions.Operations.ProGet.Packages
 {
     internal sealed class RepackPromoteSourceSuggestionProvider : ISuggestionProvider
     {
-        public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
+        public IAsyncEnumerable<string> GetSuggestionsAsync(IComponentConfiguration config, CancellationToken cancellationToken)
         {
-            var results = new List<string>();
-
-            foreach (var p in GetSuggestionProviders())
-            {
-                foreach (var v in await p.GetSuggestionsAsync(config).ConfigureAwait(false))
-                    results.Add(v);
-            }
-
-            return results;
+            return this.GetSuggestionsAsync(string.Empty, config, cancellationToken);
         }
 
-        async IAsyncEnumerable<string> ISuggestionProvider.GetSuggestionsAsync(string startsWith, IComponentConfiguration config, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetSuggestionsAsync(string startsWith, IComponentConfiguration config, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             foreach (var p in GetSuggestionProviders())
             {

@@ -1,18 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
-using Inedo.Extensions.UniversalPackages;
 
 namespace Inedo.Extensions.SuggestionProviders
 {
     internal sealed class PackageVersionSuggestionProvider : ISuggestionProvider
     {
-        public async Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
+        public IAsyncEnumerable<string> GetSuggestionsAsync(IComponentConfiguration config, CancellationToken cancellationToken)
         {
-            var list = new List<string>();
-
-            await foreach (var p in this.GetSuggestionsAsync(string.Empty, config, default))
-                list.Add(p);
-
-            return list;
+            return this.GetSuggestionsAsync(string.Empty, config, cancellationToken);
         }
         public async IAsyncEnumerable<string> GetSuggestionsAsync(string startsWith, IComponentConfiguration config, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
