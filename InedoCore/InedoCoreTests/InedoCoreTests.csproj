@@ -6,7 +6,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="4.0.0-ci.4" />
+    <PackageReference Include="Inedo.SDK" Version="4.0.0-ci.7" />
     <PackageReference Include="MSTest" Version="4.1.0" />
   </ItemGroup>
   <ItemGroup>
