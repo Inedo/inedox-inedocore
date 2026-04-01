@@ -455,7 +455,7 @@ public sealed class ADUserDirectory : UserDirectory
         public string EmailAddress { get; }
         public string DisplayName { get; }
 
-        public bool IsMemberOfGroup(string groupName)
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
         {
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
@@ -466,7 +466,7 @@ public sealed class ADUserDirectory : UserDirectory
 
             
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
+            if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
             {
                 Logger.Log(MessageLevel.Debug, "End ActiveDirectoryUser IsMemberOfGroup", "AD User Directory");
                 this.isMemberOfGroupCache.Add(groupName);
@@ -482,8 +482,6 @@ public sealed class ADUserDirectory : UserDirectory
         public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
         public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
         public override int GetHashCode() => this.userId.GetHashCode();
-
-        public ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default) => ValueTask.FromResult(this.IsMemberOfGroup(groupName));
     }
 
     private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
@@ -538,7 +536,7 @@ public sealed class ADUserDirectory : UserDirectory
         string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
         string IUserDirectoryPrincipal.DisplayName => this.groupId.Principal;
 
-        public bool IsMemberOfGroup(string groupName)
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
         {
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
@@ -549,7 +547,7 @@ public sealed class ADUserDirectory : UserDirectory
                 throw new ArgumentNullException(nameof(groupName));                
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
+            if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
             {
                 Logger.Log(MessageLevel.Debug, "End ActiveDirectoryGroup IsMemberOfGroup", "AD User Directory");
                 this.isMemberOfGroupCache.Add(groupName);
@@ -583,8 +581,6 @@ public sealed class ADUserDirectory : UserDirectory
         public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryGroup);
         public override int GetHashCode() => this.groupId.GetHashCode();
         public override string ToString() => this.groupId.Principal;
-
-        public ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default) => ValueTask.FromResult(this.IsMemberOfGroup(groupName));
     }
 
     private sealed class CredentialedDomain : IEquatable<CredentialedDomain>
