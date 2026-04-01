@@ -656,13 +656,19 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         public string EmailAddress { get; }
         public string DisplayName { get; }
 
-        public bool IsMemberOfGroup(string groupName)
+        public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
+        public bool Equals(IUserDirectoryUser other) => this.Equals(other as ActiveDirectoryUser);
+        public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
+        public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
+        public override int GetHashCode() => this.userId.GetHashCode();
+
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
         {
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
+            if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
             {
                 this.isMemberOfGroupCache.Add(groupName);
                 return true;
@@ -670,14 +676,6 @@ public sealed class ADUserDirectoryV4 : UserDirectory
 
             return false;
         }
-
-        public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
-        public bool Equals(IUserDirectoryUser other) => this.Equals(other as ActiveDirectoryUser);
-        public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
-        public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
-        public override int GetHashCode() => this.userId.GetHashCode();
-
-        public ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default) => ValueTask.FromResult(this.IsMemberOfGroup(groupName));
     }
 
     private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
@@ -742,23 +740,6 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
         string IUserDirectoryPrincipal.DisplayName => this.groupId.Principal;
 
-        public bool IsMemberOfGroup(string groupName)
-        {
-            ArgumentNullException.ThrowIfNull(groupName);
-
-            if (this.isMemberOfGroupCache.Contains(groupName))
-                return true;
-
-            var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
-            {
-                this.isMemberOfGroupCache.Add(groupName);
-                return true;
-            }
-
-            return false;
-        }
-
         internal async IAsyncEnumerable<IUserDirectoryUser> GetMembersAsync()
         {
             if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
@@ -790,7 +771,22 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         public override int GetHashCode() => this.groupId.GetHashCode();
         public override string ToString() => this.groupId.Principal;
 
-        public ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default) => ValueTask.FromResult(this.IsMemberOfGroup(groupName));
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(groupName);
+
+            if (this.isMemberOfGroupCache.Contains(groupName))
+                return true;
+
+            var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
+            if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
+            {
+                this.isMemberOfGroupCache.Add(groupName);
+                return true;
+            }
+
+            return false;
+        }
     }
 }
 
