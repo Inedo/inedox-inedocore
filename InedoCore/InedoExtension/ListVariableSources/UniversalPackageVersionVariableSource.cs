@@ -21,10 +21,7 @@ namespace Inedo.Extensions.ListVariableSources
         [DisplayName("Include prerelease versions")]
         public bool IncludePrerelease { get; set; }
 
-        public override Task<IEnumerable<string>> EnumerateListValuesAsync(VariableTemplateContext context)
-        {
-            return Task.FromResult(Enumerable.Empty<string>());
-        }
+        public override IAsyncEnumerable<string> EnumerateListValuesAsync(VariableTemplateContext context) => AsyncEnumerable.Empty<string>();
         public override RichDescription GetDescription()
         {
             return new RichDescription(

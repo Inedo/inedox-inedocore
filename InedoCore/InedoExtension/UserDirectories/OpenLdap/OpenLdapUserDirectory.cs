@@ -1,4 +1,5 @@
-﻿using System.Security;
+﻿using System.Runtime.CompilerServices;
+using System.Security;
 using Inedo.Extensibility.UserDirectories;
 using Inedo.Serialization;
 
@@ -143,18 +144,21 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /****************************************************************************************************
     * User Directory Methods
     ****************************************************************************************************/
-    public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.Search(PrincipalSearchType.UsersAndGroups, $"{LdapHelperV4.Escape(searchTerm)}*");
+    public override IAsyncEnumerable<IUserDirectoryPrincipal> FindPrincipalsAsync(string searchTerm, CancellationToken cancellationToken) => this.SearchAsync(PrincipalSearchType.UsersAndGroups, $"{LdapHelperV4.Escape(searchTerm)}*");
+    public override IAsyncEnumerable<IUserDirectoryUser> FindUsersAsync(string searchTerm, CancellationToken cancellationToken) => this.SearchAsync(PrincipalSearchType.Users, $"{LdapHelperV4.Escape(searchTerm)}*").OfType<IUserDirectoryUser>();
+    public override IAsyncEnumerable<IUserDirectoryGroup> FindGroupsAsync(string searchTerm, CancellationToken cancellationToken) => this.SearchAsync(PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(searchTerm)}*").OfType<IUserDirectoryGroup>();
 
-    public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
+    public override async IAsyncEnumerable<IUserDirectoryUser> GetGroupMembersAsync(string groupName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var group = (GenericLdapGroup)this.TryGetGroup(groupName);
+        var group = (GenericLdapGroup)await this.TryGetGroupAsync(groupName, cancellationToken);
         if (group == null)
-            return [];
+            yield break;
 
-        return this.GetMembers(group.PrincipalId);
+        await foreach (var m in this.GetMembersAsync(group.PrincipalId))
+            yield return m;
     }
 
-    public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
+    public override async Task<IUserDirectoryUser> TryGetAndValidateUserAsync(string userName, string password, CancellationToken cancellationToken)
     {
         // Convert domain\user to user@domain
         if (userName.Contains('\\'))
@@ -164,37 +168,37 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
                 return null;
         }
 
-        var user = (GenericLdapUser)this.TryGetUser(userName);
+        var user = (GenericLdapUser)await this.TryGetUserAsync(userName, cancellationToken);
         if (user == null)
             return null;
 
-        using var ldapClient = GetClientAndConnect(false);
-        ldapClient.BindUsingDn(user.DistinguishedName, password);
+        using var ldapClient = await GetClientAndConnectAsync(false);
+        await ldapClient.BindUsingDnAsync(user.DistinguishedName, password);
 
         return user;
     }
 
-    public override IUserDirectoryGroup TryGetGroup(string groupName)
+    public override async Task<IUserDirectoryGroup> TryGetGroupAsync(string groupName, CancellationToken cancellationToken)
     {
-        var groups = this.Search(PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(groupName)}");
-        return (IUserDirectoryGroup)groups.FirstOrDefault();
+        var groups = this.SearchAsync(PrincipalSearchType.Groups, $"{LdapHelperV4.Escape(groupName)}");
+        return (IUserDirectoryGroup)await groups.FirstOrDefaultAsync();
     }
 
-    public override IUserDirectoryUser TryGetUser(string userName)
+    public override async Task<IUserDirectoryUser> TryGetUserAsync(string userName, CancellationToken cancellationToken)
     {
-        var users = this.Search(PrincipalSearchType.Users, $"{LdapHelperV4.Escape(userName)}");
-        return (IUserDirectoryUser)users.FirstOrDefault();
+        var users = this.SearchAsync(PrincipalSearchType.Users, $"{LdapHelperV4.Escape(userName)}");
+        return (IUserDirectoryUser)await users.FirstOrDefaultAsync();
     }
 
-    public override IUserDirectoryUser TryParseLogonUser(string logonUser)
+    public override async ValueTask<IUserDirectoryUser> TryParseLogonUserAsync(string logonUser, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(logonUser))
-            throw new ArgumentNullException(nameof(logonUser));
+        ArgumentException.ThrowIfNullOrEmpty(logonUser);
 
         var domainLogin = this.TryParseLoginUserName(logonUser);
         if (domainLogin == null)
             return null;
-        return this.TryGetUser(domainLogin);
+
+        return await this.TryGetUserAsync(domainLogin, cancellationToken);
     }
 
     /****************************************************************************************************
@@ -277,12 +281,13 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// </summary>
     /// <param name="bind">True if the connection should also bind using the Bind DN</param>
     /// <returns>An LDAP Client</returns>
-    private LdapClient GetClientAndConnect(bool bind)
+    private async Task<LdapClient> GetClientAndConnectAsync(bool bind)
     {
         LdapClient ldapClient = OperatingSystem.IsWindows() ? new DirectoryServicesLdapClient() : new NovellLdapClient();
-        ldapClient.Connect(this.Host, int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
-        if(bind)
-            ldapClient.BindUsingDn(this.BindDn, AH.Unprotect(this.BindPassword));
+        await ldapClient.ConnectAsync(this.Host, int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+        if (bind)
+            await ldapClient.BindUsingDnAsync(this.BindDn, AH.Unprotect(this.BindPassword));
+
         return ldapClient;
     }
 
@@ -292,24 +297,24 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// <param name="searchType">LDAP object type to search for</param>
     /// <param name="searchTerm">search string</param>
     /// <returns>An array of LDAP Users and/or Groups</returns>
-    private IEnumerable<IUserDirectoryPrincipal> Search(PrincipalSearchType searchType, string searchTerm)
+    private async IAsyncEnumerable<IUserDirectoryPrincipal> SearchAsync(PrincipalSearchType searchType, string searchTerm)
     {
-        using var ldapClient = this.GetClientAndConnect(true);
+        using var ldapClient = await this.GetClientAndConnectAsync(true);
         
         if(searchType.HasFlag(PrincipalSearchType.Users))
         {
             var userFilter = this.UsersFilter.Replace("%s", searchTerm);
             string[] attributes = ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName];
-            var entries = ldapClient.SearchV2(this.UserBaseDn, userFilter, LdapClientSearchScope.Subtree, attributes);
-            foreach(var user in entries)
+            var entries = ldapClient.SearchV2Async(this.UserBaseDn, userFilter, LdapClientSearchScope.Subtree, attributes);
+            await foreach(var user in entries)
                 yield return CreatePrincipal(user, true);
         }
         if(searchType.HasFlag(PrincipalSearchType.Groups))
         {
             var groupFilter = this.GroupsFilter.Replace("%s", searchTerm);
             string[] attributes = ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName];
-            var entries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, attributes);
-            foreach (var group in entries)
+            var entries = ldapClient.SearchV2Async(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, attributes);
+            await foreach (var group in entries)
                 yield return CreatePrincipal(group, false);
         }
     }
@@ -319,14 +324,14 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// </summary>
     /// <param name="principalId">Principal object</param>
     /// <returns>A list of group names</returns>
-    private HashSet<string> GetGroupNames(PrincipalId principalId)
+    private async Task<HashSet<string>> GetGroupNamesAsync(PrincipalId principalId)
     {
-        using var ldapClient = this.GetClientAndConnect(true);
+        using var ldapClient = await this.GetClientAndConnectAsync(true);
         var groups = new HashSet<string>();
 
         var groupFilter = this.UserGroupsFilter.Replace("%s", principalId.DistinguishedName);
-        var groupEntries = ldapClient.SearchV2(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]).ToList();
-        foreach(var groupEntry in groupEntries)
+        var groupEntries = ldapClient.SearchV2Async(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]);
+        await foreach(var groupEntry in groupEntries)
         {
             var groupName = groupEntry.GetPropertyValue(this.GroupNamePropertyName);
             if (!string.IsNullOrWhiteSpace(groupName))
@@ -341,13 +346,14 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     /// </summary>
     /// <param name="principalId">Group Principal</param>
     /// <returns>A list of LDAP Users</returns>
-    private IEnumerable<IUserDirectoryUser> GetMembers(PrincipalId principalId)
+    private async IAsyncEnumerable<IUserDirectoryUser> GetMembersAsync(PrincipalId principalId)
     {
-        using var ldapClient = this.GetClientAndConnect(true);
+        using var ldapClient = await this.GetClientAndConnectAsync(true);
         var memberFilter = this.GroupMembersFilter.Replace("%s", principalId.DistinguishedName);
 
-        var memberEntries = ldapClient.SearchV2(this.UserBaseDn, memberFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName]).Select(u => CreatePrincipal(u, true)).OfType<IUserDirectoryUser>();
-        return memberEntries;
+        var memberEntries = ldapClient.SearchV2Async(this.UserBaseDn, memberFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName]).Select(u => CreatePrincipal(u, true)).OfType<IUserDirectoryUser>();
+        await foreach (var e in memberEntries)
+            yield return e;
     }
 
     /// <summary>
@@ -417,7 +423,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
     private sealed class GenericLdapGroup(OpenLdapUserDirectory directory, GroupId groupId) : GenericLdapPrincipal(directory, groupId), IUserDirectoryGroup
     {
-        internal IEnumerable<IUserDirectoryUser> GetMembers() => this.directory.GetMembers(this.principalId);
+        internal IAsyncEnumerable<IUserDirectoryUser> GetMembersAsync() => this.directory.GetMembersAsync(this.principalId);
     }
 
     private abstract class GenericLdapPrincipal : IUserDirectoryPrincipal, IEquatable<GenericLdapPrincipal>
@@ -425,13 +431,13 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         protected readonly PrincipalId principalId;
         protected readonly OpenLdapUserDirectory directory;
         protected readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
-        protected readonly Lazy<HashSet<string>> groups;
+        protected readonly LazyAsync<HashSet<string>> groups;
 
         public GenericLdapPrincipal(OpenLdapUserDirectory directory, PrincipalId principalId)
         {
             this.directory = directory;
             this.principalId = principalId ?? throw new ArgumentNullException(nameof(principalId));
-            this.groups = new Lazy<HashSet<string>>(() => this.directory.GetGroupNames(this.principalId));
+            this.groups = new LazyAsync<HashSet<string>>(() => null, () => this.directory.GetGroupNamesAsync(this.principalId));
         }
 
         internal PrincipalId PrincipalId => this.principalId;
@@ -445,7 +451,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         public override bool Equals(object obj) => this.Equals(obj as GenericLdapPrincipal);
         public override int GetHashCode() => this.principalId.GetHashCode();
 
-        public bool IsMemberOfGroup(string groupName)
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken)
         {
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
@@ -453,7 +459,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
             ArgumentNullException.ThrowIfNull(groupName);
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
+            if ((await this.groups.ValueAsync).Contains(compareName))
             {
                 this.isMemberOfGroupCache.Add(groupName);
                 return true;

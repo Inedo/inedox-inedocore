@@ -220,7 +220,7 @@ internal sealed class ProGetFeedClient
             return packages.FirstOrDefault(v => v.Version.Major == major);
         }
 
-        var semver = UniversalPackageVersion.Parse(packageVersion);
+        var semver = UniversalPackageVersion.TryParse(packageVersion);
         return packages.FirstOrDefault(v => v.Version == semver);
     }
 

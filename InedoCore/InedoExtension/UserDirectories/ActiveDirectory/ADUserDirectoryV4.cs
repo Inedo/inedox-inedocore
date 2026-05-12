@@ -1,5 +1,6 @@
 ﻿using System.DirectoryServices.ActiveDirectory;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -167,40 +168,48 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     * UserDirectory
     ****************************************************************************************************/
 
-    public override IEnumerable<IUserDirectoryPrincipal> FindPrincipals(string searchTerm) => this.FindPrincipals(PrincipalSearchType.UsersAndGroups, searchTerm);
-    public override IEnumerable<IUserDirectoryUser> GetGroupMembers(string groupName)
+    public override IAsyncEnumerable<IUserDirectoryPrincipal> FindPrincipalsAsync(string searchTerm, CancellationToken cancellationToken = default) => this.FindPrincipalsAsync(PrincipalSearchType.UsersAndGroups, searchTerm);
+    public override IAsyncEnumerable<IUserDirectoryUser> FindUsersAsync(string searchTerm, CancellationToken cancellationToken = default) => this.FindPrincipalsAsync(PrincipalSearchType.Users, searchTerm).OfType<IUserDirectoryUser>();
+    public override IAsyncEnumerable<IUserDirectoryGroup> FindGroupsAsync(string searchTerm, CancellationToken cancellationToken = default) => this.FindPrincipalsAsync(PrincipalSearchType.Groups, searchTerm).OfType<IUserDirectoryGroup>();
+
+    public override async IAsyncEnumerable<IUserDirectoryUser> GetGroupMembersAsync(string groupName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var group = (ActiveDirectoryGroup)this.TryGetGroup(groupName);
-        return group?.GetMembers()?.ToList() ?? [];
+        var group = (ActiveDirectoryGroup)await this.TryGetGroupAsync(groupName, cancellationToken);
+        if (group is not null)
+        {
+            await foreach (var m in group.GetMembersAsync())
+                yield return m;
+        }
     }
-    public override IUserDirectoryUser TryGetAndValidateUser(string userName, string password)
+    public override async Task<IUserDirectoryUser> TryGetAndValidateUserAsync(string userName, string password, CancellationToken cancellationToken)
     {
         if (userName.Contains('\\'))
         {
-            userName = this.TryParseLoginUserName(userName);
+            userName = await this.TryParseLoginUserNameAsync(userName);
             if (userName == null)
                 return null;
         }
 
-        var result = this.TryGetPrincipal(PrincipalSearchType.Users, userName);
+        var result = await this.TryGetPrincipalAsync(PrincipalSearchType.Users, userName);
         if (result == null)
             return null;
 
         try
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+            await conn.ConnectAsync(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
             if (userName?.Contains('@') ?? false)
             {
                 var userNameSplit = userName.Split('@');
-                conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
+                await conn.BindAsync(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
 
             }
             else
             {
                 var domain = result.GetDomainPath();
-                conn.Bind(new NetworkCredential(userName, password, domain));
+                await conn.BindAsync(new NetworkCredential(userName, password, domain));
             }
+
             return this.CreatePrincipal(result) as IUserDirectoryUser;
         }
         catch
@@ -208,23 +217,29 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             return null;
         }
     }
-    public override IUserDirectoryUser TryGetUser(string userName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
-    public override IUserDirectoryGroup TryGetGroup(string groupName) => this.CreatePrincipal(this.TryGetPrincipal(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
-    public override IUserDirectoryUser TryParseLogonUser(string logonUser)
+    public override async Task<IUserDirectoryUser> TryGetUserAsync(string userName, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(logonUser))
-            throw new ArgumentNullException(nameof(logonUser));
+        return this.CreatePrincipal(await this.TryGetPrincipalAsync(PrincipalSearchType.Users, userName)) as IUserDirectoryUser;
+    }
+    public override async Task<IUserDirectoryGroup> TryGetGroupAsync(string groupName, CancellationToken cancellationToken = default)
+    {
+        return this.CreatePrincipal(await this.TryGetPrincipalAsync(PrincipalSearchType.Groups, groupName)) as IUserDirectoryGroup;
+    }
+    public override async ValueTask<IUserDirectoryUser> TryParseLogonUserAsync(string logonUser, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(logonUser);
 
-        var domainLogin = this.TryParseLoginUserName(logonUser);
+        var domainLogin = await this.TryParseLoginUserNameAsync(logonUser);
         if (domainLogin == null)
             return null;
-        return this.TryGetUser(domainLogin);
+
+        return await this.TryGetUserAsync(domainLogin, cancellationToken);
     }
 
     /****************************************************************************************************
     * Internal Methods
     ****************************************************************************************************/
-    private string TryParseLoginUserName(string logonUser)
+    private async ValueTask<string> TryParseLoginUserNameAsync(string logonUser)
     {
         if (logonUser.Contains('\\'))
         {
@@ -232,7 +247,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             if (parts.Length != 2)
                 return null;
 
-            var domain = GetDomainNameFromNetbiosName(parts[0]);
+            var domain = await GetDomainNameFromNetbiosNameAsync(parts[0]);
             if (string.IsNullOrWhiteSpace(domain))
                 return parts[1];
             return $"{parts[1]}@{domain}";
@@ -254,7 +269,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /****************************************************************************************************
     * Get/Create Principals Methods
     ****************************************************************************************************/
-    private LdapClientEntry TryGetPrincipal(PrincipalSearchType searchType, string principalName)
+    private async Task<LdapClientEntry> TryGetPrincipalAsync(PrincipalSearchType searchType, string principalName)
     {
         if (string.IsNullOrEmpty(principalName))
             return null;
@@ -288,12 +303,12 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         //Closes the &
         searchString.Append(')');
 
-        var principal = this.SearchDomain(searchString.ToString()).Where(p => principalId?.DomainAlias == null || (principalId?.DomainAlias?.Equals(p.GetDomainPath(), StringComparison.OrdinalIgnoreCase) ?? true)).FirstOrDefault();
+        var principal = await this.SearchDomainAsync(searchString.ToString()).Where(p => principalId?.DomainAlias == null || (principalId?.DomainAlias?.Equals(p.GetDomainPath(), StringComparison.OrdinalIgnoreCase) ?? true)).FirstOrDefaultAsync();
         if(principal == null)
             this.LogDebug("Principal not found.");
         return principal;
     }
-    private IEnumerable<IUserDirectoryPrincipal> FindPrincipals(PrincipalSearchType searchType, string searchTerm)
+    private async IAsyncEnumerable<IUserDirectoryPrincipal> FindPrincipalsAsync(PrincipalSearchType searchType, string searchTerm)
     {
         if (string.IsNullOrEmpty(searchTerm))
             yield break;
@@ -302,11 +317,11 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         var filter = $"(|(userPrincipalName={st}*)({this.UserNamePropertyName}={st}*)({this.GroupNamePropertyName}={st}*)({this.DisplayNamePropertyName}={st}*))";
         this.LogDebug("Search term: " + searchTerm);
 
-        foreach (var principal in this.FindPrincipalsUsingLdap(searchType, filter))
+        await foreach (var principal in this.FindPrincipalsUsingLdapAsync(searchType, filter))
             yield return principal;
     }
 
-    private IEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdap(PrincipalSearchType searchType, string ldapSearch = null, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
+    private async IAsyncEnumerable<IUserDirectoryPrincipal> FindPrincipalsUsingLdapAsync(PrincipalSearchType searchType, string ldapSearch = null, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
     {
         var userSearchQuery = this.UsersFilterBase;
         if (this.IncludeGroupManagedServiceAccounts)
@@ -321,7 +336,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         var filter = $"(&{categoryFilter}{ldapSearch ?? string.Empty})";
         this.LogDebug("Filter string: " + filter);
 
-        foreach (var result in this.SearchDomain(filter, scope))
+        await foreach (var result in this.SearchDomainAsync(filter, scope))
         {
             var principal = this.CreatePrincipal(result);
             if (principal == null)
@@ -414,7 +429,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// </summary>
     /// <param name="netbiosName">NetBios mapping</param>
     /// <returns>The DNS Root of the mapped NetBios name</returns>
-    private string GetDomainNameFromNetbiosName(string netbiosName)
+    private async Task<string> GetDomainNameFromNetbiosNameAsync(string netbiosName)
     {
         if (string.IsNullOrEmpty(netbiosName))
             return null;
@@ -425,29 +440,29 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         try
         {
             using var conn = GetClient();
-            conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+            await conn.ConnectAsync(AH.NullIf(this.DomainControllerAddress, string.Empty) ?? AH.NullIf(this.Domain, string.Empty), AH.ParseInt(this.Port), this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
 
             if (this.Username?.Contains('@') ?? false)
             {
                 var userNameSplit = this.Username.Split('@');
-                conn.Bind(new NetworkCredential(userNameSplit[0], this.Password, userNameSplit[1]));
+                await conn.BindAsync(new NetworkCredential(userNameSplit[0], this.Password, userNameSplit[1]));
             }
             else if (this.Username?.Contains('\\') ?? false)
             {
                 var userNameSplit = this.Username.Split('\\');
-                conn.Bind(new NetworkCredential(userNameSplit[1], this.Password, userNameSplit[0]));
+                await conn.BindAsync(new NetworkCredential(userNameSplit[1], this.Password, userNameSplit[0]));
             }
             else
             {
-                conn.Bind(new NetworkCredential(this.Username, this.Password));
+                await conn.BindAsync(new NetworkCredential(this.Username, this.Password));
             }
 
-            var response = conn.Search("", "(&(objectClass=*))", LdapClientSearchScope.Base).FirstOrDefault();
+            var response = await conn.SearchAsync("", "(&(objectClass=*))", LdapClientSearchScope.Base).FirstOrDefaultAsync();
             if (response != null)
             {
                 var cfg = response.GetPropertyValue("configurationNamingContext");
 
-                var response2 = conn.Search("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapClientSearchScope.Subtree).FirstOrDefault();
+                var response2 = await conn.SearchAsync("cn=Partitions," + cfg, "nETBIOSName=" + netbiosName, LdapClientSearchScope.Subtree).FirstOrDefaultAsync();
                 if (response2 != null)
                 {
                     var root = response2.GetPropertyValue("dnsRoot");
@@ -514,7 +529,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// <param name="searchString">LDAP query to search for</param>
     /// <returns>IEnumerable of <see cref="LdapClientEntry"/></returns>
     /// <exception cref="InvalidOperationException">If CredentialName is not <see cref="UsernamePasswordCredentials"/></exception>
-    private IEnumerable<LdapClientEntry> SearchDomain(string searchString, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
+    private async IAsyncEnumerable<LdapClientEntry> SearchDomainAsync(string searchString, LdapClientSearchScope scope = LdapClientSearchScope.Subtree)
     {
         this.LogDebug($"Search string is \"{searchString}\"...");
 
@@ -523,7 +538,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             this.LogDebug($"Searching domain {this.Domain}...");
 
             var baseDn = string.IsNullOrWhiteSpace(this.SearchRootPath) ? "DC=" + this.Domain.Replace(".", ",DC=") : this.SearchRootPath;
-            foreach (var result in this.Search(baseDn, searchString.ToString(), scope: scope, userName: this.Username?.GetDomainQualifiedName(this.Domain), password: this.Password))
+            await foreach (var result in this.SearchAsync(baseDn, searchString.ToString(), scope: scope, userName: this.Username?.GetDomainQualifiedName(this.Domain), password: this.Password))
                 yield return result;
         }
         else
@@ -533,7 +548,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 this.LogDebug($"Searching domain {domain}...");
                 
                 var baseDn = string.IsNullOrWhiteSpace(this.SearchRootPath) ? "DC=" + domain.Replace(".", ",DC=") : this.SearchRootPath;
-                foreach (var result in this.Search(baseDn, searchString.ToString()))
+                await foreach (var result in this.SearchAsync(baseDn, searchString.ToString()))
                     yield return result;
             }
         }
@@ -550,31 +565,28 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     /// <param name="userName">Username to connect to the domain wtih</param>
     /// <param name="password">Password to connect to the domain with</param>
     /// <returns></returns>
-    private IEnumerable<LdapClientEntry> Search(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
+    private async IAsyncEnumerable<LdapClientEntry> SearchAsync(string dn, string filter, LdapClientSearchScope scope = LdapClientSearchScope.Subtree, string userName = null, SecureString password = null)
     {
         using var conn = GetClient();
-        conn.Connect(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
+        await conn.ConnectAsync(AH.NullIf(this.DomainControllerAddress, string.Empty), int.TryParse(this.Port, out var port) ? port : null, this.LdapConnection != LdapConnectionType.Ldap, this.LdapConnection == LdapConnectionType.LdapsWithBypass);
         if (userName?.Contains('@') ?? false)
         {
             var userNameSplit = userName.Split('@');
-            conn.Bind(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
+            await conn.BindAsync(new NetworkCredential(userNameSplit[0], password, userNameSplit[1]));
         }
         else if (userName?.Contains('\\') ?? false)
         {
             var userNameSplit = userName.Split('\\');
-            conn.Bind(new NetworkCredential(userNameSplit[1], password, userNameSplit[0]));
+            await conn.BindAsync(new NetworkCredential(userNameSplit[1], password, userNameSplit[0]));
         }
         else
         {
-            conn.Bind(new NetworkCredential(userName, password));
+            await conn.BindAsync(new NetworkCredential(userName, password));
         }
 
-        if (OperatingSystem.IsLinux())
-            return conn.Search(dn, filter, scope).ToList();
-        return conn.Search(dn, filter, scope);
+        await foreach (var e in conn.SearchAsync(dn, filter, scope))
+            yield return e;
     }
-
-
 
     /****************************************************************************************************
     * User and Group Classes
@@ -584,24 +596,23 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         private readonly ADUserDirectoryV4 directory;
         private readonly UserId userId;
         private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Lazy<ISet<string>> groups;
+        private readonly LazyAsync<HashSet<string>> groups;
 
-
-        public ActiveDirectoryUser(ADUserDirectoryV4 directory, UserId userId, string displayName, string emailAddress, ISet<string> groupNames = null)
+        public ActiveDirectoryUser(ADUserDirectoryV4 directory, UserId userId, string displayName, string emailAddress, HashSet<string> groupNames = null)
         {
             this.directory = directory;
             this.userId = userId ?? throw new ArgumentNullException(nameof(userId));
             this.DisplayName = AH.CoalesceString(displayName, userId.Principal);
             this.EmailAddress = emailAddress;
 
-            this.groups = new Lazy<ISet<string>>(() =>
+            this.groups = new LazyAsync<HashSet<string>>(() => null, async () =>
             {
-                ISet<string> groups;
+                HashSet<string> groups;
                 // Old Group Search way
                 if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
                     if (groupNames == null)
                     {
-                        var userSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
+                        var userSearchResult = await this.directory.TryGetPrincipalAsync(PrincipalSearchType.Users, this.userId.ToFullyQualifiedName());
                         groups = userSearchResult == null ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : userSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
                     }
                     else
@@ -614,7 +625,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                         while (groupsToSearch.Count > 0)
                         {
                             var nextGroup = groupsToSearch.Dequeue();
-                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            var groupSearchResult = await this.directory.TryGetPrincipalAsync(PrincipalSearchType.Groups, nextGroup);
                             if (groupSearchResult != null)
                             {
                                 var groupNames = groupSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
@@ -633,9 +644,10 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 else
                 {
                     groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    foreach(var groupEntry in this.directory.SearchDomain($"(&{this.directory.GroupsFilterBase}(member:1.2.840.113556.1.4.1941:={this.userId.DistinguishedName}))"))
+                    await foreach (var groupEntry in this.directory.SearchDomainAsync($"(&{this.directory.GroupsFilterBase}(member:1.2.840.113556.1.4.1941:={this.userId.DistinguishedName}))"))
                         groups.Add(this.directory.CreatePrincipal(groupEntry).DisplayName);
                 }
+
                 return groups;
             });
         }
@@ -644,13 +656,19 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         public string EmailAddress { get; }
         public string DisplayName { get; }
 
-        public bool IsMemberOfGroup(string groupName)
+        public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
+        public bool Equals(IUserDirectoryUser other) => this.Equals(other as ActiveDirectoryUser);
+        public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
+        public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
+        public override int GetHashCode() => this.userId.GetHashCode();
+
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
         {
             if (this.isMemberOfGroupCache.Contains(groupName))
                 return true;
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
+            if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
             {
                 this.isMemberOfGroupCache.Add(groupName);
                 return true;
@@ -658,12 +676,6 @@ public sealed class ADUserDirectoryV4 : UserDirectory
 
             return false;
         }
-
-        public bool Equals(ActiveDirectoryUser other) => this.userId.Equals(other?.userId);
-        public bool Equals(IUserDirectoryUser other) => this.Equals(other as ActiveDirectoryUser);
-        public bool Equals(IUserDirectoryPrincipal other) => this.Equals(other as ActiveDirectoryUser);
-        public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryUser);
-        public override int GetHashCode() => this.userId.GetHashCode();
     }
 
     private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
@@ -671,22 +683,22 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         private readonly GroupId groupId;
         private readonly ADUserDirectoryV4 directory;
         private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Lazy<ISet<string>> groups;
+        private readonly LazyAsync<HashSet<string>> groups;
 
-        public ActiveDirectoryGroup(ADUserDirectoryV4 directory, GroupId groupId, ISet<string> groupNames = null)
+        public ActiveDirectoryGroup(ADUserDirectoryV4 directory, GroupId groupId, HashSet<string> groupNames = null)
         {
             this.directory = directory;
             this.groupId = groupId ?? throw new ArgumentNullException(nameof(groupId));
 
-            this.groups = new Lazy<ISet<string>>(() =>
+            this.groups = new LazyAsync<HashSet<string>>(() => null, async () =>
             {
-                ISet<string> groups;
+                HashSet<string> groups;
                 //Old Group searching way
                 if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory)
                 {
                     if (groupNames == null)
                     {
-                        var rootGroupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                        var rootGroupSearchResult = await this.directory.TryGetPrincipalAsync(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
                         groups = rootGroupSearchResult == null ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : rootGroupSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
                     }
                     else
@@ -699,7 +711,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                         while (groupsToSearch.Count > 0)
                         {
                             var nextGroup = groupsToSearch.Dequeue();
-                            var groupSearchResult = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, nextGroup);
+                            var groupSearchResult = await this.directory.TryGetPrincipalAsync(PrincipalSearchType.Groups, nextGroup);
                             if (groupSearchResult != null)
                             {
                                 var groupNames = groupSearchResult.ExtractGroupNames(this.directory.GroupNamesPropertyName);
@@ -717,9 +729,10 @@ public sealed class ADUserDirectoryV4 : UserDirectory
                 else
                 {
                     groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var groupEntry in this.directory.SearchDomain($"(&{this.directory.GroupsFilterBase}(member:1.2.840.113556.1.4.1941:={this.groupId.DistinguishedName}))"))
+                    await foreach (var groupEntry in this.directory.SearchDomainAsync($"(&{this.directory.GroupsFilterBase}(member:1.2.840.113556.1.4.1941:={this.groupId.DistinguishedName}))"))
                         groups.Add(this.directory.CreatePrincipal(groupEntry).DisplayName);
                 }
+
                 return groups;
             });
         }
@@ -727,30 +740,13 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         string IUserDirectoryPrincipal.Name => this.groupId.ToFullyQualifiedName();
         string IUserDirectoryPrincipal.DisplayName => this.groupId.Principal;
 
-        public bool IsMemberOfGroup(string groupName)
-        {
-            ArgumentNullException.ThrowIfNull(groupName);
-
-            if (this.isMemberOfGroupCache.Contains(groupName))
-                return true;
-
-            var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
-            if (this.groups.Value.Contains(compareName))
-            {
-                this.isMemberOfGroupCache.Add(groupName);
-                return true;
-            }
-
-            return false;
-        }
-
-        internal IEnumerable<IUserDirectoryUser> GetMembers()
+        internal async IAsyncEnumerable<IUserDirectoryUser> GetMembersAsync()
         {
             if (this.directory.GroupSearchType != GroupSearchType.RecursiveSearchActiveDirectory) {
-                var groupSearch = this.directory.TryGetPrincipal(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
-                var users = this.directory.FindPrincipalsUsingLdap(PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
+                var groupSearch = await this.directory.TryGetPrincipalAsync(PrincipalSearchType.Groups, this.groupId.ToFullyQualifiedName());
+                var users = this.directory.FindPrincipalsUsingLdapAsync(PrincipalSearchType.UsersAndGroups, $"({this.directory.GroupNamesPropertyName}={groupSearch.GetPropertyValue("distinguishedName")})", LdapClientSearchScope.Subtree);
 
-                foreach (var user in users)
+                await foreach (var user in users)
                 {
                     if (user is IUserDirectoryUser userId)
                         yield return userId;
@@ -759,7 +755,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
             }
             else
             {
-                foreach (var userEntry in this.directory.SearchDomain($"(&{this.directory.UsersFilterBase}(memberOf:1.2.840.113556.1.4.1941:={this.groupId.DistinguishedName}))"))
+                await foreach (var userEntry in this.directory.SearchDomainAsync($"(&{this.directory.UsersFilterBase}(memberOf:1.2.840.113556.1.4.1941:={this.groupId.DistinguishedName}))"))
                 {
                     if(this.directory.CreatePrincipal(userEntry) is IUserDirectoryUser user)
                         yield return user;
@@ -774,6 +770,23 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         public override bool Equals(object obj) => this.Equals(obj as ActiveDirectoryGroup);
         public override int GetHashCode() => this.groupId.GetHashCode();
         public override string ToString() => this.groupId.Principal;
+
+        public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(groupName);
+
+            if (this.isMemberOfGroupCache.Contains(groupName))
+                return true;
+
+            var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
+            if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
+            {
+                this.isMemberOfGroupCache.Add(groupName);
+                return true;
+            }
+
+            return false;
+        }
     }
 }
 

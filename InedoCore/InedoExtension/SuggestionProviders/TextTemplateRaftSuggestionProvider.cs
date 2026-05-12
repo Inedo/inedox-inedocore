@@ -4,9 +4,9 @@ namespace Inedo.Extensions.SuggestionProviders
 {
     internal sealed class TextTemplateRaftSuggestionProvider : ISuggestionProvider
     {
-        public Task<IEnumerable<string>> GetSuggestionsAsync(IComponentConfiguration config)
+        public IAsyncEnumerable<string> GetSuggestionsAsync(IComponentConfiguration config, CancellationToken cancellationToken)
         {
-            return Task.FromResult(SDK.GetRaftItems(RaftItemType.TextFile, config.EditorContext).Select(i => i.Id));
+            return SDK.GetRaftItems(RaftItemType.TextFile, config.EditorContext).Select(i => i.Id).ToAsyncEnumerable();
         }
     }
 }
