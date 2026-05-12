@@ -6,8 +6,8 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Inedo.SDK" Version="4.0.0-ci.7" />
-    <PackageReference Include="MSTest" Version="4.1.0" />
+    <PackageReference Include="Inedo.SDK" Version="4.0.0" />
+    <PackageReference Include="MSTest" Version="4.2.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InedoExtension\InedoExtension.csproj" />
