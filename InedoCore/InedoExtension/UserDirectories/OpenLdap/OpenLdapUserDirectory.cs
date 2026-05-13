@@ -393,7 +393,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         if (string.IsNullOrWhiteSpace(principalName))
             return null;
 
-        var domain = result.GetDomainPath();
+        var domain = result.GetDomainPath() ?? "Default";
         if (string.IsNullOrWhiteSpace(domain))
             return null;
 
