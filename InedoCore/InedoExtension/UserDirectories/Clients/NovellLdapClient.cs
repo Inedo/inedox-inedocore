@@ -144,7 +144,7 @@ internal sealed class NovellLdapClient : LdapClient
         {
             try
             {
-                return this.entry.GetAttributeSet(propertyName)?.FirstOrDefault().Value?.StringValue;
+                return this.entry.GetStringValueOrDefault(propertyName);
             }
             catch
             {
