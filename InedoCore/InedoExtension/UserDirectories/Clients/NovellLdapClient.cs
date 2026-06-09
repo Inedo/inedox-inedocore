@@ -157,7 +157,7 @@ internal sealed class NovellLdapClient : LdapClient
             var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                foreach (var memberOf in this.entry.GetAttributeSet(AH.NullIf(memberOfPropertyName, string.Empty) ?? "memberof")?.FirstOrDefault().Value?.StringValueArray ?? [])
+                foreach (var memberOf in this.entry.Get(AH.NullIf(memberOfPropertyName, string.Empty) ?? "memberof")?.StringValueArray ?? [])
                 {
                     var groupNames = from part in memberOf.Split(',')
                                      where part.StartsWith("CN=", StringComparison.OrdinalIgnoreCase)
