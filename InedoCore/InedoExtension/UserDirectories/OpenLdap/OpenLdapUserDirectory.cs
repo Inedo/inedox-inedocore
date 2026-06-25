@@ -329,7 +329,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         using var ldapClient = await this.GetClientAndConnectAsync(true);
         var groups = new HashSet<string>();
 
-        var groupFilter = this.UserGroupsFilter.Replace("%s", LdapHelperV4.Escape(principalId.DistinguishedName));
+        var groupFilter = this.UserGroupsFilter.Replace("%s", principalId.DistinguishedName);
         var groupEntries = ldapClient.SearchV2Async(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]);
         await foreach(var groupEntry in groupEntries)
         {
@@ -349,7 +349,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     private async IAsyncEnumerable<IUserDirectoryUser> GetMembersAsync(PrincipalId principalId)
     {
         using var ldapClient = await this.GetClientAndConnectAsync(true);
-        var memberFilter = this.GroupMembersFilter.Replace("%s", LdapHelperV4.Escape(principalId.DistinguishedName));
+        var memberFilter = this.GroupMembersFilter.Replace("%s", principalId.DistinguishedName);
 
         var memberEntries = ldapClient.SearchV2Async(this.UserBaseDn, memberFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName]).Select(u => CreatePrincipal(u, true)).OfType<IUserDirectoryUser>();
         await foreach (var e in memberEntries)
