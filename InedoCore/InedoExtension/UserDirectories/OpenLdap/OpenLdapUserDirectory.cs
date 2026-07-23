@@ -303,7 +303,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         
         if(searchType.HasFlag(PrincipalSearchType.Users))
         {
-            var userFilter = this.UsersFilter.Replace("%s", LdapHelperV4.Escape(searchTerm));
+            var userFilter = this.UsersFilter.Replace("%s", searchTerm);
             string[] attributes = ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName];
             var entries = ldapClient.SearchV2Async(this.UserBaseDn, userFilter, LdapClientSearchScope.Subtree, attributes);
             await foreach(var user in entries)
@@ -311,7 +311,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
         }
         if(searchType.HasFlag(PrincipalSearchType.Groups))
         {
-            var groupFilter = this.GroupsFilter.Replace("%s", LdapHelperV4.Escape(searchTerm));
+            var groupFilter = this.GroupsFilter.Replace("%s", searchTerm);
             string[] attributes = ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName];
             var entries = ldapClient.SearchV2Async(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, attributes);
             await foreach (var group in entries)
@@ -328,8 +328,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     {
         using var ldapClient = await this.GetClientAndConnectAsync(true);
         var groups = new HashSet<string>();
-
-        var groupFilter = this.UserGroupsFilter.Replace("%s", principalId.DistinguishedName);
+        var groupFilter = this.UserGroupsFilter.Replace("%s", OperatingSystem.IsLinux() ? LdapHelperV4.EscapeFilterValue(principalId.DistinguishedName) : principalId.DistinguishedName);
         var groupEntries = ldapClient.SearchV2Async(this.GroupBaseDn, groupFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.GroupNamePropertyName]);
         await foreach(var groupEntry in groupEntries)
         {
@@ -349,7 +348,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
     private async IAsyncEnumerable<IUserDirectoryUser> GetMembersAsync(PrincipalId principalId)
     {
         using var ldapClient = await this.GetClientAndConnectAsync(true);
-        var memberFilter = this.GroupMembersFilter.Replace("%s", principalId.DistinguishedName);
+        var memberFilter = this.GroupMembersFilter.Replace("%s", OperatingSystem.IsLinux() ? LdapHelperV4.EscapeFilterValue(principalId.DistinguishedName) : principalId.DistinguishedName);
 
         var memberEntries = ldapClient.SearchV2Async(this.UserBaseDn, memberFilter, LdapClientSearchScope.Subtree, ["distinguishedName", "objectCategory", "objectClass", this.UserNamePropertyName, this.DisplayNamePropertyName, this.EmailAddressPropertyName]).Select(u => CreatePrincipal(u, true)).OfType<IUserDirectoryUser>();
         await foreach (var e in memberEntries)

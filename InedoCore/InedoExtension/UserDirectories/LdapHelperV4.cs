@@ -1,5 +1,6 @@
 ﻿using System.DirectoryServices.Protocols;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Inedo.Extensions.UserDirectories
@@ -36,6 +37,27 @@ namespace Inedo.Extensions.UserDirectories
                         return value;
                 }
             );
+        }
+
+        /// <summary>
+        /// RFC 4515 §3 compatible LDAP escape method for use with LDAP filters
+        /// 
+        /// Supports properly escaping a sitringuished name to be used when searching for user and groups.
+        /// </summary>
+        /// <param name="s">LDAP string</param>
+        /// <returns>string representing a RFC 4515 §3 LDAP filter parameter</returns>
+        public static string EscapeFilterValue(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            var sb = new StringBuilder(s.Length + 8);
+            foreach (var b in Encoding.UTF8.GetBytes(s))
+            {
+                if (b >= 0x80 || b is 0x2A or 0x28 or 0x29 or 0x5C or 0x00)  // * ( ) \ NUL
+                    sb.Append('\\').Append(b.ToString("X2"));
+                else
+                    sb.Append((char)b);
+            }
+            return sb.ToString();
         }
 
         /// <summary>
