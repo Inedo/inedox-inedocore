@@ -593,6 +593,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
     ****************************************************************************************************/
     private sealed class ActiveDirectoryUser : IUserDirectoryUser, IEquatable<ActiveDirectoryUser>
     {
+        private static readonly Lock _groupLock = new();
         private readonly ADUserDirectoryV4 directory;
         private readonly UserId userId;
         private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
@@ -664,15 +665,21 @@ public sealed class ADUserDirectoryV4 : UserDirectory
 
         public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken = default)
         {
-            if (this.isMemberOfGroupCache.Contains(groupName))
-                return true;
-
+            using (_groupLock.EnterScope())
+            {
+                if (this.isMemberOfGroupCache.Contains(groupName))
+                    return true;
+            }
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
             {
-                this.isMemberOfGroupCache.Add(groupName);
-                return true;
+                using (_groupLock.EnterScope())
+                {
+                    this.isMemberOfGroupCache.Add(groupName);
+                    return true;
+                }
             }
+            
 
             return false;
         }
@@ -680,6 +687,7 @@ public sealed class ADUserDirectoryV4 : UserDirectory
 
     private sealed class ActiveDirectoryGroup : IUserDirectoryGroup, IEquatable<ActiveDirectoryGroup>
     {
+        private static readonly Lock _groupLock = new();
         private readonly GroupId groupId;
         private readonly ADUserDirectoryV4 directory;
         private readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
@@ -775,15 +783,21 @@ public sealed class ADUserDirectoryV4 : UserDirectory
         {
             ArgumentNullException.ThrowIfNull(groupName);
 
-            if (this.isMemberOfGroupCache.Contains(groupName))
-                return true;
-
+            using (_groupLock.EnterScope())
+            {
+                if (this.isMemberOfGroupCache.Contains(groupName))
+                    return true;
+            }
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if ((await this.groups.ValueAsync.ConfigureAwait(false)).Contains(compareName))
             {
-                this.isMemberOfGroupCache.Add(groupName);
-                return true;
+                using (_groupLock.EnterScope())
+                {
+                    this.isMemberOfGroupCache.Add(groupName);
+                    return true;
+                }
             }
+            
 
             return false;
         }

@@ -427,6 +427,7 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
     private abstract class GenericLdapPrincipal : IUserDirectoryPrincipal, IEquatable<GenericLdapPrincipal>
     {
+        private static readonly Lock _groupLock = new();
         protected readonly PrincipalId principalId;
         protected readonly OpenLdapUserDirectory directory;
         protected readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
@@ -452,16 +453,22 @@ public sealed partial class OpenLdapUserDirectory : UserDirectory
 
         public async ValueTask<bool> IsMemberOfGroupAsync(string groupName, CancellationToken cancellationToken)
         {
-            if (this.isMemberOfGroupCache.Contains(groupName))
-                return true;
+            using (_groupLock.EnterScope())
+            {
+                if (this.isMemberOfGroupCache.Contains(groupName))
+                    return true;
+            }
 
             ArgumentNullException.ThrowIfNull(groupName);
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if ((await this.groups.ValueAsync).Contains(compareName))
             {
-                this.isMemberOfGroupCache.Add(groupName);
-                return true;
+                using (_groupLock.EnterScope())
+                {
+                    this.isMemberOfGroupCache.Add(groupName);
+                    return true;
+                }
             }
 
             return false;

@@ -521,7 +521,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
         using var ldapClient = await this.GetClientAndConnectAsync(true);
         var groups = new HashSet<string>();
 
-        await foreach(var group in this.SearchDomainsAsync(ldapClient, $"(&{this.GroupsFilterBase}(member:1.2.840.113556.1.4.1941:={principal.PrincipalId.DistinguishedName}))", false))
+        await foreach(var group in this.SearchDomainsAsync(ldapClient, $"(&{this.GroupsFilterBase}(member:1.2.840.113556.1.4.1941:={(OperatingSystem.IsLinux() ? LdapHelperV4.EscapeFilterValue(principal.PrincipalId.DistinguishedName) : principal.PrincipalId.DistinguishedName)}))", false))
             groups.Add(group.DisplayName);
 
         this.Log(MessageLevel.Debug, "End ActiveDirectoryV5 GetGroupNames", "AD User Directory V5");
@@ -538,7 +538,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
         this.Log(MessageLevel.Debug, "Begin ActiveDirectoryV5 GetMembers", "AD User Directory V5");
         using var client = await this.GetClientAndConnectAsync(true);
 
-        await foreach (var user in this.SearchDomainsAsync(client, $"(&{this.UsersFilterBase}(memberOf:1.2.840.113556.1.4.1941:={principalId.DistinguishedName}))", true))
+        await foreach (var user in this.SearchDomainsAsync(client, $"(&{this.UsersFilterBase}(memberOf:1.2.840.113556.1.4.1941:={(OperatingSystem.IsLinux() ? LdapHelperV4.EscapeFilterValue(principalId.DistinguishedName) : principalId.DistinguishedName)}))", true))
             yield return user as IUserDirectoryUser;
         
         this.Log(MessageLevel.Debug, "End ActiveDirectoryV5 GetMembers", "AD User Directory V5");
@@ -563,6 +563,7 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
 
     private abstract class ActiveDirectoryV5Principal : IUserDirectoryPrincipal, IEquatable<ActiveDirectoryV5Principal>
     {
+        private static readonly Lock _groupLock = new();
         protected readonly PrincipalId principalId;
         protected readonly ADUserDirectoryV5 directory;
         protected readonly HashSet<string> isMemberOfGroupCache = new(StringComparer.OrdinalIgnoreCase);
@@ -590,15 +591,22 @@ public sealed partial class ADUserDirectoryV5 : UserDirectory
         {
             ArgumentNullException.ThrowIfNull(groupName);
 
-            if (this.isMemberOfGroupCache.Contains(groupName))
-                return true;
+            using (_groupLock.EnterScope())
+            {
+                if (this.isMemberOfGroupCache.Contains(groupName))
+                    return true;
+            }
 
             var compareName = GroupId.Parse(groupName)?.Principal ?? groupName;
             if ((await this.groups.ValueAsync).Contains(compareName))
             {
-                this.isMemberOfGroupCache.Add(groupName);
-                return true;
+                using (_groupLock.EnterScope())
+                {
+                    this.isMemberOfGroupCache.Add(groupName);
+                    return true;
+                }
             }
+            
 
             return false;
         }
